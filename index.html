@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261024104825">
+<meta name="fedup-version" content="20261024120925">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -302,6 +302,21 @@ ul.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template
 .rc-sub { font-size: 0.74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rc-foot { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; padding: 0 4px 6px 8px; margin-top: auto; min-height: 40px; }
 .rc-foot .push { flex: 1; }
+.rc-sides { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 10px; }
+.side-line { font-size: 0.74rem; color: var(--ink); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.side-line.muted { color: var(--muted); }
+.side-add { border: 1.5px dashed var(--accent); background: transparent; color: var(--accent); border-radius: 999px; font: inherit; font-size: 0.8rem; font-weight: 600; padding: 7px 10px; cursor: pointer; width: 100%; }
+.side-add:active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.sides-head { margin: 22px 0 10px; display: flex; flex-direction: column; gap: 2px; }
+.sides-head h3 { margin: 0; font-size: 1.05rem; }
+dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto; overscroll-behavior: contain; }
+.side-pick h3 { margin: 0; }
+.side-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.side-row .box { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 0.8rem; }
+.side-row[aria-pressed="true"] { border-color: var(--accent); }
+.side-row[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); color: #fff; }
+.side-row .txt { display: flex; flex-direction: column; min-width: 0; }
+.side-row .txt span { font-size: 0.74rem; color: var(--muted); }
 .rc-week { font-size: 0.72rem; font-weight: 600; color: var(--accent); padding-left: 4px; }
 .rc.theirs .rc-week { color: var(--ink); }
 .ibtn { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: none; color: var(--ink); display: grid; place-items: center; padding: 0; }
@@ -631,6 +646,11 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <div class="stack" id="ed-cat-wrap" style="gap:8px">
         <div class="small" style="font-weight:600">Category <span class="muted" style="font-weight:400">(pick up to 2)</span></div>
         <div class="chips" id="ed-cats" role="group" aria-label="Category"></div>
+      </div>
+      <div class="stack" id="ed-pair-wrap" style="gap:8px" hidden>
+        <div class="small" style="font-weight:600">Pair it with a side <span class="muted" style="font-weight:400">(optional)</span></div>
+        <div class="chips" id="ed-pair" role="group" aria-label="Pair it with a side"></div>
+        <span class="small muted" id="ed-pair-note"></span>
       </div>
       <div class="two">
         <label class="f" for="ed-mins">Cook time (minutes)
@@ -1042,6 +1062,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   <button class="add-opt" type="button" data-act="add-post"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="12" r="3.5"/></svg><span>+ POST</span></button>
   <button class="add-opt" type="button" data-act="add-recipe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg><span>+ RECIPE</span></button>
 </div>
+<dialog class="zoom side-pick" id="side-pick" aria-label="Add a side"><div class="stack" id="side-pick-body"></div></dialog>
 <dialog class="zoom" id="zoom" aria-label="Ingredient photo"><div class="stack"><div id="zoom-body" class="stack"></div><button class="btn" id="zoom-close" type="button">Close</button></div></dialog>
 <div class="welcome" id="welcome" hidden>
   <div class="welcome-card">
@@ -1509,7 +1530,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 (function () {
   var AISLES = ['Produce', 'Meat & seafood', 'Dairy & eggs', 'Bakery', 'Pantry', 'Frozen', 'Drinks', 'Household', 'Other'];
   var EXTRA_AISLE = 'Added by you';
-  var S = { recipes: {}, week: { meals: {}, servings: {} }, list: { checked: {}, extras: [], out: {} }, settings: { staples: {}, favorites: [], prices: {}, budget: 0, baby: null, onHand: [], lastWeek: {} }, ings: {}, photos: {}, rphotos: {}, freezer: { items: [] }, tracker: { foods: [] } };
+  var S = { recipes: {}, week: { meals: {}, servings: {}, with: {} }, list: { checked: {}, extras: [], out: {} }, settings: { staples: {}, favorites: [], prices: {}, budget: 0, baby: null, onHand: [], lastWeek: {} }, ings: {}, photos: {}, rphotos: {}, freezer: { items: [] }, tracker: { foods: [] } };
   var ready = false, db = null, tab = 'meals', draft = null, confirmKey = null, confirmTimer = null;
   var search = '', cat = '', priceMode = false, cookId = null, wake = null, ingSearch = '', draftIng = null, suggTimer = null;
   var tagFilter = '', mode = 'adult', backTo = 'meals', mineSearch = '', mineKind = '';
@@ -1523,8 +1544,37 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function renderEdCats() {
     $('ed-cats').innerHTML = CATS.map(function (c) { return '<button class="chip" type="button" data-edcat="' + c + '" aria-pressed="' + (draft.cats.indexOf(c) >= 0 ? 'true' : 'false') + '">' + c + '</button>'; }).join('');
+    renderEdPair();
+  }
+  function renderEdPair() {
+    if (!draft) return;
+    var draftExtra = draft.cats.length > 0 && draft.cats.every(function (x) { return EXTRA_CATS.indexOf(x) >= 0; });
+    var wrap = $('ed-pair-wrap'); wrap.hidden = $('ed-kind').value === 'baby' || draftExtra;
+    if (wrap.hidden) return;
+    var opts = Object.keys(ALL).filter(function (id) { return id !== draft.id && isExtra(ALL[id]); }).sort(function (a, b) { return ALL[a].name.localeCompare(ALL[b].name); });
+    draft.sides = (draft.sides || []).filter(function (id) { return ALL[id]; });
+    $('ed-pair').innerHTML = opts.map(function (id) { return '<button class="chip" type="button" data-edpair="' + esc(id) + '" aria-pressed="' + (draft.sides.indexOf(id) >= 0 ? 'true' : 'false') + '">' + esc(ALL[id].name) + '</button>'; }).join('');
+    $('ed-pair').hidden = !opts.length;
+    $('ed-pair-note').textContent = opts.length
+      ? (draft.sides.length ? 'When you pick this for the week, ' + sideText(draft.sides.map(function (id) { return ALL[id].name; })) + ' is added too.' : 'Pick a side and it gets added to your week whenever you pick this meal.')
+      : 'Save a side recipe first, like rice or a salad, with the Side category. Then you can pair it here.';
   }
   function isBaby(r) { return r.kind === 'baby'; }
+  /* sides and desserts go with a meal, so they don't count as one of the week's meals */
+  var EXTRA_CATS = ['Side', 'Dessert'];
+  function isExtra(r) { if (!r || isBaby(r)) return false; var c = catsOf(r); return c.length > 0 && c.every(function (x) { return EXTRA_CATS.indexOf(x) >= 0; }); }
+  function sidesOf(main) { return Object.keys(S.week.with || {}).filter(function (sid) { return S.week.with[sid] === main && ALL[sid] && portions(sid) > 0; }); }
+  function sideText(names) { return !names.length ? '' : names.length === 1 ? 'a side of ' + names[0] : 'sides of ' + names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]; }
+  function pairSides(main) {
+    var r = ALL[main]; if (!r || !Array.isArray(r.sides) || isExtra(r) || isBaby(r)) return;
+    if (!S.week.with) S.week.with = {};
+    r.sides.forEach(function (sid) { if (ALL[sid] && isExtra(ALL[sid]) && !portions(sid)) { S.week.with[sid] = main; setPortions(sid, Math.max(portions(main), 1)); } });
+  }
+  function weekText(ids) {
+    var m = 0, sd = 0, ds = 0;
+    ids.forEach(function (id) { var r = ALL[id]; if (!r) return; if (!isExtra(r)) m++; else if (catsOf(r).indexOf('Side') >= 0) sd++; else ds++; });
+    return [m ? m + (m === 1 ? ' meal' : ' meals') : '', sd ? sd + (sd === 1 ? ' side' : ' sides') : '', ds ? ds + (ds === 1 ? ' dessert' : ' desserts') : ''].filter(Boolean).join(', ');
+  }
   /* baby features are a choice: asked once on first open, changeable in Settings. Someone who already has baby recipes or a log keeps them on. */
   function hasBabyData() { return S.tracker.foods.length > 0 || Object.keys(S.recipes).some(function (id) { return isBaby(S.recipes[id]); }); }
   function babyOn() { return S.settings.baby === true || (S.settings.baby === null && hasBabyData()); }
@@ -1599,7 +1649,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function syncKind() {
     var baby = $('ed-kind').value === 'baby';
-    $('ed-stage-wrap').hidden = !baby; $('ed-cat-wrap').hidden = baby; $('ed-good-wrap').hidden = !baby;
+    $('ed-stage-wrap').hidden = !baby; $('ed-cat-wrap').hidden = baby; $('ed-good-wrap').hidden = !baby; renderEdPair();
     $('ed-name').placeholder = baby ? 'Sweet potato and pear purée' : 'Chicken and rice bowls';
   }
   var TAGS = ['healthy', 'high protein', 'vegetarian', 'vegan', 'gluten free', 'dairy free', 'nut free', 'low carb', 'keto', 'quick', 'budget', 'freezer friendly', 'one pan', 'kid friendly', 'spicy', 'comfort food'];
@@ -1868,7 +1918,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function setPortions(id, n) {
     delete S.week.meals[id];
-    if (n > 0) S.week.servings[id] = Math.min(n, 99); else delete S.week.servings[id];
+    if (n > 0) S.week.servings[id] = Math.min(n, 99); else { delete S.week.servings[id]; if (S.week.with) delete S.week.with[id]; }
     save('week');
   }
   function servingsLabel(r, n) {
@@ -2036,7 +2086,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function render() {
     rebuildAll(); refreshNames(); applyBaby();
     var rows = ready ? allRows() : [], c = counts(rows);
-    var picked = Object.keys(ALL).filter(function (id) { return portions(id) > 0; }).length;
+    var picked = pickedIds().filter(function (id) { return !isExtra(ALL[id]); }).length;
     setCount('count-meals', picked); setCount('count-list', c.left.length);
     if (!ready) return;
     renderMeals(); renderMine(); renderLibrary(); renderMore(); renderFreezer(); renderTracker();
@@ -2080,7 +2130,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (!picked.length && Object.keys(ALL).length && prepToday()) ban += '<p class="note">' + esc(prepLine()) + '</p>';
     if (S.settings.planDay === null && Object.keys(ALL).length) ban += '<div class="note stack" style="gap:8px"><strong>What day do you usually plan your meals and shop?</strong><span class="small">We\'ll remind you that it\'s prep time on that day.</span><div class="chips"><button class="chip on-note" type="button" data-planday="0" aria-pressed="false">Sun</button><button class="chip on-note" type="button" data-planday="1" aria-pressed="false">Mon</button><button class="chip on-note" type="button" data-planday="2" aria-pressed="false">Tue</button><button class="chip on-note" type="button" data-planday="3" aria-pressed="false">Wed</button><button class="chip on-note" type="button" data-planday="4" aria-pressed="false">Thu</button><button class="chip on-note" type="button" data-planday="5" aria-pressed="false">Fri</button><button class="chip on-note" type="button" data-planday="6" aria-pressed="false">Sat</button><button class="chip on-note" type="button" data-planday="any" aria-pressed="false">It changes</button></div></div>';
     if (Object.keys(ALL).length) ban += '<div><button class="btn" type="button" data-act="go" data-view="pantry">What can I make with what I have?</button></div>';
-    if (!picked.length && last.length) ban += '<div><button class="btn" type="button" data-act="repeat-week">Repeat last week (' + last.length + (last.length === 1 ? ' meal' : ' meals') + ')</button></div>';
+    if (!picked.length && last.length) ban += '<div><button class="btn" type="button" data-act="repeat-week">Repeat last week (' + (weekText(last) || last.length + ' recipes') + ')</button></div>';
     $('meal-banners').innerHTML = ban; $('meal-banners').hidden = !ban;
     var all = Object.keys(ALL).filter(function (id) { return isBaby(ALL[id]) === (mode === 'baby'); }).sort(function (a, b) { return ALL[a].name.localeCompare(ALL[b].name); });
     var hasGroup = all.some(function (id) { return ALL[id].group; });
@@ -2112,10 +2162,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       return norm(r.name).indexOf(q) >= 0 || tg.some(function (t) { return t.indexOf(q) >= 0; }) || (r.ingredients || []).some(function (g) { return norm(g.name).indexOf(q) >= 0; });
     });
     if (!ids.length) { $('meals-body').innerHTML = '<p class="muted">No recipes match that. Clear the search, untick the hashtag or pick "All".</p>'; return; }
-    $('meals-body').innerHTML = '<ul class="cards">' + ids.map(function (id) {
+    function card(id) {
       var r = ALL[id], n = portions(id), c = (r.ingredients || []).length;
+      var extra = isExtra(r), sides = n && !extra && mode !== 'baby' ? sidesOf(id) : [];
+      var defSides = Array.isArray(r.sides) ? r.sides.filter(function (x) { return ALL[x]; }).map(function (x) { return ALL[x].name; }) : [];
+      var withMain = extra && n && S.week.with && ALL[S.week.with[id]] ? ALL[S.week.with[id]].name : '';
       var tag = r.group ? '<span class="rc-origin">From ' + esc(who(r.owner)) + '</span>' : r.savedFrom ? '<span class="rc-origin">Saved from ' + esc(who(r.savedFrom)) + '</span>' : r.shared ? '<span class="rc-origin mine">Shared</span>' : '';
-      var sub = [isBaby(r) ? r.stage : catsOf(r).join(' & '), r.mins > 0 ? r.mins + ' min' : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
+      var sub = withMain ? 'With ' + withMain : [isBaby(r) ? r.stage : catsOf(r).join(' & '), r.mins > 0 ? r.mins + ' min' : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
       return '<li class="rc' + (n ? ' on' : '') + (r.group || r.savedFrom ? ' theirs' : '') + '">' +
         '<button class="rc-main" type="button" data-act="toggle" data-id="' + esc(id) + '" aria-pressed="' + (n ? 'true' : 'false') + '" aria-label="' + esc((n ? 'Remove ' : 'Add ') + r.name + (n ? ' from' : ' to') + ' this week') + '">' +
         rcImg(id, r, '<span class="box" aria-hidden="true">' + (n ? '✓' : '+') + '</span>' + tag) +
@@ -2123,8 +2176,16 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         '<div class="rc-foot">' +
         (n ? '<span class="stepper"><button type="button" data-act="less" data-id="' + esc(id) + '" aria-label="One less of ' + esc(r.name) + '">−</button><span title="' + esc(servingsLabel(r, n)) + '" aria-label="' + esc(servingsLabel(r, n)) + '">' + n + '</span><button type="button" data-act="more" data-id="' + esc(id) + '" aria-label="One more of ' + esc(r.name) + '">+</button></span>' : '') +
         '<span class="push"></span><button class="ibtn" type="button" data-act="cook" data-id="' + esc(id) + '" aria-label="Open ' + esc(r.name) + '">' + ICON.book + '</button>' +
-        (r.group ? '<button class="ibtn" type="button" data-act="copy" data-id="' + esc(id) + '" aria-label="Save a copy of ' + esc(r.name) + '">' + ICON.copy + '</button>' : '<button class="ibtn" type="button" data-act="edit" data-id="' + esc(id) + '" aria-label="Edit ' + esc(r.name) + '">' + ICON.edit + '</button>') + '</div></li>';
-    }).join('') + '</ul>';
+        (r.group ? '<button class="ibtn" type="button" data-act="copy" data-id="' + esc(id) + '" aria-label="Save a copy of ' + esc(r.name) + '">' + ICON.copy + '</button>' : '<button class="ibtn" type="button" data-act="edit" data-id="' + esc(id) + '" aria-label="Edit ' + esc(r.name) + '">' + ICON.edit + '</button>') + '</div>' +
+        (n && !extra && mode !== 'baby' ? '<div class="rc-sides">' + (sides.length ? '<span class="side-line">with ' + esc(sideText(sides.map(function (sid) { return ALL[sid].name; }))) + '</span>' : '') +
+          '<button class="side-add" type="button" data-act="side-pick" data-id="' + esc(id) + '">' + (sides.length ? 'Change sides' : '+ Add a side') + '</button></div>'
+        : !n && !extra && defSides.length ? '<div class="rc-sides"><span class="side-line muted">with ' + esc(sideText(defSides)) + '</span></div>' : '') + '</li>';
+    }
+    var mains = mode === 'baby' ? ids : ids.filter(function (id) { return !isExtra(ALL[id]); });
+    var extras = mode === 'baby' ? [] : ids.filter(function (id) { return isExtra(ALL[id]); });
+    var onlyExtras = cat === 'Side' || cat === 'Dessert';
+    $('meals-body').innerHTML = (mains.length ? '<ul class="cards">' + mains.map(card).join('') + '</ul>' : '') +
+      (extras.length ? (onlyExtras ? '' : '<div class="sides-head"><h3>Sides &amp; desserts</h3><span class="small muted">These go with a meal, so they don\'t count as one of your meals for the week. Tap + Add a side on a meal to pair them.</span></div>') + '<ul class="cards">' + extras.map(card).join('') + '</ul>' : '');
   }
 
   function itemHtml(r, i) {
@@ -2518,7 +2579,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     var n = pickedIds().length, fz = S.freezer.items.length, soon = S.freezer.items.filter(function (it) { return daysLeft(it) <= 14; }).length;
     var seen = {}; S.tracker.foods.forEach(function (f) { seen[norm(f.name)] = true; });
     var tried = Object.keys(seen).length;
-    $('more-prep').textContent = n ? n + (n === 1 ? ' meal' : ' meals') + ' to prep this week, in cooking order.' : "Everything you're cooking this week, in one place.";
+    $('more-prep').textContent = n ? weekText(pickedIds()) + ' to prep this week, in cooking order.' : "Everything you're cooking this week, in one place.";
     $('more-freezer').textContent = fz ? fz + (fz === 1 ? ' item' : ' items') + (soon ? ' · ' + soon + ' to use soon' : '') : 'Track what you froze and when to use it.';
     $('more-tracker').textContent = tried ? tried + (tried === 1 ? ' food' : ' foods') + ' tried so far.' : 'Log each new food and how it went.';
   }
@@ -2942,7 +3003,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       (feedApi && bios[uid] ? '<p class="bio">' + esc(bios[uid]) + '</p>' : '') +
       (feedApi && feedApi.saveProfile ? '<div><button class="btn wide" type="button" data-act="edit-profile">Edit profile</button></div>' : '');
     var drop = '<ul class="plain menu prof-drop" id="prof-drop"' + (profMenu ? '' : ' hidden') + '>' +
-      menuRow('meals', picked ? 'My week' : 'Start my week', picked ? picked + (picked === 1 ? ' meal' : ' meals') + ' picked for this week' : 'Pick this week\'s meals and your list builds itself', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M9 4c-1 1.2 1 2.3 0 3.5M13 3c-1 1.3 1 2.7 0 4.5"/></svg>') +
+      menuRow('meals', picked ? 'My week' : 'Start my week', picked ? weekText(pickedIds()) + ' picked for this week' : 'Pick this week\'s meals and your list builds itself', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M9 4c-1 1.2 1 2.3 0 3.5M13 3c-1 1.3 1 2.7 0 4.5"/></svg>') +
       (babyOn() ? menuRow('tracker', 'Baby log', tried ? tried + (tried === 1 ? ' food' : ' foods') + ' tried so far' : 'Log each new food and how it went', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>') : '') +
       (feedApi && feedApi.sendFeedback ? menuRow('feedback', 'Send feedback', 'Tell us what you love and what to fix', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>') : '') +
       (feedAdmin && feedApi.members ? menuRow('members', 'Members', members ? members.length + (members.length === 1 ? ' person has' : ' people have') + ' joined' : 'Everyone who has signed up', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg>') : '') +
@@ -3057,7 +3118,26 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
 
   /* ---------- recipe editor ---------- */
+  var sidePickFor = null, pendingSide = null;
+  function renderSidePick() {
+    var main = sidePickFor, m = ALL[main];
+    if (!m) { try { $('side-pick').close(); } catch (e) {} return; }
+    var opts = Object.keys(ALL).filter(function (id) { return isExtra(ALL[id]); }).sort(function (a, b) {
+      var sa = catsOf(ALL[a]).indexOf('Side') >= 0 ? 0 : 1, sb = catsOf(ALL[b]).indexOf('Side') >= 0 ? 0 : 1;
+      return sa - sb || ALL[a].name.localeCompare(ALL[b].name);
+    });
+    var rows = opts.map(function (id) {
+      var r = ALL[id], on = S.week.with[id] === main && portions(id) > 0, other = !on && portions(id) > 0 && ALL[S.week.with[id]] ? 'With ' + ALL[S.week.with[id]].name : '';
+      return '<button class="side-row" type="button" data-act="side-toggle" data-id="' + esc(id) + '" aria-pressed="' + on + '"><span class="box" aria-hidden="true">' + (on ? '✓' : '+') + '</span><span class="txt"><strong>' + esc(r.name) + '</strong><span>' + esc(other || catsOf(r).join(' & ')) + '</span></span></button>';
+    }).join('');
+    $('side-pick-body').innerHTML = '<h3>Sides for ' + esc(m.name) + '</h3>' +
+      (rows ? '<span class="small muted">Sides and desserts go with this meal. They\'re added to your shopping list but don\'t count as another meal.</span><div class="stack" style="gap:8px">' + rows + '</div>'
+            : '<span class="small muted">You don\'t have any side or dessert recipes yet. Add one, like rice or a salad, and it\'ll be paired with ' + esc(m.name) + '.</span>') +
+      '<button class="btn" type="button" data-act="side-new">+ New side recipe</button><button class="btn primary" type="button" data-act="side-done">Done</button>';
+  }
+  function openSidePick(main) { if (!S.week.with) S.week.with = {}; sidePickFor = main; renderSidePick(); try { $('side-pick').showModal(); } catch (e) {} }
   function openEditor(id) {
+    pendingSide = null;
     if (tab === 'mine' || tab === 'meals' || tab === 'profile') backTo = tab;
     var r = id && S.recipes[id];
     draft = r ? clone(r) : { name: '', notes: '', ingredients: [] };
@@ -3070,7 +3150,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     $('ed-servings').value = draft.servings > 0 ? draft.servings : '';
     $('ed-mins').value = draft.mins > 0 ? draft.mins : ''; $('ed-method').value = METHODS.indexOf(draft.method) >= 0 ? draft.method : '';
     $('ed-cal').value = draft.cal > 0 ? draft.cal : ''; $('ed-protein').value = draft.protein > 0 ? draft.protein : '';
-    $('ed-paste').value = ''; $('ed-paste-box').hidden = true; draft.cats = r ? catsOf(r) : []; renderEdCats();
+    $('ed-paste').value = ''; $('ed-paste-box').hidden = true; draft.cats = r ? catsOf(r) : []; draft.sides = r && Array.isArray(r.sides) ? r.sides.slice() : []; renderEdCats();
     draft.good = r ? goodOf(r) : []; draft.goodTouched = !!(r && Array.isArray(r.goodFor)); renderEdGood();
     $('ed-kind').value = r ? (isBaby(r) ? 'baby' : 'adult') : mode; $('ed-stage').value = r && STAGES.indexOf(r.stage) >= 0 ? r.stage : ''; syncKind();
     $('ed-delete').hidden = !r;
@@ -3224,6 +3304,12 @@ var babyEd = $('ed-kind').value === 'baby';
       if (ci >= 0) draft.cats.splice(ci, 1); else if (draft.cats.length < 2) draft.cats.push(cv); else toast('Pick up to 2 categories. Untick one to switch.');
       renderEdCats(); return;
     }
+    var ep = ev.target.closest('[data-edpair]');
+    if (ep && draft) {
+      var pv = ep.dataset.edpair, pi = draft.sides.indexOf(pv);
+      if (pi >= 0) draft.sides.splice(pi, 1); else if (draft.sides.length < 3) draft.sides.push(pv); else toast('Pair up to 3 sides. Untick one to switch.');
+      renderEdPair(); return;
+    }
     var et = ev.target.closest('[data-edtag]');
     if (et && draft) {
       var tv = et.dataset.edtag, at = draft.tags.indexOf(tv);
@@ -3324,7 +3410,17 @@ var babyEd = $('ed-kind').value === 'baby';
     }
     if (act === 'go') return goView(b.dataset.view);
     if (act === 'freeze') { var fr = ALL[id]; goView('freezer'); if (fr) $('fz-name').value = fr.name; $('fz-portions').focus(); return; }
-    if (act === 'add-meal') { if (ALL[id]) { setPortions(id, base(ALL[id])); toast('Added ' + ALL[id].name + ' to this week.'); } render(); return; }
+    if (act === 'side-pick') { openSidePick(id); return; }
+    if (act === 'side-done') { try { $('side-pick').close(); } catch (e) {} return; }
+    if (act === 'side-new') { var forMain = sidePickFor; try { $('side-pick').close(); } catch (e) {} if (mode === 'baby') setMode('adult'); openEditor(null); pendingSide = forMain; draft.cats = ['Side']; renderEdCats(); return; }
+    if (act === 'side-toggle') {
+      var mn = sidePickFor;
+      if (!ALL[id] || !ALL[mn]) return;
+      if (S.week.with[id] === mn && portions(id) > 0) setPortions(id, 0);
+      else { S.week.with[id] = mn; setPortions(id, portions(id) || Math.max(portions(mn), 1)); }
+      render(); renderSidePick(); return;
+    }
+    if (act === 'add-meal') { if (ALL[id]) { setPortions(id, base(ALL[id])); pairSides(id); toast('Added ' + ALL[id].name + ' to this week.'); } render(); return; }
     if (act === 'repeat-week') {
       Object.keys(S.settings.lastWeek).forEach(function (rid) { if (ALL[rid]) S.week.servings[rid] = S.settings.lastWeek[rid]; });
       save('week'); render(); toast("Last week's meals are back on the plan."); return;
@@ -3336,7 +3432,12 @@ var babyEd = $('ed-kind').value === 'baby';
     if (act === 'tk-del') { S.tracker.foods = S.tracker.foods.filter(function (f) { return f.id !== id; }); save('tracker'); render(); return; }
     if (act === 'cook-tick') { var li = b.parentNode, on = li.classList.toggle('done'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('.box').textContent = on ? '✓' : ''; return; }
     if (act === 'copy') { copyRecipe(id); render(); return; }
-    if (act === 'toggle') setPortions(id, portions(id) ? 0 : base(ALL[id]));
+    if (act === 'toggle') {
+      var gone = portions(id) && !isExtra(ALL[id]) ? sidesOf(id) : [];
+      setPortions(id, portions(id) ? 0 : base(ALL[id]));
+      if (portions(id)) pairSides(id);
+      if (gone.length) { gone.forEach(function (sid) { setPortions(sid, 0); }); toast('Also took off ' + gone.map(function (sid) { return ALL[sid].name; }).join(', ') + '.'); }
+    }
     else if (act === 'more') setPortions(id, portions(id) + 1);
     else if (act === 'less') setPortions(id, portions(id) - 1);
     else if (act === 'check') { if (S.list.checked[k]) delete S.list.checked[k]; else S.list.checked[k] = true; save('list'); }
@@ -3515,6 +3616,7 @@ var babyEd = $('ed-kind').value === 'baby';
   $('new-ing').addEventListener('click', function () { openIng(null); });
   $('ing-search').addEventListener('input', function () { ingSearch = this.value; if (ready) renderLibrary(); });
   $('zoom-close').addEventListener('click', function () { $('zoom').close(); });
+  $('side-pick').addEventListener('click', function (ev) { if (ev.target === this) this.close(); });
   $('zoom').addEventListener('click', function (ev) { if (ev.target === this) this.close(); });
   function nameRow(el) { var m = el && el.id && el.id.match(/^ing-name-(\d+)$/); return m ? m[1] : null; }
   $('ed-ings').addEventListener('input', function (ev) { var i = nameRow(ev.target); if (i != null) { hideSugg(); showSugg(i); } });
@@ -3593,6 +3695,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (posInt($('ed-protein').value, 500)) rec.protein = posInt($('ed-protein').value, 500);
     if ($('ed-kind').value === 'baby') { rec.kind = 'baby'; if ($('ed-stage').value) rec.stage = $('ed-stage').value; if (draft.goodTouched) rec.goodFor = GOOD.filter(function (n) { return draft.good.indexOf(n) >= 0; }); }
     else if (draft.cats.length) rec.categories = CATS.filter(function (c) { return draft.cats.indexOf(c) >= 0; });
+    if (rec.kind !== 'baby' && !isExtra(rec)) { var sds = (draft.sides || []).filter(function (x) { return x !== id && ALL[x] && isExtra(ALL[x]); }).slice(0, 3); if (sds.length) rec.sides = sds; }
     addOwnTag();
     if (draft.tags.length) rec.tags = draft.tags.slice();
     /* keep this week's amount sensible if the batch size changed while it was picked the old way */
@@ -3608,7 +3711,11 @@ var babyEd = $('ed-kind').value === 'baby';
     if (canShare && (rec.shared || wasShared)) save('shared');
     if (canShare && (rec.shared || wasShared) && (photoChanged || !!rec.shared !== wasShared)) save('sphoto:' + id);
     draft = null; if ((rec.kind === 'baby') !== (mode === 'baby')) setMode(rec.kind === 'baby' ? 'baby' : 'adult');
-    show(backTo); render(); toast('Saved ' + name + '.');
+    var pairWith = pendingSide && ALL[pendingSide] && isExtra(rec) ? pendingSide : null; pendingSide = null;
+    show(backTo); render();
+    if (portions(id) > 0 && rec.sides) { pairSides(id); render(); }
+    if (pairWith && ALL[id]) { S.week.with[id] = pairWith; setPortions(id, Math.max(portions(pairWith), 1)); render(); toast('Saved ' + name + ' and added it as a side for ' + ALL[pairWith].name + '.'); }
+    else toast('Saved ' + name + '.');
   });
   $('ed-delete').addEventListener('click', function () {
     if (!confirmTap('ed-delete')) return;
@@ -3617,7 +3724,7 @@ var babyEd = $('ed-kind').value === 'baby';
     delete S.recipes[id]; save('recipe:' + id);
     if (S.rphotos[id]) { delete S.rphotos[id]; save('rphoto:' + id); }
     if (canShare && hadShare) { save('shared'); save('sphoto:' + id); }
-    if (S.week.meals[id] || S.week.servings[id] != null) { delete S.week.meals[id]; delete S.week.servings[id]; save('week'); }
+    if (S.week.meals[id] || S.week.servings[id] != null) { delete S.week.meals[id]; delete S.week.servings[id]; if (S.week.with) delete S.week.with[id]; save('week'); }
     draft = null; show(backTo); render(); toast('Deleted ' + name + '.');
   });
   $('extra-form').addEventListener('submit', function (ev) {
@@ -3631,7 +3738,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (!confirmTap('new-week')) return;
     var prev = {}; pickedIds().forEach(function (rid) { prev[rid] = portions(rid); });
     if (Object.keys(prev).length) { S.settings.lastWeek = prev; save('settings'); }
-    S.week = { meals: {}, servings: {} }; S.list = { checked: {}, extras: [], out: {} }; priceMode = false;
+    S.week = { meals: {}, servings: {}, with: {} }; S.list = { checked: {}, extras: [], out: {} }; priceMode = false;
     save('week'); save('list'); render(); show('meals'); toast('Fresh week. Recipes, staples, favourites and prices are kept.');
   });
   $('copy-list').addEventListener('click', function () {
@@ -3651,7 +3758,7 @@ var babyEd = $('ed-kind').value === 'baby';
   });
 
   /* ---------- loading ---------- */
-  function cleanWeek(d) { return { meals: Object.assign({}, d && d.meals), servings: Object.assign({}, d && d.servings) }; }
+  function cleanWeek(d) { return { meals: Object.assign({}, d && d.meals), servings: Object.assign({}, d && d.servings), with: Object.assign({}, d && d.with) }; }
   function cleanList(d) { return { checked: Object.assign({}, d && d.checked), extras: clone((d && d.extras) || []), out: Object.assign({}, d && d.out) }; }
   function cleanSettings(d) { var out = cleanSettings0(d); [out.staples, out.prices].forEach(function (o) { Object.keys(o).forEach(function (k) { var c = skey(k); if (c && c !== k && o[c] === undefined) o[c] = o[k]; }); }); return out; }
   function cleanSettings0(d) { return { zip: d && /^\d{5}$/.test(String(d.zip || '')) ? String(d.zip) : '', planDay: d && (d.planDay === 'any' || (typeof d.planDay === 'number' && d.planDay >= 0 && d.planDay <= 6)) ? d.planDay : null, staples: Object.assign({}, d && d.staples), favorites: clone((d && d.favorites) || []), prices: Object.assign({}, d && d.prices), budget: d && d.budget > 0 ? d.budget : 0, baby: d && typeof d.baby === 'boolean' ? d.baby : null, onHand: (d && Array.isArray(d.onHand) ? d.onHand : []).filter(function (x) { return typeof x === 'string' && x.trim(); }).slice(0, 200), lastWeek: Object.assign({}, d && d.lastWeek) }; }
