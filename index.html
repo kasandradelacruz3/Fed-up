@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261024001226">
+<meta name="fedup-version" content="20261024001659">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -421,7 +421,9 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 .prof-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
 .prof-tabs svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
 .ie-sugg { margin-top: -8px; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; overflow: hidden; }
-.sugg { max-height: 320px; overflow-y: auto; }
+/* the suggestion lists scroll by themselves and never drag the page along */
+.ing .sugg, .ie-sugg, .sugg { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.sugg > button { flex: none; }
 .add-sheet { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); z-index: 9; display: flex; justify-content: center; gap: 12px; width: min(360px, calc(100vw - 32px)); }
 .add-opt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; padding: 15px 18px; background: #FF1F8F; color: #fff; box-shadow: 0 10px 26px rgba(255, 31, 143, 0.38); }
 .add-opt svg { flex: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
