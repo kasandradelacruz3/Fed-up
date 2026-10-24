@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261024001952">
+<meta name="fedup-version" content="20261024104825">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1090,6 +1090,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       </label>
       <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
       <button class="btn quiet small" type="button" id="auth-forgot">Forgot your password?</button>
+      <button class="btn small" type="button" id="auth-resend" hidden>Didn't get it? Send it again</button>
     </form>
     <p class="note" id="auth-msg" role="status" aria-live="polite" hidden></p>
     <details class="auth-guide">
@@ -1136,8 +1137,18 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   var profileReady = Promise.resolve();
   function msg(text) { var m = $('auth-msg'); m.textContent = text || ''; m.hidden = !text; }
   function showAuth() { $('auth').hidden = false; }
+  var resendFor = null, resendTimer = null, resendAt = 0;
+  function showResend(kind, email) { resendFor = { kind: kind, email: email }; resendAt = Date.now(); tickResend(); }
+  function tickResend() {
+    var b = $('auth-resend'); clearTimeout(resendTimer);
+    if (!resendFor) { b.hidden = true; return; }
+    var wait = Math.ceil((resendAt + 60000 - Date.now()) / 1000);
+    b.hidden = false; b.disabled = wait > 0;
+    b.textContent = wait > 0 ? "Didn't get it? You can send it again in " + wait + 's' : "Didn't get it? Send it again";
+    if (wait > 0) resendTimer = setTimeout(tickResend, 1000);
+  }
   function setMode(m) {
-    mode = m; msg('');
+    mode = m; msg(''); resendFor = null; tickResend();
     $('auth-tabs').hidden = m === 'reset' || m === 'newpass';
     $('auth-tab-in').setAttribute('aria-pressed', m === 'in' ? 'true' : 'false');
     $('auth-tab-up').setAttribute('aria-pressed', m === 'up' ? 'true' : 'false');
@@ -1284,8 +1295,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     recipe: function (id) { return sb.from('feed_recipes').select('data').eq('post_id', id).then(function (r) { check(r); return (r.data || [])[0] ? r.data[0].data : null; }); },
     create: function (post, recipe) {
       var id = newUuid(), file = uid + '/' + id + '.jpg';
+      var thumb = uid + '/' + id + '-t.jpg';
       var upload = post.photo
-        ? sb.storage.from('feed').upload(file, dataUrlToBlob(post.photo), { contentType: 'image/jpeg', upsert: false }).then(function (r) { check(r); return sb.storage.from('feed').getPublicUrl(file).data.publicUrl; })
+        ? sb.storage.from('feed').upload(file, dataUrlToBlob(post.photo), { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' }).then(function (r) {
+            check(r);
+            if (post.thumb) sb.storage.from('feed').upload(thumb, dataUrlToBlob(post.thumb), { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' }).then(function () {}, function () {});
+            return sb.storage.from('feed').getPublicUrl(file).data.publicUrl;
+          })
         : Promise.resolve(null);
       return upload.then(function (url) {
         return sb.from('feed_posts').insert({ id: id, owner: uid, title: String(post.title).slice(0, 120), description: post.description || '', tags: post.tags || [], photo_url: url, price_cents: post.price === 200 ? 200 : 0, kind: post.kind === 'baby' ? 'baby' : 'adult' });
@@ -1297,10 +1313,12 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         return id;
       });
     },
-    follows: function () { return sb.from('follows').select('follower,followee').limit(5000).then(function (r) { check(r); return r.data || []; }); },
+    myFollows: function () { return sb.from('follows').select('followee').eq('follower', uid).limit(5000).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.followee; }); }); },
+    followCounts: function (ids) { return sb.rpc('follow_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
     follow: function (o) { return sb.from('follows').insert({ follower: uid, followee: o }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     unfollow: function (o) { return sb.from('follows').delete().eq('follower', uid).eq('followee', o).then(check); },
-    likes: function () { return sb.from('post_likes').select('post_id,user_id').limit(10000).then(function (r) { check(r); return r.data || []; }); },
+    likeCounts: function (ids) { return sb.rpc('post_like_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
+    myLikes: function (ids) { return sb.from('post_likes').select('post_id').eq('user_id', uid).in('post_id', ids.slice(0, 200)).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.post_id; }); }); },
     like: function (pid) { return sb.from('post_likes').insert({ post_id: pid, user_id: uid }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     unlike: function (pid) { return sb.from('post_likes').delete().eq('post_id', pid).eq('user_id', uid).then(check); },
     saves: function () { return sb.from('post_saves').select('post_id,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(2000).then(function (r) { check(r); return r.data || []; }); },
@@ -1370,7 +1388,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     remove: function (id) {
       return sb.from('feed_posts').delete().eq('id', id).then(function (r) {
         check(r);
-        sb.storage.from('feed').remove([uid + '/' + id + '.jpg']).then(function () {}, function () {});
+        sb.storage.from('feed').remove([uid + '/' + id + '.jpg', uid + '/' + id + '-t.jpg']).then(function () {}, function () {});
       });
     }
   };
@@ -1403,6 +1421,17 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     out.addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }, function () { location.reload(); }); });
     row.appendChild(who); row.appendChild(out); head.appendChild(row);
   }
+  $('auth-resend').addEventListener('click', function () {
+    if (!resendFor || Date.now() < resendAt + 60000) return;
+    var f = resendFor, here = location.origin + location.pathname, b = this;
+    b.disabled = true;
+    var req = f.kind === 'reset' ? sb.auth.resetPasswordForEmail(f.email, { redirectTo: here }) : sb.auth.resend({ type: 'signup', email: f.email, options: { emailRedirectTo: here } });
+    req.then(function (r) {
+      if (r && r.error) { msg(/rate|seconds|too many/i.test(r.error.message || '') ? 'Too many emails were sent just now. Wait a few minutes and try again.' : (r.error.message || 'That email could not be sent. Try again in a few minutes.')); }
+      else msg('Sent again to ' + f.email + '. Check your inbox and spam folder.');
+      resendAt = Date.now(); tickResend();
+    }, function () { msg('That email could not be sent. Check your connection and try again.'); resendAt = Date.now(); tickResend(); });
+  });
   $('auth-tab-in').addEventListener('click', function () { setMode('in'); });
   $('auth-tab-up').addEventListener('click', function () { setMode('up'); });
   $('auth-forgot').addEventListener('click', function () { setMode(mode === 'reset' ? 'in' : 'reset'); });
@@ -1417,7 +1446,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       return sb.auth.updateUser({ password: pass }).then(function (r) { if (r.error) return fail(r.error); done(); $('auth-pass').value = ''; $('auth').hidden = true; setMode('in'); }, fail);
     }
     if (!/^\S+@\S+\.\S+$/.test(email)) return fail({ message: 'Enter your email address.' });
-    if (mode === 'reset') return sb.auth.resetPasswordForEmail(email, { redirectTo: here }).then(function (r) { if (r.error) return fail(r.error); done(); msg('If that email has an account, a reset link is on its way.'); }, fail);
+    if (mode === 'reset') return sb.auth.resetPasswordForEmail(email, { redirectTo: here }).then(function (r) { if (r.error) return fail(r.error); done(); msg('If that email has an account, a reset link is on its way. Check your spam folder too.'); showResend('reset', email); }, fail);
     if (mode === 'up') {
       var name = $('auth-name').value.trim();
       var uname = cleanUsername($('auth-user').value);
@@ -1431,7 +1460,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         if (r.error) return fail(r.error);
         done();
         if (r.data && r.data.session) start(r.data.session);
-        else { setMode('in'); msg('Check your email and tap the link to confirm your account, then sign in here.'); }
+        else { setMode('in'); msg('Check your email and tap the link to confirm your account, then sign in here.'); showResend('signup', email); }
       }, fail);
     }
     return sb.auth.signInWithPassword({ email: email, password: pass }).then(function (r) {
@@ -2605,15 +2634,15 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 
   /* ---------- community feed (only where the site provides one) ---------- */
   var feedApi = null, feedPosts = [], feedState = 'loading', feedAdmin = false, feedSearch = '', feedKind = '', postPhoto = null, postTagsTouched = false, fview = null;
-  var follows = [], frBack = 'feed', userBack = 'feed', userId = null, postFrom = 'feed';
+  var myFollows = [], followCounts = {}, countsAsked = {}, frBack = 'feed', userBack = 'feed', userId = null, postFrom = 'feed';
   var fbKind = 'Idea', feedbackRows = [], profMenu = false, saves = [], profTab = 'posts', members = null, membersQ = '';
-  var likes = [], reports = [], menuFor = null, myProf = null, unames = {}, bios = {}, epRequired = false;
+  var likeCounts = {}, myLikes = {}, reports = [], menuFor = null, myProf = null, unames = {}, bios = {}, epRequired = false;
   function initFeed(api) {
     feedApi = api;
     $('tab-feed').hidden = false; $('tab-explore').hidden = false; $('new-post').hidden = false; $('tab-meals').hidden = true; syncNav();
     document.body.classList.add('has-feed');
     if (tab === 'meals') { show('feed'); window.scrollTo(0, 0); }
-    loadFollows(); loadLikes(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
+    loadFollows(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
     api.isAdmin().then(function (a) { if (a) { loadReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
     if (api.deleteAccount) $('del-wrap').hidden = false;
     api.isAdmin().then(function (a) { feedAdmin = !!a; renderFeed(); }, function () {});
@@ -2621,8 +2650,8 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function loadFeed() {
     feedApi.list().then(function (posts) {
-      feedPosts = posts || []; feedState = 'ok'; renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
-      var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); }); follows.forEach(function (f) { [f.follower, f.followee].forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); }); });
+      feedPosts = posts || []; feedState = 'ok'; loadLikes(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
+      var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); }); myFollows.forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); });
       if (user && ids.length) user.profiles(ids).then(function (ps) { ids.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (typeof ps[o].bio === 'string') bios[o] = ps[o].bio; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); renderFeed(); if (tab === 'profile') renderProfile(); renderExplore(); if (tab === 'user') renderUser(); if (fview) renderFRecipe(); });
     }, function () { feedState = 'error'; renderFeed(); });
   }
@@ -2631,30 +2660,56 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function hashLine(tags) { return tags && tags.length ? '<span class="hash">' + esc(tags.map(function (t) { return '#' + t; }).join('  ')) + '</span>' : ''; }
   function safeImg(u) { return typeof u === 'string' && (/^https:\/\//.test(u) || /^data:image\/(png|jpe?g|webp|gif|svg\+xml)[;,]/.test(u)) ? u : ''; }
   function loadFollows() {
-    if (!feedApi || !feedApi.follows) return;
-    feedApi.follows().then(function (rows) { follows = rows || []; renderFeed(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser(); }, function () {});
+    if (!feedApi || !feedApi.myFollows) return;
+    feedApi.myFollows().then(function (ids) { myFollows = ids || []; renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser(); }, function () {});
   }
-  function iFollow(o) { return follows.some(function (f) { return f.follower === uid && f.followee === o; }); }
-  function followerCount(o) { return follows.filter(function (f) { return f.followee === o; }).length; }
-  function followingCount(o) { return follows.filter(function (f) { return f.follower === o; }).length; }
+  function iFollow(o) { return myFollows.indexOf(o) >= 0; }
+  function ensureCounts(ids) {
+    if (!feedApi || !feedApi.followCounts) return;
+    var need = ids.filter(function (o) { return o && !countsAsked[o]; });
+    if (!need.length) return;
+    need.forEach(function (o) { countsAsked[o] = true; });
+    feedApi.followCounts(need).then(function (rows) {
+      (rows || []).forEach(function (r) { followCounts[r.user_id] = { followers: Number(r.followers) || 0, following: Number(r.following) || 0 }; });
+      if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
+    }, function () { need.forEach(function (o) { delete countsAsked[o]; }); });
+  }
+  function followerCount(o) { ensureCounts([o]); return (followCounts[o] || {}).followers || 0; }
+  function followingCount(o) { ensureCounts([o]); return (followCounts[o] || {}).following || 0; }
+  function bump(o, field, d) { if (!followCounts[o]) return; followCounts[o][field] = Math.max(0, (followCounts[o][field] || 0) + d); }
   function setFollow(o, on) {
     if (!feedApi || !o || o === uid) return;
-    var before = follows.slice();
-    if (on && !iFollow(o)) follows.push({ follower: uid, followee: o });
-    if (!on) follows = follows.filter(function (f) { return !(f.follower === uid && f.followee === o); });
+    if (on === iFollow(o)) return;
+    var before = myFollows.slice();
+    if (on) myFollows.push(o); else myFollows = myFollows.filter(function (x) { return x !== o; });
+    bump(o, 'followers', on ? 1 : -1); bump(uid, 'following', on ? 1 : -1);
     renderFeed(); renderExplore(); if (tab === 'user') renderUser(); if (tab === 'profile') renderProfile();
-    (on ? feedApi.follow(o) : feedApi.unfollow(o)).then(function () {}, function () { follows = before; renderFeed(); if (tab === 'user') renderUser(); toast("That didn't save. Try again."); });
+    (on ? feedApi.follow(o) : feedApi.unfollow(o)).then(function () {}, function () {
+      myFollows = before; bump(o, 'followers', on ? -1 : 1); bump(uid, 'following', on ? -1 : 1);
+      renderFeed(); if (tab === 'user') renderUser(); toast("That didn't save. Try again.");
+    });
   }
+
   function handle(o) { return unames[o] || (o === uid ? 'You' : who(o)); }
-  function loadLikes() { if (feedApi && feedApi.likes) feedApi.likes().then(function (rows) { likes = rows || []; renderFeed(); if (fview) renderFRecipe(); }, function () {}); }
-  function likeCount(pid) { return likes.filter(function (l) { return l.post_id === pid; }).length; }
-  function iLiked(pid) { return likes.some(function (l) { return l.post_id === pid && l.user_id === uid; }); }
+  function loadLikes() {
+    if (!feedApi || !feedApi.likeCounts || !feedPosts.length) return;
+    var ids = feedPosts.map(function (p) { return p.id; }).slice(0, 200);
+    Promise.all([feedApi.likeCounts(ids), feedApi.myLikes(ids)]).then(function (res) {
+      likeCounts = {}; (res[0] || []).forEach(function (r) { likeCounts[r.post_id] = Number(r.likes) || 0; });
+      myLikes = {}; (res[1] || []).forEach(function (pid) { myLikes[pid] = true; });
+      renderFeed(); if (fview) renderFRecipe();
+    }, function () {});
+  }
+  function likeCount(pid) { return likeCounts[pid] || 0; }
+  function iLiked(pid) { return !!myLikes[pid]; }
   function toggleLike(pid) {
     if (!feedApi || !feedApi.like) return;
-    var on = !iLiked(pid), before = likes.slice();
-    if (on) likes.push({ post_id: pid, user_id: uid }); else likes = likes.filter(function (l) { return !(l.post_id === pid && l.user_id === uid); });
+    var on = !iLiked(pid);
+    var undo = function () { if (on) delete myLikes[pid]; else myLikes[pid] = true; likeCounts[pid] = Math.max(0, (likeCounts[pid] || 0) + (on ? -1 : 1)); };
+    if (on) myLikes[pid] = true; else delete myLikes[pid];
+    likeCounts[pid] = Math.max(0, (likeCounts[pid] || 0) + (on ? 1 : -1));
     renderFeed(); if (fview) renderFRecipe();
-    (on ? feedApi.like(pid) : feedApi.unlike(pid)).then(function () {}, function () { likes = before; renderFeed(); if (fview) renderFRecipe(); toast("That didn't save. Try again."); });
+    (on ? feedApi.like(pid) : feedApi.unlike(pid)).then(function () {}, function () { undo(); renderFeed(); if (fview) renderFRecipe(); toast("That didn't save. Try again."); });
   }
   function loadSaves() { if (feedApi && feedApi.saves) feedApi.saves().then(function (rows) { saves = (rows || []).map(function (r) { return r.post_id; }); renderFeed(); if (fview) renderFRecipe(); if (tab === 'profile') renderProfile(); }, function () {}); }
   function toggleSave(pid) {
@@ -2832,7 +2887,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function gridHtml(list) {
     return '<ul class="grid3">' + list.map(function (p) {
       var img = safeImg(p.photo);
-      return '<li><button class="tile" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="' + esc(p.title) + '">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy">' : '<span class="tile-txt">' + esc(p.title) + '</span>') + '</button></li>';
+      return '<li><button class="tile" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="' + esc(p.title) + '">' + (img ? '<img src="' + esc(thumbOf(img)) + '" data-full="' + esc(img) + '" alt="" loading="lazy" decoding="async" onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}">' : '<span class="tile-txt">' + esc(p.title) + '</span>') + '</button></li>';
     }).join('') + '</ul>';
   }
   function renderFeed() {
@@ -2840,7 +2895,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (feedState === 'loading') { $('feed-body').innerHTML = '<p class="muted">Loading the feed…</p>'; return; }
     if (feedState === 'error') { $('feed-body').innerHTML = '<div class="empty"><p><strong>The feed could not load.</strong></p><p class="muted">Check your connection and try again.</p><button class="btn" type="button" data-act="reload-feed">Try again</button></div>'; return; }
     var list = feedPosts.filter(function (p) { return p.owner === uid || iFollow(p.owner); });
-    var none = !follows.some(function (f) { return f.follower === uid; });
+    var none = !myFollows.length;
     var invite = '<div class="empty"><p><strong>' + (none ? 'Your feed is waiting for you' : "You're all caught up") + '</strong></p><p class="muted">' + (none ? 'Follow other people and their meals show up here. Find them on Explore.' : 'Find more people to follow on Explore.') + '</p><button class="btn primary" type="button" data-act="go" data-view="explore">Go to Explore</button></div>';
     var prepCard = ready && !pickedIds().length && prepToday() ? '<button class="week-card" type="button" data-act="go" data-view="meals"><span class="rl-txt"><strong>It\'s prep time!</strong><span class="small">' + esc(typeof S.settings.planDay === 'number' ? 'It\'s ' + DAY_NAMES[S.settings.planDay] + ', your planning day. Tap to pick this week\'s meals.' : 'Tap to pick this week\'s meals and your list builds itself.') + '</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' : '';
     $('feed-body').innerHTML = prepCard + (list.length ? '<ul class="plain posts"' + (prepCard ? ' style="margin-top:16px"' : '') + '>' + list.map(postCard).join('') + '</ul>' : '') + (list.length < 3 ? '<div style="margin-top:16px">' + invite + '</div>' : '');
@@ -2956,6 +3011,20 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     }
     $('fr-body').innerHTML = html;
   }
+  function shrinkData(dataUrl, maxSide, maxLen, done) {
+    var img = new Image();
+    img.onload = function () {
+      var k = Math.min(1, maxSide / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      var q = 0.78, d = c.toDataURL('image/jpeg', q);
+      while (d.length > maxLen && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+      done(d);
+    };
+    img.onerror = function () { done(null); };
+    img.src = dataUrl;
+  }
+  function thumbOf(url) { return /^https:\/\/.+\.jpg$/.test(url) ? url.replace(/\.jpg$/, '-t.jpg') : url; }
   function shrinkPhoto(file, maxSide, maxLen, done, failed) {
     var url = URL.createObjectURL(file), img = new Image();
     img.onload = function () {
@@ -2981,7 +3050,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function openPostForm() {
     var ids = Object.keys(S.recipes).sort(function (a, b) { return S.recipes[a].name.localeCompare(S.recipes[b].name); });
-    if (!ids.length) { toast('Add a recipe on the Meals tab first, then post it here.'); return; }
+    if (!ids.length) { toast('Add a recipe first: tap + then + RECIPE. Then you can post it.'); return; }
     $('post-recipe').innerHTML = ids.map(function (id) { return '<option value="' + esc(id) + '">' + esc(S.recipes[id].name) + '</option>'; }).join('');
     postPhoto = null; postPhotoPicked = false; postTagsTouched = false; $('post-desc').value = ''; $('post-file').value = ''; $('post-submit').disabled = false;
     postPreview(); fillPostTags(); show('post'); window.scrollTo(0, 0);
@@ -3308,7 +3377,7 @@ var babyEd = $('ed-kind').value === 'baby';
   $('welcome-no').addEventListener('click', function () { setBaby(false); });
   $('ed-photo-file').addEventListener('change', function () {
     var f = this.files && this.files[0]; this.value = '';
-    if (f) shrinkPhoto(f, 900, 170000, function (d) { if (!draft) return; draft.photo = d; draft.photoChanged = true; edPhotoPreview(); }, function () { toast("That file isn't a photo this page can read. Try a JPG or PNG."); });
+    if (f) shrinkPhoto(f, 800, 120000, function (d) { if (!draft) return; draft.photo = d; draft.photoChanged = true; edPhotoPreview(); }, function () { toast("That file isn't a photo this page can read. Try a JPG or PNG."); });
   });
   $('ed-photo-remove').addEventListener('click', function () { draft.photo = null; draft.photoChanged = true; edPhotoPreview(); });
   $('mine-new').addEventListener('click', function () { openEditor(null); });
@@ -3420,7 +3489,7 @@ var babyEd = $('ed-kind').value === 'baby';
   $('post-tags').addEventListener('input', function () { postTagsTouched = true; });
   $('post-file').addEventListener('change', function () {
     var f = this.files && this.files[0]; this.value = '';
-    if (f) shrinkPhoto(f, 1080, 600000, function (d) { postPhoto = d; postPhotoPicked = true; postPreview(); }, function () { toast("That file isn't a photo this page can read. Try a JPG or PNG."); });
+    if (f) shrinkPhoto(f, 1080, 280000, function (d) { postPhoto = d; postPhotoPicked = true; postPreview(); }, function () { toast("That file isn't a photo this page can read. Try a JPG or PNG."); });
   });
   $('post-form').addEventListener('submit', function (ev) {
     ev.preventDefault();
@@ -3429,9 +3498,12 @@ var babyEd = $('ed-kind').value === 'baby';
     var seen = {}, tags = $('post-tags').value.split(/[,\n]/).map(cleanTag).filter(function (t) { if (!t || seen[t]) return false; seen[t] = true; return true; }).slice(0, 12);
     var btn = $('post-submit'); btn.disabled = true; btn.textContent = 'Posting…';
     var fin = function () { btn.disabled = false; btn.textContent = 'Post'; };
-    feedApi.create({ title: r.name, description: $('post-desc').value.trim().slice(0, 280), tags: tags, price: 0, kind: isBaby(r) ? 'baby' : 'adult', photo: postPhoto }, plain(r)).then(function () {
-      fin(); postPhoto = null; show('feed'); feedState = 'loading'; renderFeed(); loadFeed(); toast('Posted to the feed.');
-    }, function () { fin(); toast("Couldn't post that. Check your connection and try again."); });
+    var go = function (thumb) {
+      feedApi.create({ title: r.name, description: $('post-desc').value.trim().slice(0, 280), tags: tags, price: 0, kind: isBaby(r) ? 'baby' : 'adult', photo: postPhoto, thumb: thumb }, plain(r)).then(function () {
+        fin(); postPhoto = null; show('feed'); feedState = 'loading'; renderFeed(); loadFeed(); toast('Posted to the feed.');
+      }, function () { fin(); toast("Couldn't post that. Check your connection and try again."); });
+    };
+    if (postPhoto) shrinkData(postPhoto, 360, 40000, go); else go(null);
   });
   $('ed-tag-add').addEventListener('click', addOwnTag);
   $('ed-kind').addEventListener('change', function () { syncKind(); renderEdTags(); });
