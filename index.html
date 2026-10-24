@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261024001659">
+<meta name="fedup-version" content="20261024001952">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -39,6 +39,9 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* no zooming in on a quick double tap (pinch-to-zoom still works); text boxes stay at 16px so iPhones don't zoom when you tap into one */
+html, body, button, a, label, input, select, textarea, .tab, .chip { touch-action: manipulation; }
+html input, html select, html textarea { font-size: 16px; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45; }
 .wrap { max-width: 680px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 112px; display: flex; flex-direction: column; gap: 20px; }
 h1, h2, h3 { font-family: var(--body); margin: 0; text-wrap: balance; }
