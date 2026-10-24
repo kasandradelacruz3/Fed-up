@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261024120925">
+<meta name="fedup-version" content="20261024182030">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -302,6 +302,27 @@ ul.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template
 .rc-sub { font-size: 0.74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rc-foot { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; padding: 0 4px 6px 8px; margin-top: auto; min-height: 40px; }
 .rc-foot .push { flex: 1; }
+.cost-break { margin-top: 8px; }
+.cost-break summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.9rem; padding: 6px 0; list-style: none; }
+.cost-break summary::-webkit-details-marker { display: none; }
+.cost-break summary::before { content: '▸ '; }
+.cost-break[open] summary::before { content: '▾ '; }
+.cb-flag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #fff4d6; color: #7a5400; font-size: 0.74rem; font-weight: 600; }
+.cost-bare { margin: 2px 0 6px; display: flex; flex-wrap: wrap; column-gap: 6px; font-variant-numeric: tabular-nums; }
+.cost-bare strong { color: var(--accent); }
+.cost-bare .small { flex-basis: 100%; }
+.cb-tag { font-size: 0.7rem; padding: 1px 7px; border-radius: 999px; background: var(--chip, #f3f1ef); color: var(--muted); align-self: center; }
+.cb-row { border-top: 1px solid var(--line); }
+.cb-main { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 10px 0; background: none; border: 0; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.cb-main:disabled { cursor: default; opacity: 1; }
+.cb-txt { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; column-gap: 6px; row-gap: 2px; }
+.cb-txt .small { flex-basis: 100%; color: var(--muted); }
+.cb-row.warn .cb-txt .small { color: #8a5a00; }
+.cb-row.warn .cb-cost { color: #8a5a00; }
+.cb-cost { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cb-form { display: flex; flex-direction: column; gap: 8px; padding: 0 0 12px; }
+.cb-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cb-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; font-weight: 600; }
 .rc-sides { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 10px; }
 .side-line { font-size: 0.74rem; color: var(--ink); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .side-line.muted { color: var(--muted); }
@@ -1658,41 +1679,80 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function tagsOf(r) { return Array.isArray(r.tags) ? r.tags.map(cleanTag).filter(Boolean).slice(0, 12) : []; }
   /* what a recipe costs to make, from THIS person's own ingredient prices, so it reflects where they shop */
   function calcCost(r) {
-    var idx = libIndex(), total = 0, counted = 0, rows = 0, rough = false, src = { yours: 0, area: 0, est: 0 };
-    (r.ingredients || []).forEach(function (g) {
+    var idx = libIndex(), total = 0, counted = 0, rows = 0, rough = false, src = { yours: 0, area: 0, est: 0 }, lines = [], seasonCost = 0;
+    (r.ingredients || []).forEach(function (g, i) {
       var key = norm(g.name);
       if (!key) return;
+      var q = parseQty(g.qty), unit = normUnit(g.unit), amt = !isNaN(q) ? amountText(q, unit) : [g.qty, g.unit].filter(Boolean).join(' ');
+      var line = { i: i, name: g.name, amt: amt, cost: null, how: 'none', season: isSeasoning(g.name) }; lines.push(line);
+      if (isFree(g)) { line.how = 'free'; line.cost = 0; return; }
       rows++;
       var lid = libFor(g, idx), lib = lid && S.ings[lid];
       var pr = priceFor(g.name, lib);
       if (!pr || !(pr.price > 0)) return;
       counted++; src[pr.src]++;
-      var q = parseQty(g.qty), pk = isNaN(q) ? null : toPackages(q, normUnit(g.unit), { size: pr.size });
-      if (pk) total += pk.n * pr.price; else { total += pr.price; rough = true; } /* amount can't be compared with the package: count one whole package */
+      line.price = pr.price; line.size = pr.size; line.src = pr.src;
+      var pk = isNaN(q) ? null : toPackages(q, unit, { size: pr.size, name: lib ? lib.name : g.name });
+      if (pk) { line.cost = pk.n * pr.price; line.how = pk.approx || 'exact'; line.n = pk.n; }
+      else { line.cost = pr.price; line.how = 'whole'; rough = true; } /* amount can't be compared with the package: count one whole package */
+      if (line.how === 'pkg') rough = true;
+      total += line.cost; if (line.season) seasonCost += line.cost;
     });
-    if (!counted) return null;
-    return { total: Math.round(total * 100) / 100, counted: counted, rows: rows, rough: rough, src: src, per: r.servings > 0 ? Math.round(total / r.servings * 100) / 100 : 0 };
+    if (!counted) return lines.length ? { total: 0, counted: 0, rows: rows, rough: false, src: src, per: 0, lines: lines, none: true } : null;
+    var bare = total - seasonCost, hasSeason = lines.some(function (l) { return l.season; });
+    return { total: Math.round(total * 100) / 100, counted: counted, rows: rows, rough: rough, src: src, lines: lines, per: r.servings > 0 ? Math.round(total / r.servings * 100) / 100 : 0,
+      bare: hasSeason ? Math.round(bare * 100) / 100 : null, barePer: hasSeason && r.servings > 0 ? Math.round(bare / r.servings * 100) / 100 : 0 };
   }
   function priceBand(n) { return n < 10 ? 'under $10' : n < 15 ? 'under $15' : n < 20 ? 'under $20' : '$20+'; }
   /* hashtags as this person should see them: the price one comes from their own prices when every ingredient is priced, otherwise the author's estimate stays */
   function showTags(r) {
     var tags = tagsOf(r), c = calcCost(r);
-    if (!c || c.counted < c.rows) return tags;
+    if (!c || c.none || c.counted < c.rows) return tags;
     return tags.filter(function (t) { return PRICE_TAGS.indexOf(t) < 0; }).concat([priceBand(c.total)]);
   }
   function costBlock(r) {
     var c = calcCost(r), author = tagsOf(r).filter(function (t) { return PRICE_TAGS.indexOf(t) >= 0; })[0];
     if (!c && !author) return '';
     var line, note;
-    if (c) {
+    if (c && !c.none) {
       line = 'About ' + money(c.total) + (c.per ? ' · ' + money(c.per) + ' per serving' : '');
       note = priceNote(c.src) + (c.counted < c.rows ? ' ' + (c.rows - c.counted) + (c.rows - c.counted === 1 ? ' ingredient has' : ' ingredients have') + ' no price yet, so the real cost is a little higher.' : '') +
         (c.src.yours < c.counted ? ' Add your own prices on the Ingredients page for the most accurate cost' + (S.settings.zip ? '.' : ', or add your ZIP code in Settings to see prices from people near you.') : '');
-      if (c.rough) note += ' Some amounts could not be compared with the package size, so those count as one whole package.';
+      if (c.rough) note += ' Some amounts could not be compared with the package size. Check the ones marked below.';
       if (c.counted < c.rows && author) note += ' The recipe author estimated #' + author + '.';
     } else { line = '#' + author; note = "The recipe author's estimate. Add prices to these ingredients on the Ingredients tab to see what it costs where you shop."; }
-    return '<div class="aisle"><h3>Cost to make</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(line) + '</p><p class="small muted">' + esc(note) + '</p></div>';
+    if (c && c.none) { line = author ? '#' + author : 'No prices yet'; note = 'Add prices below to see what it costs where you shop.'; }
+    var bareLine = c && !c.none && c.bare != null ? '<p class="cost-bare"><strong>' + esc(money(c.bare) + (c.barePer ? ' · ' + money(c.barePer) + ' per serving' : '')) + '</strong> <span>without seasonings</span><span class="small muted">Leaves out spices, salt, pepper, bouillon and cooking oil, since most kitchens already have them.</span></p>' : '';
+    return '<div class="aisle"><h3>Cost to make</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(line) + '</p>' + bareLine + '<p class="small muted">' + esc(note) + '</p>' + (c ? costBreak(r, c) : '') + '</div>';
   }
+  var costOpen = false, costFix = -1;
+  var SRC_LABEL = { yours: 'your price', area: 'people near you', est: 'typical U.S. price' };
+  function costBreak(r, c) {
+    var flagged = c.lines.filter(function (l) { return l.how === 'whole' || l.how === 'pkg' || l.how === 'none'; }).length;
+    var rows = c.lines.map(function (l) {
+      var sub, warn = false;
+      if (l.how === 'free') sub = 'Tap water, no cost';
+      else if (l.how === 'none') { sub = 'No price yet. Tap to add one.'; warn = true; }
+      else {
+        sub = money(l.price) + (l.size ? ' for ' + l.size : '') + ' · ' + SRC_LABEL[l.src];
+        if (l.how === 'whole') { sub = 'Counted as a whole package (' + money(l.price) + (l.size ? ' for ' + l.size : '') + ') because ' + (l.amt || 'this amount') + ' can\'t be compared with it. Tap to fix.'; warn = true; }
+        else if (l.how === 'pkg') { sub = 'Counted as ' + (l.n === 1 ? '1 package' : fmtN(l.n) + ' packages') + ' of ' + l.size + ' at ' + money(l.price) + '. Tap to fix if that\'s wrong.'; warn = true; }
+        else if (l.how === 'each' || l.how === 'vol') sub += ' · amount estimated';
+      }
+      var open = costFix === l.i;
+      var lib = S.ings[libFor(r.ingredients[l.i], libIndex())] || {};
+      return '<li class="cb-row' + (warn ? ' warn' : '') + '"><button class="cb-main" type="button" data-act="cost-fix" data-i="' + l.i + '" aria-expanded="' + open + '"' + (l.how === 'free' ? ' disabled' : '') + '>' +
+        '<span class="cb-txt"><strong>' + esc(l.name) + '</strong> <span class="muted">' + esc(l.amt) + '</span>' + (l.season ? '<span class="cb-tag">seasoning</span>' : '') + '<span class="small">' + esc(sub) + '</span></span>' +
+        '<span class="cb-cost">' + (l.cost == null ? '—' : money(l.cost)) + '</span></button>' +
+        (open ? '<form class="cb-form" data-i="' + l.i + '"><span class="small muted">What do you pay for the package you buy? Like $1.79 for 1 lb, $0.25 for 1 count or $3.49 for 3 oz.</span>' +
+          '<div class="cb-inputs"><label>Price<input type="text" inputmode="decimal" name="price" placeholder="0.00" value="' + esc(lib.price > 0 ? String(lib.price) : (l.price ? String(l.price) : '')) + '"></label>' +
+          '<label>For<input type="text" name="size" placeholder="1 lb" value="' + esc(lib.size || l.size || '') + '"></label></div>' +
+          '<div class="row" style="gap:8px"><button class="btn primary small" type="submit">Save price</button><button class="btn quiet small" type="button" data-act="cost-cancel">Cancel</button></div>' +
+          '<span class="small muted">This updates ' + esc(l.name) + ' on your Ingredients page, so every recipe that uses it gets the new price.</span></form>' : '') + '</li>';
+    }).join('');
+    return '<details class="cost-break"' + (costOpen ? ' open' : '') + '><summary>See the price of each ingredient' + (flagged ? ' <span class="cb-flag">' + flagged + ' to check</span>' : '') + '</summary><ul class="plain">' + rows + '</ul></details>';
+  }
+  function fmtN(n) { return String(Math.round(n * 100) / 100); }
   var groupPhotos = {}, photoSubs = {};
   function photoOf(id) {
     if (S.rphotos[id]) return S.rphotos[id];
@@ -1949,15 +2009,39 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     return null;
   }
   /* returns packages used, or null when the amount can't be compared with the package */
+  /* about how much one of these weighs, in ounces, so "5 tomatoes" can be compared with a price per pound */
+  var EACH_OZ_SRC = 'Yellow onion=8;White onion=8;Red onion=8;Sweet onion=10;Shallot=1.5;Green onions=0.5;Garlic=0.2;Ginger=2;Russet potatoes=10;Yukon gold potatoes=6;Red potatoes=5;Baby potatoes=1.5;Sweet potatoes=8;' +
+    'Carrots=2;Celery=2;Broccoli=12;Cauliflower=30;Cabbage=32;Red cabbage=32;Zucchini=7;Yellow squash=7;Butternut squash=40;Spaghetti squash=48;Cucumber=10;Mini cucumbers=2;' +
+    'Green bell pepper=6;Red bell pepper=6;Yellow bell pepper=6;Orange bell pepper=6;Mini sweet peppers=0.7;Jalapeño=0.6;Poblano pepper=4;Serrano pepper=0.2;' +
+    'Tomatoes=4;Beefsteak tomatoes=8;Avocado=6;Corn on the cob=7;Romaine lettuce=20;Iceberg lettuce=20;Eggplant=16;Beets=5;Lemons=4;Limes=2.5;Oranges=6;Clementines=3;Apples=6;Granny smith apples=6;Bananas=4;' +
+    'Mangoes=12;Mango=12;Peaches=5;Pears=6;Kiwi=3;Tomatillos=1.5;Chicken breasts=8;Chicken thighs=4;Chicken drumsticks=4;Pork chops=6;Salmon fillets=6;Sausage links=3;Hot dogs=1.6;Bacon=1;Tortillas=1.5;Flour tortillas=1.5;Corn tortillas=1';
+  var EACH_OZ = {};
+  EACH_OZ_SRC.split(';').forEach(function (e) { var m = /^(.+)=([\d.]+)$/.exec(e); if (m) EACH_OZ[norm(m[1])] = parseFloat(m[2]); });
+  function eachOz(name) { if (!name) return 0; var m = masterOf(name); return EACH_OZ[norm(m ? m.name : name)] || EACH_OZ[skey(name)] || 0; }
+  /* packages used, or null when the amount can't be compared with the package.
+     approx: 'each' = counted items turned into a weight, 'vol' = cups or spoons compared with a weight, 'pkg' = each item counted as one whole package */
   function toPackages(q, unit, lib) {
-    var sz = lib && lib.size ? parseSize(lib.size) : null;
+    var sz = lib && lib.size ? parseSize(lib.size) : null, f = FAM[unit], loose = unit === '' || unit === 'each' || unit === 'whole' || unit === 'item';
     if (sz) {
-      if (FAM[unit] && FAM[unit][0] === sz.fam) return { n: q * FAM[unit][1] / sz.base, viaSize: true };
-      if (unit === '' && sz.fam === 'count') return { n: q / sz.base, viaSize: true };
+      if (f && f[0] === sz.fam) return { n: q * f[1] / sz.base, viaSize: true };
+      if (loose && sz.fam === 'count') return { n: q / sz.base, viaSize: true };
+      var each = eachOz(lib.name);
+      if (loose && sz.fam === 'w' && each) return { n: q * each / sz.base, viaSize: true, approx: 'each' };
+      if (f && f[0] === 'w' && sz.fam === 'count' && each) return { n: q * f[1] / each / sz.base, viaSize: true, approx: 'each' };
+      if (f && f[0] === 'v' && sz.fam === 'w') return { n: q * f[1] / 6 / sz.base, viaSize: true, approx: 'vol' };
+      if (f && f[0] === 'w' && sz.fam === 'v') return { n: q * f[1] * 6 / sz.base, viaSize: true, approx: 'vol' };
     }
-    if (CONTAINER[unit]) return { n: q, viaSize: false };
+    if (CONTAINER[unit]) return { n: q, viaSize: false, approx: sz && unit === '' ? 'pkg' : '' };
     return null;
   }
+  /* seasonings most kitchens already have, so a recipe can also show its price without them */
+  var SEASON = {};
+  ('Salt;Kosher salt;Sea salt;Black pepper;Garlic powder;Onion powder;Paprika;Smoked paprika;Chili powder;Cumin;Italian seasoning;Oregano;Dried basil;Dried parsley;Dried thyme;Cinnamon;Nutmeg;Red pepper flakes;Cayenne pepper;' +
+    'Taco seasoning;Ranch seasoning;Garlic salt;Seasoned salt;Everything bagel seasoning;Bay leaves;Curry powder;Chicken bouillon;Tomato bouillon;Beef bouillon;Olive oil;Vegetable oil;Avocado oil;Coconut oil;Cooking spray;Canola oil;' +
+    'Ground ginger;Turmeric;Allspice;Cloves;Dried rosemary;Dried dill;Sage;Pepper;White pepper;Lemon pepper;Cajun seasoning;Adobo;Sazon;Vanilla extract;Baking soda;Baking powder').split(';').forEach(function (n) { SEASON[norm(n)] = true; });
+  function isSeasoning(name) { var m = masterOf(name); return !!(SEASON[norm(m ? m.name : name)] || SEASON[skey(name)] || SEASON[norm(name)] || /\b(seasoning|spice|bouillon|powder)\b/.test(norm(name)) && !/protein|cocoa|baking|milk/.test(norm(name))); }
+  /* tap water in a recipe doesn't cost anything */
+  function isFree(g) { var k = norm(g.name); return /^(cold |warm |hot |boiling |tap |ice )?water$/.test(k) && !!FAM[normUnit(g.unit)]; }
 
   /* ---------- build the shopping list ---------- */
   function buildList() {
@@ -2013,7 +2097,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       if (r.buy) n = r.buy;
       else if (pr && r.sums) {
         var tot = 0, ok = true, any = false;
-        Object.keys(r.sums).forEach(function (u) { var k = toPackages(r.sums[u], u, { size: pr.size }); if (k) { tot += k.n; any = true; } else ok = false; });
+        Object.keys(r.sums).forEach(function (u) { var k = toPackages(r.sums[u], u, { size: pr.size, name: r.name }); if (k) { tot += k.n; any = true; } else ok = false; });
         if (ok && any) n = Math.max(1, Math.ceil(tot - 0.001));
       }
       r.price = r.unitPrice != null ? r.unitPrice * n : null;
@@ -2289,7 +2373,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function openCook(id) {
     if (tab === 'mine' || tab === 'meals' || tab === 'pantry' || tab === 'profile') backTo = tab;
-    cookId = id; show('cook'); renderCook(); window.scrollTo(0, 0);
+    cookId = id; costOpen = false; costFix = -1; show('cook'); renderCook(); window.scrollTo(0, 0);
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }, function () {}); } catch (e) {}
   }
 
@@ -2360,7 +2444,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       'Cheddar cheese=shredded cheddar,cheddar;Mozzarella cheese=shredded mozzarella,mozzarella;Fresh mozzarella;Parmesan cheese=parmesan,grated parmesan,parmigiano;Mexican blend cheese=mexican cheese,shredded mexican cheese,taco cheese;Monterey jack cheese=monterey jack;Pepper jack cheese=pepper jack;Swiss cheese;Provolone cheese=provolone;American cheese=cheese slices,kraft singles;Feta cheese=feta;Cream cheese;Cottage cheese;Ricotta cheese=ricotta;String cheese=cheese sticks;' +
       'Sour cream;Greek yogurt=plain greek yogurt;Yogurt=plain yogurt,vanilla yogurt;Yogurt cups=kids yogurt,yogurt tubes;Whipped cream=cool whip,whipped topping;Refrigerated biscuits=canned biscuits;Crescent rolls;Pie crust=refrigerated pie crust;Tortillas=flour tortillas;Corn tortillas;Hummus;Salsa=fresh salsa;Guacamole',
     'Bakery': 'Bread=sandwich bread,white bread,loaf of bread;Whole wheat bread=wheat bread;Sourdough bread=sourdough;French bread=baguette;Hamburger buns=burger buns,buns;Hot dog buns;Dinner rolls=rolls;English muffins;Bagels=bagel;Croissants=croissant;Pita bread=pita;Naan;Hawaiian rolls',
-    'Pantry': 'White rice=rice,long grain rice;Jasmine rice;Brown rice;Basmati rice;Instant rice=minute rice;Quinoa;Couscous;Rolled oats=oats,old fashioned oats,oatmeal;Quick oats=quick cooking oats;' +
+    'Pantry': 'Chicken bouillon=caldo de pollo,chicken bouillon powder,chicken bouillon cubes,knorr chicken bouillon;Tomato bouillon=caldo de tomate,tomato chicken bouillon,knorr tomato bouillon;Beef bouillon=beef bouillon cubes,beef bouillon powder;White rice=rice,long grain rice;Jasmine rice;Brown rice;Basmati rice;Instant rice=minute rice;Quinoa;Couscous;Rolled oats=oats,old fashioned oats,oatmeal;Quick oats=quick cooking oats;' +
       'Spaghetti;Penne=penne pasta;Elbow macaroni=macaroni,elbow pasta;Rotini;Egg noodles;Lasagna noodles;Fettuccine;Ramen noodles=ramen;Orzo;Mac and cheese=boxed mac and cheese;' +
       'Marinara sauce=marinara,pasta sauce,spaghetti sauce;Alfredo sauce=alfredo;Pizza sauce;Tomato sauce;Tomato paste;Diced tomatoes=canned tomatoes,can diced tomatoes;Crushed tomatoes;Rotel=diced tomatoes and green chiles;Enchilada sauce;Taco sauce;' +
       'Black beans=can black beans;Pinto beans;Kidney beans;Chickpeas=garbanzo beans;Refried beans;Cannellini beans=white beans;Baked beans;Lentils;Canned corn=corn,sweet corn,whole kernel corn;Green chiles=diced green chiles;' +
@@ -2405,6 +2489,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
      and there is no average from people near them. */
   var EST_SRC =
     'Yellow onion=0.99@1 count;White onion=1.09@1 count;Red onion=1.19@1 count;Sweet onion=1.29@1 count;Green onions=0.99@1 count;Shallot=0.89@1 count;Leek=1.79@1 count;Garlic=0.69@1 count;Ginger=4.49@1 lb;' +
+    'Chicken bouillon=3.49@7.9 oz;Tomato bouillon=3.49@7.9 oz;Beef bouillon=3.29@7.9 oz;' +
     'Russet potatoes=4.29@5 lb;Yukon gold potatoes=4.99@3 lb;Red potatoes=4.49@3 lb;Baby potatoes=4.29@24 oz;Sweet potatoes=1.29@1 lb;' +
     'Carrots=1.29@1 lb;Baby carrots=1.99@16 oz;Celery=2.29@1 count;Broccoli=2.49@1 lb;Cauliflower=3.49@1 count;Green beans=2.49@1 lb;Asparagus=3.99@1 lb;Brussels sprouts=3.49@1 lb;Cabbage=0.89@1 lb;Red cabbage=1.29@1 lb;' +
     'Zucchini=1.79@1 lb;Yellow squash=1.79@1 lb;Butternut squash=1.49@1 lb;Spaghetti squash=1.49@1 lb;Acorn squash=1.49@1 lb;Pumpkin=4.99@1 count;Cucumber=0.99@1 count;Mini cucumbers=3.49@16 oz;' +
@@ -3410,6 +3495,8 @@ var babyEd = $('ed-kind').value === 'baby';
     }
     if (act === 'go') return goView(b.dataset.view);
     if (act === 'freeze') { var fr = ALL[id]; goView('freezer'); if (fr) $('fz-name').value = fr.name; $('fz-portions').focus(); return; }
+    if (act === 'cost-fix') { var ci2 = +b.dataset.i; costFix = costFix === ci2 ? -1 : ci2; costOpen = true; renderCook(); var inp = document.querySelector('.cb-form input[name=price]'); if (inp) { inp.focus(); inp.select(); } return; }
+    if (act === 'cost-cancel') { costFix = -1; renderCook(); return; }
     if (act === 'side-pick') { openSidePick(id); return; }
     if (act === 'side-done') { try { $('side-pick').close(); } catch (e) {} return; }
     if (act === 'side-new') { var forMain = sidePickFor; try { $('side-pick').close(); } catch (e) {} if (mode === 'baby') setMode('adult'); openEditor(null); pendingSide = forMain; draft.cats = ['Side']; renderEdCats(); return; }
@@ -3617,6 +3704,20 @@ var babyEd = $('ed-kind').value === 'baby';
   $('ing-search').addEventListener('input', function () { ingSearch = this.value; if (ready) renderLibrary(); });
   $('zoom-close').addEventListener('click', function () { $('zoom').close(); });
   $('side-pick').addEventListener('click', function (ev) { if (ev.target === this) this.close(); });
+  $('cook-body').addEventListener('toggle', function (ev) { if (ev.target.classList && ev.target.classList.contains('cost-break')) costOpen = ev.target.open; }, true);
+  $('cook-body').addEventListener('submit', function (ev) {
+    var f = ev.target.closest('.cb-form'); if (!f) return;
+    ev.preventDefault();
+    var r = ALL[cookId], g = r && (r.ingredients || [])[+f.dataset.i]; if (!g) return;
+    var p = parseFloat(String(f.elements.price.value).replace(/[$,\s]/g, '')), size = f.elements.size.value.trim();
+    if (!(p > 0) || p > 9999) { toast('Type the price you pay, like 1.79.'); f.elements.price.focus(); return; }
+    if (size && !parseSize(size)) { toast('Write the package size like 1 lb, 16 oz, 32 fl oz or 1 count.'); f.elements.size.focus(); return; }
+    var idx = libIndex(), lid = libFor(g, idx);
+    if (!lid) { var mst = masterOf(g.name); lid = addToLibrary(mst ? mst.name : g.name, mst ? mst.aisle : g.aisle); }
+    S.ings[lid].price = Math.round(p * 100) / 100; S.ings[lid].size = size;
+    save('ing:' + lid); costFix = -1; costOpen = true; render(); renderCook();
+    toast('Saved. ' + S.ings[lid].name + ' is now ' + money(S.ings[lid].price) + (size ? ' for ' + size : '') + '.');
+  });
   $('zoom').addEventListener('click', function (ev) { if (ev.target === this) this.close(); });
   function nameRow(el) { var m = el && el.id && el.id.match(/^ing-name-(\d+)$/); return m ? m[1] : null; }
   $('ed-ings').addEventListener('input', function (ev) { var i = nameRow(ev.target); if (i != null) { hideSugg(); showSugg(i); } });
