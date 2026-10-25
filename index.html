@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025113821">
+<meta name="fedup-version" content="20261025115054">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -597,7 +597,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     </div>
     <div class="stack" style="gap:8px" id="zip-wrap">
       <label class="f" for="set-zip">Your ZIP code
-        <input type="text" id="set-zip" inputmode="numeric" maxlength="5" placeholder="75001" autocomplete="postal-code">
+        <input type="text" id="set-zip" inputmode="numeric" maxlength="5" placeholder="75001" autocomplete="off">
       </label>
       <p class="small muted">Used to estimate grocery prices from what people near you pay. Fed Up only uses the first 3 digits to group nearby areas. Nobody can see your ZIP code or your prices, only averages from 2 or more people.</p>
     </div>
@@ -3729,6 +3729,17 @@ var babyEd = $('ed-kind').value === 'baby';
       return el.offsetParent !== null;
     });
   }
+  /* iPhone shows an "AutoFill Contact" bar on boxes it guesses are for names or addresses.
+     Safari skips autofill on boxes whose name says "search", so every box in the app (not the sign-in boxes) gets one. */
+  function noAutofill(root) {
+    Array.prototype.forEach.call((root || document).querySelectorAll('input[type=text], input:not([type]), textarea'), function (el) {
+      if (/^auth-/.test(el.id)) return;
+      if (!el.getAttribute('name')) el.setAttribute('name', 'search_' + (el.id || 'box').replace(/[^a-z0-9]/gi, '_'));
+      if (el.getAttribute('autocomplete') !== 'off') el.setAttribute('autocomplete', 'off');
+    });
+  }
+  noAutofill();
+  try { new MutationObserver(function (ms) { ms.forEach(function (m) { Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) noAutofill(n.parentNode || n); }); }); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   function edHints() { Array.prototype.forEach.call($('editor-form').querySelectorAll('input[type=text]'), function (el) { el.setAttribute('enterkeyhint', 'next'); }); }
   $('editor-form').addEventListener('keydown', function (ev) {
     var t = ev.target;
