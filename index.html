@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025113406">
+<meta name="fedup-version" content="20261025113821">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3294,6 +3294,7 @@ var babyEd = $('ed-kind').value === 'baby';
         '<button class="x" type="button" data-rm="' + i + '" aria-label="Remove ingredient">×</button>' +
         '<div class="sugg" id="sugg-' + i + '" hidden></div></li>';
     }).join('');
+    edHints();
   }
   function readIngs() {
     draft.ingredients = draft.ingredients.map(function (_, i) {
@@ -3720,7 +3721,47 @@ var babyEd = $('ed-kind').value === 'baby';
     readIngs(); draft.good = suggestGood(draft.ingredients); draft.goodTouched = false; renderEdGood();
     toast(draft.good.length ? 'Suggested from your ingredients. It will keep updating as the ingredients change.' : 'No suggestions yet. Add the ingredients first.');
   });
-  $('ed-tag-input').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); addOwnTag(); } });
+  $('ed-tag-input').addEventListener('keydown', function (ev) { if (ev.key === 'Enter' && this.value.trim()) { ev.preventDefault(); ev.stopPropagation(); addOwnTag(); } });
+  /* the keyboard's Next key moves to the next box instead of saving the recipe */
+  function edFields() {
+    return Array.prototype.filter.call($('editor-form').querySelectorAll('input, textarea'), function (el) {
+      if (el.type === 'file' || el.type === 'checkbox' || el.type === 'search' || el.disabled) return false;
+      return el.offsetParent !== null;
+    });
+  }
+  function edHints() { Array.prototype.forEach.call($('editor-form').querySelectorAll('input[type=text]'), function (el) { el.setAttribute('enterkeyhint', 'next'); }); }
+  $('editor-form').addEventListener('keydown', function (ev) {
+    var t = ev.target;
+    if (ev.key !== 'Enter' || ev.isComposing || t.tagName !== 'INPUT' || t.type === 'search') return;
+    ev.preventDefault();
+    var m = /^ing-(qty|unit|name)-(\d+)$/.exec(t.id), next = null;
+    if (m) {
+      var sg = $('sugg-' + m[2]); if (sg) sg.hidden = true;
+      if (m[1] === 'name' && t.value.trim()) { var mm = masterOf(t.value); if (mm) { t.value = mm.name; var as = $('ing-aisle-' + m[2]); if (as && AISLES.indexOf(mm.aisle) >= 0) as.value = mm.aisle; } }
+    }
+    var rowEmpty = m && +m[2] === draft.ingredients.length - 1 && !$('ing-qty-' + m[2]).value.trim() && !$('ing-unit-' + m[2]).value.trim() && !$('ing-name-' + m[2]).value.trim();
+    if (rowEmpty) {
+      var all = edFields(), from = all.indexOf($('ing-name-' + m[2]));
+      next = all.filter(function (el, k) { return k > from && !/^ing-/.test(el.id); })[0] || null;
+      if (next) { next.focus(); return; }
+    }
+    if (m && m[1] === 'name') {
+      var i = +m[2];
+      if (i === draft.ingredients.length - 1) {
+        if (!$('ing-name-' + i).value.trim()) { next = null; }
+        else { $('ed-add').click(); next = $('ing-qty-' + (i + 1)); }
+      }
+    }
+    if (!next) {
+      var list = edFields(), at = list.indexOf(m && m[1] === 'name' ? $('ing-name-' + m[2]) : t);
+      next = list[at + 1] || null;
+      if (m && m[1] === 'name' && !$('ing-name-' + m[2]).value.trim() && +m[2] === draft.ingredients.length - 1) {
+        next = list.filter(function (el, k) { return k > at && !/^ing-/.test(el.id); })[0] || null;
+      }
+    }
+    if (next) { next.focus(); if (next.select && next.tagName === 'INPUT') try { next.select(); } catch (e) {} }
+    else t.blur();
+  });
   $('new-ing').addEventListener('click', function () { openIng(null); });
   $('ing-search').addEventListener('input', function () { ingSearch = this.value; if (ready) renderLibrary(); });
   $('zoom-close').addEventListener('click', function () { $('zoom').close(); });
