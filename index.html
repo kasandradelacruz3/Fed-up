@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025110454">
+<meta name="fedup-version" content="20261025113406">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3894,7 +3894,7 @@ var babyEd = $('ed-kind').value === 'baby';
   function startLocal(kind) {
     priv = false; canShare = false;
     try { var raw = JSON.parse(localStorage.getItem('cart-kitchen') || 'null'); if (raw) { S.recipes = raw.recipes || {}; S.week = cleanWeek(raw.week); S.list = cleanList(raw.list); S.settings = cleanSettings(raw.settings); S.ings = raw.ings || {}; S.photos = raw.photos || {}; S.rphotos = raw.rphotos || {}; S.freezer = cleanFreezer(raw.freezer); S.tracker = cleanTracker(raw.tracker); } } catch (e) {}
-    showNote(kind || 'off'); ready = true; render();
+    showNote(kind || 'off'); ready = true; tidyNames(); render();
   }
   function watchShared() {
     db.collection('shared').onSnapshot(function (snap) {
@@ -3919,9 +3919,41 @@ var babyEd = $('ed-kind').value === 'baby';
       if (ready) render();
     }, function () {});
   }
+  /* once per visit: bring this person's ingredient names in line with the standard list (e.g. "garlic" -> "Garlic clove", "Spaghetti" -> "Spaghetti pasta") */
+  var tidied = false;
+  function tidyNames() {
+    if (tidied) return; tidied = true;
+    var remap = {}, byName = {}, sharedCh = false;
+    Object.keys(S.ings).forEach(function (id) {
+      var g = S.ings[id], c = canonName(g.name);
+      if (c && c !== g.name) { g.name = c; var m = masterOf(c); if (m && m.aisle) g.aisle = m.aisle; save('ing:' + id); }
+    });
+    Object.keys(S.ings).forEach(function (id) {
+      var k = norm(S.ings[id].name);
+      if (!byName[k]) { byName[k] = id; return; }
+      var keep = byName[k], drop = id;
+      if (!(S.ings[keep].price > 0) && S.ings[drop].price > 0) { keep = id; drop = byName[k]; byName[k] = keep; }
+      var a = S.ings[keep], b = S.ings[drop];
+      Object.keys(b).forEach(function (f) { if (a[f] == null || a[f] === '' || a[f] === 0) a[f] = b[f]; });
+      remap[drop] = keep; delete S.ings[drop]; save('ing:' + drop); save('ing:' + keep);
+    });
+    Object.keys(S.recipes).forEach(function (rid) {
+      var r = S.recipes[rid], ch = false;
+      (r.ingredients || []).forEach(function (g) {
+        var c = canonName(g.name);
+        if (c && c !== g.name) { g.name = c; ch = true; }
+        if (g.ing && remap[g.ing]) { g.ing = remap[g.ing]; ch = true; }
+      });
+      if (ch) { save('recipe:' + rid); if (r.shared) sharedCh = true; }
+    });
+    if (sharedCh && canShare) save('shared');
+    var pr = S.settings.prices || {}, pch = false;
+    Object.keys(pr).forEach(function (k) { var c = norm(canonName(k)); if (c !== k) { if (!(pr[c] > 0)) pr[c] = pr[k]; delete pr[k]; pch = true; } });
+    if (pch) save('settings');
+  }
   function startDb() {
     var got = { r: false, w: false, l: false, s: false, i: false };
-    var go = function () { if (got.r && got.w && got.l && got.s && got.i) ready = true; if (ready) render(); };
+    var go = function () { if (got.r && got.w && got.l && got.s && got.i) { if (!ready) { ready = true; tidyNames(); } } if (ready) render(); };
     var fail = function () { if (!ready) startLocal('off'); };
     var merge = function (snap, kind, cur, pickv) {
       var next = {};
