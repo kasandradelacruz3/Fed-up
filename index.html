@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025115454">
+<meta name="fedup-version" content="20261025170817">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1076,7 +1076,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 </div>
 <nav class="tabs" role="tablist" aria-label="Sections">
   <button class="tab" role="tab" id="tab-feed" data-tab="feed" aria-selected="false" hidden><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.500 12 3l9 7.500"/><path d="M5 9.500V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.500"/></svg></span>Home</button>
-  <button class="tab" role="tab" id="tab-explore" data-tab="explore" aria-selected="false" hidden><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.500-3.500"/></svg></span>Explore</button>
+  <button class="tab" role="tab" id="tab-explore" data-tab="explore" aria-selected="false" hidden><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.500-3.500"/></svg></span>Community</button>
   <button class="tab tab-post" type="button" id="new-post" data-act="add-menu" aria-label="Add a post or a recipe" aria-expanded="false" aria-controls="add-sheet" hidden><span class="post-plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></button>
   <button class="tab" role="tab" id="tab-meals" data-tab="meals" aria-selected="true"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M9 4c-1 1.2 1 2.300 0 3.500M13 3c-1 1.300 1 2.700 0 4.500"/></svg><span class="count" id="count-meals" hidden></span></span>My week</button>
   <button class="tab" role="tab" id="tab-list" data-tab="list" aria-selected="false"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.500l2.200 10.500h9.800L20 7H7"/><circle cx="9.500" cy="19" r="1.400"/><circle cx="17" cy="19" r="1.400"/></svg><span class="count" id="count-list" hidden></span></span>Shopping list</button>
@@ -3058,13 +3058,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (feedState === 'error') { $('feed-body').innerHTML = '<div class="empty"><p><strong>The feed could not load.</strong></p><p class="muted">Check your connection and try again.</p><button class="btn" type="button" data-act="reload-feed">Try again</button></div>'; return; }
     var list = feedPosts.filter(function (p) { return p.owner === uid || iFollow(p.owner); });
     var none = !myFollows.length;
-    var invite = '<div class="empty"><p><strong>' + (none ? 'Your feed is waiting for you' : "You're all caught up") + '</strong></p><p class="muted">' + (none ? 'Follow other people and their meals show up here. Find them on Explore.' : 'Find more people to follow on Explore.') + '</p><button class="btn primary" type="button" data-act="go" data-view="explore">Go to Explore</button></div>';
+    var invite = '<div class="empty"><p><strong>' + (none ? 'Your feed is waiting for you' : "You're all caught up") + '</strong></p><p class="muted">' + (none ? 'Follow other people and their meals show up here. Find them in Community.' : 'Find more people to follow in Community.') + '</p><button class="btn primary" type="button" data-act="go" data-view="explore">Go to Community</button></div>';
     var prepCard = ready && !pickedIds().length && prepToday() ? '<button class="week-card" type="button" data-act="go" data-view="meals"><span class="rl-txt"><strong>It\'s prep time!</strong><span class="small">' + esc(typeof S.settings.planDay === 'number' ? 'It\'s ' + DAY_NAMES[S.settings.planDay] + ', your planning day. Tap to pick this week\'s meals.' : 'Tap to pick this week\'s meals and your list builds itself.') + '</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' : '';
     $('feed-body').innerHTML = prepCard + (list.length ? '<ul class="plain posts"' + (prepCard ? ' style="margin-top:16px"' : '') + '>' + list.map(postCard).join('') + '</ul>' : '') + (list.length < 3 ? '<div style="margin-top:16px">' + invite + '</div>' : '');
   }
   function renderExplore() {
     if (!feedApi) return;
-    if (feedState !== 'ok') { $('explore-body').innerHTML = feedState === 'error' ? '<p class="note">Explore could not load. Check your connection and try again.</p>' : '<p class="muted">Loading…</p>'; return; }
+    if (feedState !== 'ok') { $('explore-body').innerHTML = feedState === 'error' ? '<p class="note">The community page could not load. Check your connection and try again.</p>' : '<p class="muted">Loading…</p>'; return; }
     var q = norm(feedSearch), tq = q.charAt(0) === '#' ? cleanTag(q) : '';
     var list = feedPosts.filter(function (p) {
       if (feedKind && p.kind !== feedKind) return false;
