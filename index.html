@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025115054">
+<meta name="fedup-version" content="20261025115454">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -175,7 +175,7 @@ label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; fon
 .pricebox input { width: 104px; text-align: right; padding: 8px 10px; }
 
 .ings { gap: 10px; }
-.ing { display: grid; grid-template-columns: 72px 88px minmax(0, 1fr) 150px 36px; gap: 6px; align-items: center; }
+.ing { display: grid; grid-template-columns: minmax(0, 1fr) 72px 88px 150px 36px; gap: 6px; align-items: center; }
 @media (max-width: 560px) {
   .ing { grid-template-columns: 1fr 1fr 1.6fr 36px; grid-template-areas: "name name name x" "qty unit aisle aisle"; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
   .ing .i-name { grid-area: name; } .ing .i-qty { grid-area: qty; } .ing .i-unit { grid-area: unit; } .ing .i-aisle { grid-area: aisle; } .ing .x { grid-area: x; }
@@ -3287,9 +3287,9 @@ var babyEd = $('ed-kind').value === 'baby';
   function renderIngs() {
     $('ed-ings').innerHTML = draft.ingredients.map(function (g, i) {
       return '<li class="ing">' +
+        '<input class="i-name" type="text" id="ing-name-' + i + '" placeholder="Ingredient" aria-label="Ingredient" value="' + esc(g.name) + '">' +
         '<input class="i-qty" type="text" id="ing-qty-' + i + '" inputmode="text" placeholder="Qty" aria-label="Amount" value="' + esc(g.qty) + '">' +
         '<input class="i-unit" type="text" id="ing-unit-' + i + '" list="units" placeholder="Unit" aria-label="Unit" value="' + esc(g.unit) + '">' +
-        '<input class="i-name" type="text" id="ing-name-' + i + '" placeholder="Ingredient" aria-label="Ingredient" value="' + esc(g.name) + '">' +
         '<select class="i-aisle" id="ing-aisle-' + i + '" aria-label="Store aisle">' + AISLES.map(function (a) { return '<option' + (a === g.aisle ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select>' +
         '<button class="x" type="button" data-rm="' + i + '" aria-label="Remove ingredient">×</button>' +
         '<div class="sugg" id="sugg-' + i + '" hidden></div></li>';
@@ -3724,53 +3724,37 @@ var babyEd = $('ed-kind').value === 'baby';
   $('ed-tag-input').addEventListener('keydown', function (ev) { if (ev.key === 'Enter' && this.value.trim()) { ev.preventDefault(); ev.stopPropagation(); addOwnTag(); } });
   /* the keyboard's Next key moves to the next box instead of saving the recipe */
   function edFields() {
-    return Array.prototype.filter.call($('editor-form').querySelectorAll('input, textarea'), function (el) {
+    return Array.prototype.filter.call($('editor-form').querySelectorAll('input, textarea, select.i-aisle'), function (el) {
       if (el.type === 'file' || el.type === 'checkbox' || el.type === 'search' || el.disabled) return false;
       return el.offsetParent !== null;
     });
   }
-  /* iPhone shows an "AutoFill Contact" bar on boxes it guesses are for names or addresses.
-     Safari skips autofill on boxes whose name says "search", so every box in the app (not the sign-in boxes) gets one. */
-  function noAutofill(root) {
-    Array.prototype.forEach.call((root || document).querySelectorAll('input[type=text], input:not([type]), textarea'), function (el) {
-      if (/^auth-/.test(el.id)) return;
-      if (!el.getAttribute('name')) el.setAttribute('name', 'search_' + (el.id || 'box').replace(/[^a-z0-9]/gi, '_'));
-      if (el.getAttribute('autocomplete') !== 'off') el.setAttribute('autocomplete', 'off');
-    });
-  }
-  noAutofill();
-  try { new MutationObserver(function (ms) { ms.forEach(function (m) { Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) noAutofill(n.parentNode || n); }); }); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  /* on iPhone the aisle picker closes with Done: picking one on the last row starts the next ingredient */
+  $('ed-ings').addEventListener('change', function (ev) {
+    var t = ev.target, m = /^ing-aisle-(\d+)$/.exec(t.id || '');
+    if (!m || +m[1] !== draft.ingredients.length - 1 || !$('ing-name-' + m[1]).value.trim()) return;
+    $('ed-add').click();
+  });
   function edHints() { Array.prototype.forEach.call($('editor-form').querySelectorAll('input[type=text]'), function (el) { el.setAttribute('enterkeyhint', 'next'); }); }
+  function afterIngs(list, from) { return list.filter(function (el, k) { return k > from && !/^ing-/.test(el.id); })[0] || null; }
   $('editor-form').addEventListener('keydown', function (ev) {
     var t = ev.target;
-    if (ev.key !== 'Enter' || ev.isComposing || t.tagName !== 'INPUT' || t.type === 'search') return;
+    if (ev.key !== 'Enter' || ev.isComposing || t.type === 'search') return;
+    if (t.tagName !== 'INPUT' && !(t.tagName === 'SELECT' && t.classList.contains('i-aisle'))) return;
     ev.preventDefault();
-    var m = /^ing-(qty|unit|name)-(\d+)$/.exec(t.id), next = null;
+    var m = /^ing-(qty|unit|name|aisle)-(\d+)$/.exec(t.id), next = null, list = edFields(), at = list.indexOf(t);
     if (m) {
-      var sg = $('sugg-' + m[2]); if (sg) sg.hidden = true;
-      if (m[1] === 'name' && t.value.trim()) { var mm = masterOf(t.value); if (mm) { t.value = mm.name; var as = $('ing-aisle-' + m[2]); if (as && AISLES.indexOf(mm.aisle) >= 0) as.value = mm.aisle; } }
-    }
-    var rowEmpty = m && +m[2] === draft.ingredients.length - 1 && !$('ing-qty-' + m[2]).value.trim() && !$('ing-unit-' + m[2]).value.trim() && !$('ing-name-' + m[2]).value.trim();
-    if (rowEmpty) {
-      var all = edFields(), from = all.indexOf($('ing-name-' + m[2]));
-      next = all.filter(function (el, k) { return k > from && !/^ing-/.test(el.id); })[0] || null;
-      if (next) { next.focus(); return; }
-    }
-    if (m && m[1] === 'name') {
-      var i = +m[2];
-      if (i === draft.ingredients.length - 1) {
-        if (!$('ing-name-' + i).value.trim()) { next = null; }
-        else { $('ed-add').click(); next = $('ing-qty-' + (i + 1)); }
+      var i = +m[2], last = i === draft.ingredients.length - 1, nm = $('ing-name-' + i), sg = $('sugg-' + i);
+      if (sg) sg.hidden = true;
+      if (m[1] === 'name' && nm.value.trim()) { var mm = masterOf(nm.value); if (mm) { nm.value = mm.name; var as = $('ing-aisle-' + i); if (as && AISLES.indexOf(mm.aisle) >= 0) as.value = mm.aisle; } }
+      if (m[1] === 'name' && !nm.value.trim() && last) next = afterIngs(list, at);
+      else if (m[1] === 'aisle' && last) {
+        if (nm.value.trim()) { $('ed-add').click(); next = $('ing-name-' + (i + 1)); }
+        else next = afterIngs(edFields(), at);
       }
     }
-    if (!next) {
-      var list = edFields(), at = list.indexOf(m && m[1] === 'name' ? $('ing-name-' + m[2]) : t);
-      next = list[at + 1] || null;
-      if (m && m[1] === 'name' && !$('ing-name-' + m[2]).value.trim() && +m[2] === draft.ingredients.length - 1) {
-        next = list.filter(function (el, k) { return k > at && !/^ing-/.test(el.id); })[0] || null;
-      }
-    }
-    if (next) { next.focus(); if (next.select && next.tagName === 'INPUT') try { next.select(); } catch (e) {} }
+    if (!next) next = edFields()[at + 1] || null;
+    if (next) { next.focus(); if (next.tagName === 'INPUT') try { next.select(); } catch (e) {} }
     else t.blur();
   });
   $('new-ing').addEventListener('click', function () { openIng(null); });
@@ -3843,7 +3827,7 @@ var babyEd = $('ed-kind').value === 'baby';
   });
   $('ed-add').addEventListener('click', function () {
     readIngs(); draft.ingredients.push(blankIng()); renderIngs();
-    $('ing-qty-' + (draft.ingredients.length - 1)).focus();
+    $('ing-name-' + (draft.ingredients.length - 1)).focus();
   });
   $('ed-ings').addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-rm]');
