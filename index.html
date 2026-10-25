@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261024194300">
+<meta name="fedup-version" content="20261024202334">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -352,6 +352,8 @@ dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto;
 .post-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 14px; min-width: 0; }
 .post-head .push { margin-left: auto; }
 .avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-size: 0.9rem; }
+.credit-btn { display: block; border: 0; background: none; padding: 0; margin: 2px 0 6px; font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; text-align: left; }
+.credit-btn strong { color: var(--accent); font-weight: 600; }
 .post-who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .post-who strong { font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .post-imgbtn { display: block; width: 100%; border: 0; padding: 0; margin: 0; background: none; }
@@ -1021,6 +1023,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <label class="f" for="post-recipe">Link your recipe
         <select id="post-recipe"></select>
       </label>
+      <p class="note small" id="post-credit" hidden></p>
       <label class="f" for="post-desc">Short description
         <textarea id="post-desc" maxlength="280" style="min-height:80px" placeholder="What makes it good, who it's for, how long it takes…"></textarea>
       </label>
@@ -1328,9 +1331,9 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   feedShim = {
     isAdmin: function () { return sb.rpc('is_admin').then(function (r) { return !r.error && r.data === true; }, function () { return false; }); },
     list: function () {
-      return sb.from('feed_posts').select('id,owner,title,description,tags,photo_url,price_cents,kind,created_at').order('created_at', { ascending: false }).limit(100).then(function (r) {
+      return sb.from('feed_posts').select('id,owner,title,description,tags,photo_url,price_cents,kind,created_at,credit').order('created_at', { ascending: false }).limit(100).then(function (r) {
         check(r);
-        return (r.data || []).map(function (p) { return { id: p.id, owner: p.owner, title: p.title || '', description: p.description || '', tags: Array.isArray(p.tags) ? p.tags : [], photo: p.photo_url || '', price: p.price_cents || 0, kind: p.kind === 'baby' ? 'baby' : 'adult', at: p.created_at }; });
+        return (r.data || []).map(function (p) { return { id: p.id, owner: p.owner, title: p.title || '', description: p.description || '', tags: Array.isArray(p.tags) ? p.tags : [], photo: p.photo_url || '', price: p.price_cents || 0, kind: p.kind === 'baby' ? 'baby' : 'adult', at: p.created_at, credit: p.credit || null }; });
       });
     },
     /* the full recipe, or null when it is a paid recipe this person has not bought (the database decides, not this page) */
@@ -1346,7 +1349,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           })
         : Promise.resolve(null);
       return upload.then(function (url) {
-        return sb.from('feed_posts').insert({ id: id, owner: uid, title: String(post.title).slice(0, 120), description: post.description || '', tags: post.tags || [], photo_url: url, price_cents: post.price === 200 ? 200 : 0, kind: post.kind === 'baby' ? 'baby' : 'adult' });
+        return sb.from('feed_posts').insert({ id: id, owner: uid, title: String(post.title).slice(0, 120), description: post.description || '', tags: post.tags || [], photo_url: url, price_cents: post.price === 200 ? 200 : 0, kind: post.kind === 'baby' ? 'baby' : 'adult', credit: post.credit && post.credit !== uid ? post.credit : null });
       }).then(function (r) {
         check(r);
         return sb.from('feed_recipes').insert({ post_id: id, owner: uid, data: recipe });
@@ -2797,7 +2800,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function loadFeed() {
     feedApi.list().then(function (posts) {
       feedPosts = posts || []; feedState = 'ok'; loadLikes(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
-      var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); }); myFollows.forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); });
+      var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); if (p.credit && ids.indexOf(p.credit) < 0) ids.push(p.credit); }); myFollows.forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); });
       if (user && ids.length) user.profiles(ids).then(function (ps) { ids.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (typeof ps[o].bio === 'string') bios[o] = ps[o].bio; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); renderFeed(); if (tab === 'profile') renderProfile(); renderExplore(); if (tab === 'user') renderUser(); if (fview) renderFRecipe(); });
     }, function () { feedState = 'error'; renderFeed(); });
   }
@@ -3018,6 +3021,11 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function nameOf(o) { return o === uid ? (names[o] || 'You') : who(o); }
   function initial(o) { return String(nameOf(o)).trim().charAt(0).toUpperCase() || '?'; }
+  function atName(o) { return unames[o] ? '@' + unames[o] : who(o); }
+  function creditLine(p) {
+    if (!p.credit || p.credit === p.owner) return '';
+    return '<button class="credit-btn" type="button" data-act="user" data-id="' + esc(p.credit) + '">Recipe by <strong>' + esc(atName(p.credit)) + '</strong></button>';
+  }
   function postCard(p) {
     var img = safeImg(p.photo), mine = p.owner === uid;
     var follow = !mine && !iFollow(p.owner) ? '<button class="btn quiet small follow-btn" type="button" data-act="follow" data-id="' + esc(p.owner) + '">Follow</button>' : '';
@@ -3025,7 +3033,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       '<span class="post-who"><strong>' + esc(handle(p.owner)) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' + follow +
       '<button class="ibtn push" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) +
       (img ? '<button class="post-imgbtn" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="Open ' + esc(p.title) + '"><img class="post-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy"></button>' : '') +
-      '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' +
+      '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + creditLine(p) +
       (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) +
       '<button class="recipe-link" type="button" data-act="open-post" data-id="' + esc(p.id) + '"><span class="rl-ico">' + ICON.book + '</span><span class="rl-txt"><strong>Get the recipe</strong><span class="small muted">Ingredients, steps and save a copy</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' +
       '</div></li>';
@@ -3143,7 +3151,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       '<div class="stack" style="gap:8px"><h2>' + esc(p.title) + '</h2>' +
       '<div class="post-head" style="padding:0"><button class="who-btn" type="button" data-act="user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + '<span class="post-who"><strong>' + esc(handle(p.owner)) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' +
       (p.owner !== uid ? (iFollow(p.owner) ? '<button class="btn small push" type="button" data-act="unfollow" data-id="' + esc(p.owner) + '">Following</button>' : '<button class="btn primary small push" type="button" data-act="follow" data-id="' + esc(p.owner) + '">Follow</button>') : '<span class="push"></span>') +
-      '<button class="ibtn" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) + likeRow(p) + (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) + '</div>';
+      '<button class="ibtn" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) + likeRow(p) + creditLine(p) + (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) + '</div>';
     if (fview.state === 'loading') html += '<p class="muted">Opening the recipe…</p>';
     else if (fview.state === 'error') html += '<p class="note">The recipe could not load. Go back and try again.</p>';
     else if (fview.state === 'locked') html += '<p class="note">This recipe is not available right now.</p>';
@@ -3162,10 +3170,12 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     img.onload = function () {
       var k = Math.min(1, maxSide / Math.max(img.width, img.height)), c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      var q = 0.78, d = c.toDataURL('image/jpeg', q);
-      while (d.length > maxLen && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
-      done(d);
+      try {
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        var q = 0.78, d = c.toDataURL('image/jpeg', q);
+        while (d.length > maxLen && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+        done(d);
+      } catch (e) { done(null); }
     };
     img.onerror = function () { done(null); };
     img.src = dataUrl;
@@ -3193,6 +3203,9 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     var pid = $('post-recipe').value, r = S.recipes[pid];
     if (r && !postTagsTouched) $('post-tags').value = tagsOf(r).join(', ');
     if (!postPhotoPicked) { postPhoto = S.rphotos[pid] || null; postPreview(); }
+    var cr = r && r.savedFrom && r.savedFrom !== uid ? r.savedFrom : null;
+    $('post-credit').hidden = !cr;
+    if (cr) $('post-credit').textContent = 'You saved this recipe from ' + atName(cr) + ', so your post will say "Recipe by ' + atName(cr) + '" and link to their profile.';
   }
   function openPostForm() {
     var ids = Object.keys(S.recipes).sort(function (a, b) { return S.recipes[a].name.localeCompare(S.recipes[b].name); });
@@ -3465,7 +3478,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (act === 'reload-feed') { feedState = 'loading'; renderFeed(); loadFeed(); return; }
     if (act === 'save-post') {
       if (!fview || !fview.recipe) return;
-      var sid = newId(); S.recipes[sid] = plain(fview.recipe); if (fview.post.owner !== uid) S.recipes[sid].savedFrom = fview.post.owner; save('recipe:' + sid);
+      var sid = newId(); S.recipes[sid] = plain(fview.recipe); var orig = fview.post.credit || fview.post.owner; if (orig !== uid) S.recipes[sid].savedFrom = orig; save('recipe:' + sid);
       setMode(isBaby(S.recipes[sid]) ? 'baby' : 'adult'); render(); toast(feedApi ? 'Saved. Find it in Profile, under My recipes.' : 'Saved to your recipes. Find it on the Meals tab.'); return;
     }
     if (act === 'del-post') {
@@ -3687,7 +3700,7 @@ var babyEd = $('ed-kind').value === 'baby';
     var btn = $('post-submit'); btn.disabled = true; btn.textContent = 'Posting…';
     var fin = function () { btn.disabled = false; btn.textContent = 'Post'; };
     var go = function (thumb) {
-      feedApi.create({ title: r.name, description: $('post-desc').value.trim().slice(0, 280), tags: tags, price: 0, kind: isBaby(r) ? 'baby' : 'adult', photo: postPhoto, thumb: thumb }, plain(r)).then(function () {
+      feedApi.create({ title: r.name, description: $('post-desc').value.trim().slice(0, 280), tags: tags, price: 0, kind: isBaby(r) ? 'baby' : 'adult', photo: postPhoto, thumb: thumb, credit: r.savedFrom && r.savedFrom !== uid ? r.savedFrom : null }, plain(r)).then(function () {
         fin(); postPhoto = null; show('feed'); feedState = 'loading'; renderFeed(); loadFeed(); toast('Posted to the feed.');
       }, function () { fin(); toast("Couldn't post that. Check your connection and try again."); });
     };
