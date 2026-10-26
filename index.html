@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025170817">
+<meta name="fedup-version" content="20261025220437">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -891,7 +891,11 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   </section>
 
   <section class="view" id="view-explore" hidden>
-    <input type="search" id="feed-search" placeholder="Search meals, @usernames or #hashtags" aria-label="Search Fed Up">
+    <div class="seg" id="comm-seg" role="group" aria-label="Show">
+      <button type="button" data-cmode="recipes" aria-pressed="true">Recipes</button>
+      <button type="button" data-cmode="posts" aria-pressed="false">Posts</button>
+    </div>
+    <input type="search" id="feed-search" placeholder="Search recipes, ingredients, @usernames or #hashtags" aria-label="Search Fed Up">
     <div class="chips" id="feed-kinds">
       <button class="chip" type="button" data-fkind="" aria-pressed="true">All</button>
       <button class="chip" type="button" data-fkind="adult" aria-pressed="false">Family meals</button>
@@ -2180,6 +2184,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (!ready) return;
     renderMeals(); renderMine(); renderLibrary(); renderMore(); renderFreezer(); renderTracker();
     if (tab === 'profile') renderProfile();
+    if (tab === 'explore' && typeof renderExplore === 'function') renderExplore();
     if (tab === 'prep') renderPrep();
     if (tab === 'pantry') renderPantry();
     var a = document.activeElement;
@@ -2377,7 +2382,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       '<div class="aisle"><h3>Steps and notes</h3><p class="steps">' + (r.notes ? esc(r.notes) : '<span class="muted">No steps written yet. Tap Edit to add them.</span>') + '</p></div>';
   }
   function openCook(id) {
-    if (tab === 'mine' || tab === 'meals' || tab === 'pantry' || tab === 'profile') backTo = tab;
+    if (tab === 'mine' || tab === 'meals' || tab === 'pantry' || tab === 'profile' || tab === 'explore') backTo = tab;
     cookId = id; costOpen = false; costFix = -1; show('cook'); renderCook(); window.scrollTo(0, 0);
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }, function () {}); } catch (e) {}
   }
@@ -2790,7 +2795,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
 
   /* ---------- community feed (only where the site provides one) ---------- */
-  var feedApi = null, feedPosts = [], feedState = 'loading', feedAdmin = false, feedSearch = '', feedKind = '', postPhoto = null, postTagsTouched = false, fview = null;
+  var commMode = (function () { try { return localStorage.getItem('fed-up-comm') === 'posts' ? 'posts' : 'recipes'; } catch (e) { return 'recipes'; } })(), feedApi = null, feedPosts = [], feedState = 'loading', feedAdmin = false, feedSearch = '', feedKind = '', postPhoto = null, postTagsTouched = false, fview = null;
   var myFollows = [], followCounts = {}, countsAsked = {}, frBack = 'feed', userBack = 'feed', userId = null, postFrom = 'feed';
   var fbKind = 'Idea', feedbackRows = [], profMenu = false, saves = [], profTab = 'posts', members = null, membersQ = '';
   var likeCounts = {}, myLikes = {}, reports = [], menuFor = null, myProf = null, unames = {}, bios = {}, epRequired = false;
@@ -3062,8 +3067,44 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     var prepCard = ready && !pickedIds().length && prepToday() ? '<button class="week-card" type="button" data-act="go" data-view="meals"><span class="rl-txt"><strong>It\'s prep time!</strong><span class="small">' + esc(typeof S.settings.planDay === 'number' ? 'It\'s ' + DAY_NAMES[S.settings.planDay] + ', your planning day. Tap to pick this week\'s meals.' : 'Tap to pick this week\'s meals and your list builds itself.') + '</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' : '';
     $('feed-body').innerHTML = prepCard + (list.length ? '<ul class="plain posts"' + (prepCard ? ' style="margin-top:16px"' : '') + '>' + list.map(postCard).join('') + '</ul>' : '') + (list.length < 3 ? '<div style="margin-top:16px">' + invite + '</div>' : '');
   }
+  /* every recipe people have shared with the community, plus the recipes linked from posts */
+  function commRecipes() {
+    var out = [], seen = {};
+    Object.keys(ALL).forEach(function (id) {
+      var r = ALL[id], owner = r.group ? r.owner : (S.recipes[id] && S.recipes[id].shared ? uid : null);
+      if (!owner) return;
+      var k = owner + '|' + norm(r.name); if (seen[k]) return; seen[k] = true;
+      out.push({ type: 'recipe', id: id, name: r.name, owner: owner, photo: photoOf(id), tags: tagsOf(r), baby: isBaby(r), text: (r.ingredients || []).map(function (g) { return g.name; }).join(' '), sub: [isBaby(r) ? r.stage : catsOf(r).join(' & '), r.mins > 0 ? r.mins + ' min' : ''].filter(Boolean).join(' · ') });
+    });
+    feedPosts.forEach(function (p) {
+      var k = p.owner + '|' + norm(p.title); if (seen[k]) return; seen[k] = true;
+      out.push({ type: 'post', id: p.id, name: p.title, owner: p.owner, credit: p.credit, photo: safeImg(p.photo), tags: p.tags || [], baby: p.kind === 'baby', text: p.description || '', sub: '', at: p.at });
+    });
+    return out.sort(function (a, b) { return (b.photo ? 1 : 0) - (a.photo ? 1 : 0) || (b.at || '').localeCompare(a.at || '') || a.name.localeCompare(b.name); });
+  }
+  function commCard(x) {
+    var by = x.credit && x.credit !== x.owner ? x.credit : x.owner;
+    var img = x.photo ? '<img src="' + esc(x.type === 'post' ? thumbOf(x.photo) : x.photo) + '"' + (x.type === 'post' ? ' data-full="' + esc(x.photo) + '" onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}"' : '') + ' alt="" loading="lazy">' : '<span class="rc-ph" aria-hidden="true">' + esc((x.name || '?').trim().charAt(0).toUpperCase()) + '</span>';
+    return '<li class="rc theirs"><button class="rc-main" type="button" data-act="' + (x.type === 'post' ? 'open-post' : 'comm-open') + '" data-id="' + esc(x.id) + '" aria-label="Open ' + esc(x.name) + '">' +
+      '<span class="rc-img">' + img + '</span>' +
+      '<span class="rc-txt"><span class="mname">' + esc(x.name) + '</span><span class="rc-sub">' + esc((by === uid ? 'by you' : 'by ' + atName(by)) + (x.sub ? ' · ' + x.sub : '')) + '</span></span></button></li>';
+  }
+  function renderCommRecipes(q) {
+    var tq = q.charAt(0) === '#' ? cleanTag(q) : '', qh = q.replace(/^@/, '');
+    var all = commRecipes(), list = all.filter(function (x) {
+      if (feedKind && (feedKind === 'baby') !== x.baby) return false;
+      if (!q) return true;
+      if (q.charAt(0) === '#') return !tq || x.tags.some(function (t) { return t.indexOf(tq) >= 0; });
+      if (q.charAt(0) === '@') return (unames[x.owner] || '').indexOf(qh) >= 0 || norm(who(x.owner)).indexOf(qh) >= 0;
+      return norm(x.name + ' ' + x.text + ' ' + (unames[x.owner] || '') + ' ' + who(x.owner)).indexOf(qh) >= 0 || x.tags.some(function (t) { return t.indexOf(q) >= 0; });
+    });
+    if (!all.length) return '<div class="empty"><p><strong>No community recipes yet.</strong></p><p class="muted">Share one of yours: open a recipe, tap Edit, and tick "Share with everyone on Fed Up". Recipes linked to posts show up here too.</p></div>';
+    if (!list.length) return '<p class="muted">No recipes match that.</p>';
+    return '<p class="small muted">' + list.length + (list.length === 1 ? ' recipe' : ' recipes') + ' from the community. Tap one to see it and save a copy.</p><ul class="cards">' + list.map(commCard).join('') + '</ul>';
+  }
   function renderExplore() {
     if (!feedApi) return;
+    Array.prototype.forEach.call($('comm-seg').children, function (c) { c.setAttribute('aria-pressed', c.dataset.cmode === commMode ? 'true' : 'false'); });
     if (feedState !== 'ok') { $('explore-body').innerHTML = feedState === 'error' ? '<p class="note">The community page could not load. Check your connection and try again.</p>' : '<p class="muted">Loading…</p>'; return; }
     var q = norm(feedSearch), tq = q.charAt(0) === '#' ? cleanTag(q) : '';
     var list = feedPosts.filter(function (p) {
@@ -3080,6 +3121,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       return '<li><button class="who-btn" type="button" data-act="user" data-id="' + esc(o) + '">' + avatarHtml(o) + '<span class="post-who"><strong>' + esc(handle(o)) + '</strong><span class="small muted">' + esc(who(o)) + ' · ' + n + (n === 1 ? ' post' : ' posts') + '</span></span></button>' +
         (iFollow(o) ? '<button class="btn small" type="button" data-act="unfollow" data-id="' + esc(o) + '">Following</button>' : '<button class="btn primary small" type="button" data-act="follow" data-id="' + esc(o) + '">Follow</button>') + '</li>';
     }).join('') + '</ul>' : '';
+    if (commMode === 'recipes') { $('explore-body').innerHTML = html + renderCommRecipes(q); return; }
     if (!feedPosts.length) html += '<div class="empty"><p><strong>Nothing here yet.</strong></p><p class="muted">Be the first to share a meal.</p><button class="btn primary" type="button" data-act="new-post">Share a meal</button></div>';
     else if (!list.length) html += '<p class="muted">No meals match that.</p>';
     else html += gridHtml(list);
@@ -3441,6 +3483,8 @@ var babyEd = $('ed-kind').value === 'baby';
       if (g0) { $('ing-name-' + ri).value = g0.name; $('ing-aisle-' + ri).value = g0.aisle; }
       hideSugg(); return;
     }
+    var cm = ev.target.closest('[data-cmode]');
+    if (cm) { commMode = cm.dataset.cmode; try { localStorage.setItem('fed-up-comm', commMode); } catch (e) {} renderExplore(); return; }
     var fk = ev.target.closest('[data-fkind]');
     if (fk) { feedKind = fk.dataset.fkind; Array.prototype.forEach.call($('feed-kinds').children, function (c) { c.setAttribute('aria-pressed', c === fk ? 'true' : 'false'); }); renderExplore(); return; }
     var hd = ev.target.closest('[data-hand]');
@@ -3484,6 +3528,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (act === 'follow') return setFollow(id, true);
     if (act === 'unfollow') return setFollow(id, false);
     if (act === 'open-post') return openPostView(id);
+    if (act === 'comm-open') { if (ALL[id]) openCook(id); return; }
     if (act === 'reload-feed') { feedState = 'loading'; renderFeed(); loadFeed(); return; }
     if (act === 'save-post') {
       if (!fview || !fview.recipe) return;
