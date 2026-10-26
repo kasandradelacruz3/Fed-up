@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025220437">
+<meta name="fedup-version" content="20261025220858">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3083,11 +3083,9 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     return out.sort(function (a, b) { return (b.photo ? 1 : 0) - (a.photo ? 1 : 0) || (b.at || '').localeCompare(a.at || '') || a.name.localeCompare(b.name); });
   }
   function commCard(x) {
-    var by = x.credit && x.credit !== x.owner ? x.credit : x.owner;
-    var img = x.photo ? '<img src="' + esc(x.type === 'post' ? thumbOf(x.photo) : x.photo) + '"' + (x.type === 'post' ? ' data-full="' + esc(x.photo) + '" onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}"' : '') + ' alt="" loading="lazy">' : '<span class="rc-ph" aria-hidden="true">' + esc((x.name || '?').trim().charAt(0).toUpperCase()) + '</span>';
-    return '<li class="rc theirs"><button class="rc-main" type="button" data-act="' + (x.type === 'post' ? 'open-post' : 'comm-open') + '" data-id="' + esc(x.id) + '" aria-label="Open ' + esc(x.name) + '">' +
-      '<span class="rc-img">' + img + '</span>' +
-      '<span class="rc-txt"><span class="mname">' + esc(x.name) + '</span><span class="rc-sub">' + esc((by === uid ? 'by you' : 'by ' + atName(by)) + (x.sub ? ' · ' + x.sub : '')) + '</span></span></button></li>';
+    var by = x.credit && x.credit !== x.owner ? x.credit : x.owner, label = x.name + ' by ' + (by === uid ? 'you' : atName(by));
+    var img = x.photo ? '<img src="' + esc(x.type === 'post' ? thumbOf(x.photo) : x.photo) + '"' + (x.type === 'post' ? ' data-full="' + esc(x.photo) + '" onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}"' : '') + ' alt="" loading="lazy" decoding="async">' : '<span class="tile-txt">' + esc(x.name) + '</span>';
+    return '<li><button class="tile" type="button" data-act="' + (x.type === 'post' ? 'open-post' : 'comm-open') + '" data-id="' + esc(x.id) + '" aria-label="' + esc(label) + '">' + img + '</button></li>';
   }
   function renderCommRecipes(q) {
     var tq = q.charAt(0) === '#' ? cleanTag(q) : '', qh = q.replace(/^@/, '');
@@ -3100,7 +3098,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     });
     if (!all.length) return '<div class="empty"><p><strong>No community recipes yet.</strong></p><p class="muted">Share one of yours: open a recipe, tap Edit, and tick "Share with everyone on Fed Up". Recipes linked to posts show up here too.</p></div>';
     if (!list.length) return '<p class="muted">No recipes match that.</p>';
-    return '<p class="small muted">' + list.length + (list.length === 1 ? ' recipe' : ' recipes') + ' from the community. Tap one to see it and save a copy.</p><ul class="cards">' + list.map(commCard).join('') + '</ul>';
+    return '<ul class="grid3">' + list.map(commCard).join('') + '</ul>';
   }
   function renderExplore() {
     if (!feedApi) return;
