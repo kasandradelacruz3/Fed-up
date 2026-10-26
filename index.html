@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025220858">
+<meta name="fedup-version" content="20261025221519">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3048,7 +3048,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       (img ? '<button class="post-imgbtn" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="Open ' + esc(p.title) + '"><img class="post-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy"></button>' : '') +
       '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + creditLine(p) +
       (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) +
-      '<button class="recipe-link" type="button" data-act="open-post" data-id="' + esc(p.id) + '"><span class="rl-ico">' + ICON.book + '</span><span class="rl-txt"><strong>Get the recipe</strong><span class="small muted">Ingredients, steps and save a copy</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' +
+      '<button class="recipe-link" type="button" data-act="open-post" data-id="' + esc(p.id) + '"><span class="rl-ico">' + ICON.book + '</span><span class="rl-txt"><strong>Steal this recipe</strong><span class="small muted">See it and save it to your recipes</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' +
       '</div></li>';
   }
   function gridHtml(list) {
@@ -3207,7 +3207,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       var ings = (r.ingredients || []).map(function (g) {
         return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
       }).join('');
-      html += '<div class="row"><button class="btn primary" type="button" data-act="save-post">Save to my recipes</button></div>' +
+      html += '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps and notes</h3><p class="steps">' + (r.notes ? esc(r.notes) : '<span class="muted">No steps written.</span>') + '</p></div>';
     }
