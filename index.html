@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025221519">
+<meta name="fedup-version" content="20261025221805">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -352,6 +352,9 @@ dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto;
 .post-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 14px; min-width: 0; }
 .post-head .push { margin-left: auto; }
 .avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-size: 0.9rem; }
+.steal-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 7px 16px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+.steal-btn:active { background: var(--accent-soft); }
+.steal-btn span { font-size: 1rem; line-height: 1; }
 .credit-btn { display: block; border: 0; background: none; padding: 0; margin: 2px 0 6px; font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; text-align: left; }
 .credit-btn strong { color: var(--accent); font-weight: 600; }
 .post-who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
@@ -3048,7 +3051,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       (img ? '<button class="post-imgbtn" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="Open ' + esc(p.title) + '"><img class="post-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy"></button>' : '') +
       '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + creditLine(p) +
       (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) +
-      '<button class="recipe-link" type="button" data-act="open-post" data-id="' + esc(p.id) + '"><span class="rl-ico">' + ICON.book + '</span><span class="rl-txt"><strong>Steal this recipe</strong><span class="small muted">See it and save it to your recipes</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' +
+      '<div><button class="steal-btn" type="button" data-act="open-post" data-id="' + esc(p.id) + '">Steal this recipe <span aria-hidden="true">→</span></button></div>' +
       '</div></li>';
   }
   function gridHtml(list) {
