@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025221805">
+<meta name="fedup-version" content="20261025224623">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1336,6 +1336,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function check(r) { if (r && r.error) throw mapErr(r.error); return r; }
   feedShim = {
+    /* recipe photos live in photo storage; the database keeps only the link */
+    uploadPhoto: function (dataUrl, name) {
+      var path = uid + '/r/' + String(name).replace(/[^a-zA-Z0-9_-]/g, '') + '.jpg';
+      return sb.storage.from('feed').upload(path, dataUrlToBlob(dataUrl), { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' }).then(function (r) {
+        check(r); return sb.storage.from('feed').getPublicUrl(path).data.publicUrl;
+      });
+    },
     isAdmin: function () { return sb.rpc('is_admin').then(function (r) { return !r.error && r.data === true; }, function () { return false; }); },
     list: function () {
       return sb.from('feed_posts').select('id,owner,title,description,tags,photo_url,price_cents,kind,created_at,credit').order('created_at', { ascending: false }).limit(100).then(function (r) {
@@ -2163,7 +2170,18 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       return db.doc('shared/' + uid).set({ recipes: mine });
     }
     var cut = key.indexOf(':'), kind = key.slice(0, cut), id = key.slice(cut + 1);
-    if (kind === 'rphoto') return S.rphotos[id] ? pcoll('rphotos').doc(id).set({ data: S.rphotos[id] }) : pcoll('rphotos').doc(id).delete();
+    if (kind === 'rphoto') {
+      var pv = S.rphotos[id];
+      if (!pv) return pcoll('rphotos').doc(id).delete();
+      if (/^data:image\/jpe?g;base64,/.test(pv) && feedApi && feedApi.uploadPhoto) {
+        return feedApi.uploadPhoto(pv, id + '-' + Date.now().toString(36)).then(function (url) {
+          if (S.rphotos[id] !== pv) return;
+          S.rphotos[id] = url;
+          return pcoll('rphotos').doc(id).set({ data: url }).then(function () { if (S.recipes[id] && S.recipes[id].shared && canShare) save('sphoto:' + id); });
+        }, function () { return pcoll('rphotos').doc(id).set({ data: pv }); });
+      }
+      return pcoll('rphotos').doc(id).set({ data: pv });
+    }
     if (kind === 'sphoto') {
       var sref = db.doc('shared/' + uid + '/photos/' + id);
       return S.recipes[id] && S.recipes[id].shared && S.rphotos[id] ? sref.set({ data: S.rphotos[id] }) : sref.delete();
@@ -2802,8 +2820,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   var myFollows = [], followCounts = {}, countsAsked = {}, frBack = 'feed', userBack = 'feed', userId = null, postFrom = 'feed';
   var fbKind = 'Idea', feedbackRows = [], profMenu = false, saves = [], profTab = 'posts', members = null, membersQ = '';
   var likeCounts = {}, myLikes = {}, reports = [], menuFor = null, myProf = null, unames = {}, bios = {}, epRequired = false;
+  function movePhotos() {
+    if (!priv || !feedApi || !feedApi.uploadPhoto) return;
+    Object.keys(S.rphotos).forEach(function (id) { if (/^data:image\/jpe?g;base64,/.test(S.rphotos[id] || '')) save('rphoto:' + id); });
+  }
   function initFeed(api) {
     feedApi = api;
+    if (ready) movePhotos(); else { var waitMove = setInterval(function () { if (ready) { clearInterval(waitMove); movePhotos(); } }, 500); setTimeout(function () { clearInterval(waitMove); }, 60000); }
     $('tab-feed').hidden = false; $('tab-explore').hidden = false; $('new-post').hidden = false; $('tab-meals').hidden = true; syncNav();
     document.body.classList.add('has-feed');
     if (tab === 'meals') { show('feed'); window.scrollTo(0, 0); }
@@ -3218,6 +3241,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function shrinkData(dataUrl, maxSide, maxLen, done) {
     var img = new Image();
+    if (/^https?:/.test(dataUrl)) img.crossOrigin = 'anonymous';
     img.onload = function () {
       var k = Math.min(1, maxSide / Math.max(img.width, img.height)), c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
@@ -3303,7 +3327,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     draft.good = r ? goodOf(r) : []; draft.goodTouched = !!(r && Array.isArray(r.goodFor)); renderEdGood();
     $('ed-kind').value = r ? (isBaby(r) ? 'baby' : 'adult') : mode; $('ed-stage').value = r && STAGES.indexOf(r.stage) >= 0 ? r.stage : ''; syncKind();
     $('ed-delete').hidden = !r;
-    $('ed-share-wrap').hidden = !canShare; $('ed-share').checked = !!(r && r.shared);
+    $('ed-share-wrap').hidden = !canShare; $('ed-share').checked = r ? !!r.shared : true;
     renderIngs(); renderEdTags(); show('editor');
     if (!r) $('ed-name').focus();
     window.scrollTo(0, 0);
@@ -3759,7 +3783,10 @@ var babyEd = $('ed-kind').value === 'baby';
         fin(); postPhoto = null; show('feed'); feedState = 'loading'; renderFeed(); loadFeed(); toast('Posted to the feed.');
       }, function () { fin(); toast("Couldn't post that. Check your connection and try again."); });
     };
-    if (postPhoto) shrinkData(postPhoto, 360, 40000, go); else go(null);
+    var withThumb = function () { if (postPhoto) shrinkData(postPhoto, 360, 40000, go); else go(null); };
+    /* a recipe photo that already lives in photo storage is fetched back so the post gets its own copy */
+    if (postPhoto && /^https?:/.test(postPhoto)) shrinkData(postPhoto, 1080, 280000, function (d) { postPhoto = d; withThumb(); });
+    else withThumb();
   });
   $('ed-tag-add').addEventListener('click', addOwnTag);
   $('ed-kind').addEventListener('change', function () { syncKind(); renderEdTags(); });
@@ -3993,7 +4020,7 @@ var babyEd = $('ed-kind').value === 'baby';
         photoSubs[o] = true;
         db.collection('shared/' + o + '/photos').onSnapshot(function (ps) {
           var m = {};
-          ps.docs.forEach(function (d) { var v = d.data(); if (v && typeof v.data === 'string' && v.data.indexOf('data:image/') === 0) m[d.id] = v.data; });
+          ps.docs.forEach(function (d) { var v = d.data(); if (v && typeof v.data === 'string' && safeImg(v.data)) m[d.id] = v.data; });
           groupPhotos[o] = m;
           if (ready) render();
         }, function () {});
@@ -4049,7 +4076,7 @@ var babyEd = $('ed-kind').value === 'baby';
     };
     pcoll('recipes').onSnapshot(function (snap) { S.recipes = merge(snap, 'recipe', S.recipes, function (v) { return v && v.name ? clone(v) : null; }); got.r = true; go(); }, fail);
     pcoll('ingredients').onSnapshot(function (snap) { S.ings = merge(snap, 'ing', S.ings, function (v) { return v && v.name ? clone(v) : null; }); got.i = true; go(); }, fail);
-    pcoll('rphotos').onSnapshot(function (snap) { S.rphotos = merge(snap, 'rphoto', S.rphotos, function (v) { return v && typeof v.data === 'string' && v.data.indexOf('data:image/') === 0 ? v.data : null; }); if (ready) render(); }, function () {});
+    pcoll('rphotos').onSnapshot(function (snap) { S.rphotos = merge(snap, 'rphoto', S.rphotos, function (v) { return v && typeof v.data === 'string' && safeImg(v.data) ? v.data : null; }); if (ready) render(); }, function () {});
     pcoll('photos').onSnapshot(function (snap) { S.photos = merge(snap, 'photo', S.photos, function (v) { return v && typeof v.data === 'string' && v.data.indexOf('data:image/') === 0 ? v.data : null; }); if (ready) render(); }, function () {});
     pdoc('week').onSnapshot(function (d) { if (!busy('week')) S.week = cleanWeek(d.exists ? d.data() : null); got.w = true; go(); }, fail);
     pdoc('list').onSnapshot(function (d) { if (!busy('list')) S.list = cleanList(d.exists ? d.data() : null); got.l = true; go(); }, fail);
