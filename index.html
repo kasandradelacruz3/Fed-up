@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261025224623">
+<meta name="fedup-version" content="20261026201720">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -352,6 +352,9 @@ dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto;
 .post-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 14px; min-width: 0; }
 .post-head .push { margin-left: auto; }
 .avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-size: 0.9rem; }
+.warn-note { background: #fff1e6; color: #7a3300; border-color: #f5c9a3; }
+.legal h4 { margin: 8px 0 0; font-size: 0.95rem; }
+.legal p { margin: 0; }
 .steal-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 7px 16px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
 .steal-btn:active { background: var(--accent-soft); }
 .steal-btn span { font-size: 1rem; line-height: 1; }
@@ -995,18 +998,32 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         <li><strong>Be kind.</strong> Every family eats differently. No put-downs, bullying or shaming.</li>
         <li><strong>Keep it family friendly.</strong> Nothing you would not want your kids to see.</li>
         <li><strong>No ads, spam or selling.</strong> Fed Up is free for everyone.</li>
-        <li><strong>Baby food is not medical advice.</strong> Check with your pediatrician about allergies, textures and when to start new foods.</li>
+        <li><strong>Baby food is not medical advice.</strong> Check with your pediatrician about allergies, textures and when to start new foods. Never give honey to babies under 1.</li>
+        <li><strong>Respect other people's work.</strong> Don't post photos or recipes copied from blogs, cookbooks or other people. Credit where a recipe came from.</li>
       </ul>
-      <p>If you see a post that breaks these rules, tap the three dots on it and choose Report. The site owner reviews every report and can remove posts.</p>
+      <p>If you see a post that breaks these rules, or a photo or recipe that was taken from you, tap the three dots on it and choose Report. The site owner reviews every report and can remove posts and accounts.</p>
       <h3 class="sec-h">Privacy</h3>
+      <p class="small muted">Last updated October 26, 2026</p>
       <ul>
-        <li><strong>What other members see:</strong> your name, username, bio, the meals you post, and who you follow.</li>
-        <li><strong>What only you see:</strong> your recipes (unless you share them), ingredients, weekly plan, shopping list and baby log.</li>
-        <li><strong>What we keep:</strong> your email address and what you add to Fed Up, so the app works on all your devices.</li>
-        <li><strong>We never sell your information</strong> or share it with advertisers.</li>
+        <li><strong>What we collect:</strong> your email, name, username, bio and profile photo; the recipes, ingredients, prices, weekly plans, shopping lists and baby log you add; your posts, likes, saves, follows, reports and feedback; and your ZIP code if you add one.</li>
+        <li><strong>What other members see:</strong> your name, username, bio, profile photo, the meals you post, the recipes you share with the community, and who you follow. New recipes are shared with the community unless you untick "Share with everyone on Fed Up".</li>
+        <li><strong>What only you see:</strong> recipes you keep private, your ingredients and prices, weekly plan, shopping list and baby log.</li>
+        <li><strong>Prices near you:</strong> if you add a ZIP code, the prices you enter are combined with other people's in your area (by the first 3 digits of your ZIP) to show typical local prices. Only averages from 2 or more people are shown, and your name is never attached.</li>
+        <li><strong>Who stores it:</strong> your account, data and photos are stored with Supabase. The website is hosted on GitHub Pages and the web address runs through Cloudflare. They only process it to run Fed Up.</li>
+        <li><strong>No ads or tracking.</strong> We never sell your information or share it with advertisers. Fed Up only stores what it needs on your device to keep you signed in and remember your settings.</li>
+        <li><strong>Children:</strong> Fed Up is not for children under 13, and we delete any account we learn belongs to a child under 13. Baby log entries are about your child and are only visible to you.</li>
+        <li><strong>Your choices:</strong> you can edit or delete your posts, recipes and profile any time, and delete your whole account in Settings under Delete my account. That permanently removes your information, except copies of shared recipes other members already saved.</li>
+        <li><strong>Security:</strong> your data is sent over secure connections and protected so only you can see your private things. No system is perfect, so use a password you don't use anywhere else.</li>
       </ul>
-      <p id="guide-contact" class="muted">To have your account and everything in it deleted, contact the site owner.</p>
+      <p><button class="btn small" type="button" data-act="go" data-view="terms">Read the Terms of Service</button></p>
+      <p id="guide-contact" class="muted legal-contact">Questions or privacy requests: use Send feedback in the app (Profile, then the ☰ menu).</p>
     </div>
+  </section>
+
+  <section class="view" id="view-terms" hidden>
+    <div><button class="btn quiet" type="button" data-act="go" data-view="profile">← Profile</button></div>
+    <h2>Terms of Service</h2>
+    <div class="stack guide" id="terms-body"></div>
   </section>
 
   <section class="view" id="view-user" hidden>
@@ -1037,7 +1054,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <label class="f" for="post-tags">Hashtags
         <input type="text" id="post-tags" placeholder="healthy, high protein, quick">
       </label>
-      <p class="small muted">Everyone on Fed Up sees your photo and description, and can open the linked recipe and save a copy to their own recipes.</p>
+      <p class="small muted">Everyone on Fed Up sees your photo and description, and can open the linked recipe and save a copy to their own recipes. Only post photos you took and recipes you have the right to share.</p>
       <div><button class="btn primary" type="submit" id="post-submit">Post</button></div>
     </form>
   </section>
@@ -1140,19 +1157,58 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <label class="f" for="auth-pass" id="auth-pass-wrap">Password
         <input type="password" id="auth-pass" autocomplete="current-password" placeholder="At least 8 characters">
       </label>
+      <label class="small" id="auth-agree" hidden style="display:flex;gap:10px;align-items:flex-start;margin-top:4px"><input type="checkbox" id="auth-age" style="width:20px;height:20px;flex:none;margin-top:1px;accent-color:#e0247a"><span>I'm 13 or older, and I agree to the Terms of Service, community guidelines and privacy policy (tap "Terms of Service, community guidelines and privacy" below to read them).</span></label>
       <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
       <button class="btn quiet small" type="button" id="auth-forgot">Forgot your password?</button>
       <button class="btn small" type="button" id="auth-resend" hidden>Didn't get it? Send it again</button>
     </form>
     <p class="note" id="auth-msg" role="status" aria-live="polite" hidden></p>
     <details class="auth-guide">
-      <summary>Community guidelines and privacy</summary>
+      <summary>Terms of Service, community guidelines and privacy</summary>
       <div class="stack" style="gap:8px">
         <p>Fed Up is a place to share the real meals you make. Be kind, post your own food photos and recipes, and keep it family friendly. No ads, spam or selling. Anything that breaks these rules can be reported and removed.</p>
-        <p>We keep your email, name, username, bio, recipes and posts so the app works. Your posts, username and bio are visible to other members. Your private recipes, shopping list and baby log are only visible to you. We never sell your information.</p>
+        <p>We keep your email, name, username, bio, recipes and posts so the app works. Your posts, shared recipes, username and bio are visible to other members. Your private recipes, shopping list and baby log are only visible to you. We never sell your information.</p>
+        <p>Recipes, prices and nutrition are shared by members or estimated, and aren't medical or nutrition advice. Talk with your pediatrician about baby foods.</p>
+        <details class="terms-full"><summary>Read the full Terms of Service</summary>
+<div id="terms-text" class="stack legal" style="gap:10px">
+  <p class="small muted">Last updated October 26, 2026</p>
+  <p>These terms are the agreement between you and Fed Up (fedupmeals.com). By creating an account or using Fed Up, you agree to them. If you don't agree, please don't use Fed Up.</p>
+  <h4>1. Who can use Fed Up</h4>
+  <p>You must be at least 13 years old. If you are under 18, you need a parent's or guardian's permission. Fed Up is not meant for children under 13, and we delete any account we learn belongs to someone under 13.</p>
+  <h4>2. Your account</h4>
+  <p>Keep your password private and use your own information. You are responsible for what happens on your account. We may suspend or remove accounts that break these terms or the community guidelines.</p>
+  <h4>3. What you post</h4>
+  <p>You own the photos, recipes and words you add. By posting a meal or sharing a recipe with the community, you give Fed Up permission to store and show it on Fed Up, and you let other members view it and save a copy to their own recipes. This permission ends for anything you delete, except copies other members already saved. Recipes you keep private are seen only by you.</p>
+  <p>Only post photos you took and content you have the right to share. If a recipe came from someone else, give them credit. When you post a recipe you saved from another member, Fed Up credits them automatically.</p>
+  <h4>4. Rules</h4>
+  <p>Follow the community guidelines. Don't post anything illegal, hateful, harassing, sexual, violent, misleading or dangerous, and no spam, ads or selling. Don't try to break, overload or misuse Fed Up, or access other people's accounts. We may remove any content or account at our discretion.</p>
+  <h4>5. Copyright: reporting stolen photos or recipes</h4>
+  <p>If you believe something on Fed Up copies your work without permission, tap the three dots on the post and choose Report, or send us a notice using the contact details below. A formal notice should include: your name and contact information, the work you own, a link to or description of the post, a statement that you believe in good faith the use is not authorized, a statement that your notice is accurate and that you are the owner or allowed to act for the owner, and your signature (typing your full name is fine).</p>
+  <p>We remove content that we're notified infringes someone's rights, and we close the accounts of people who repeatedly post others' work. If your content was removed by mistake, you can send us a counter-notice explaining why.</p>
+  <h4>6. Recipes, food safety and health</h4>
+  <p>Recipes on Fed Up are shared by members and are not checked or tested by Fed Up. They are for general information only and are not medical, nutrition or dietary advice. Always check ingredients for allergies and sensitivities, cook food to safe temperatures, and follow safe food handling.</p>
+  <p>Baby food features are general information, not medical advice. Talk with your pediatrician about when to start foods, allergens, textures and portion sizes. Never give honey to a baby under 1 year old. Prepare foods in safe sizes and textures to reduce choking risk, and always supervise babies and young children while they eat.</p>
+  <h4>7. Prices, costs and nutrition are estimates</h4>
+  <p>Prices, recipe costs and nutrition on Fed Up are estimates. They come from typical U.S. prices, prices members enter, and nutrition values members enter, and they may be wrong or different where you shop. Don't rely on them for medical, dietary or budgeting decisions.</p>
+  <h4>8. Fed Up is provided as is</h4>
+  <p>Fed Up is free, and we may change, pause or stop any part of it at any time. We provide it "as is" and "as available," without warranties of any kind, to the fullest extent the law allows. We don't promise it will always work, be error free, or keep your content forever, so keep copies of anything important.</p>
+  <h4>9. Limits on liability</h4>
+  <p>To the fullest extent the law allows, Fed Up and its owner are not responsible for indirect, incidental, special or consequential damages, or for anything that results from recipes, food you prepare, content posted by members, or estimates shown in the app. If we are ever found responsible for something, the most we will owe you in total is $50.</p>
+  <h4>10. Your responsibility</h4>
+  <p>If someone makes a claim against Fed Up because of something you posted or because you broke these terms, you agree to cover the reasonable costs of that claim, to the extent the law allows.</p>
+  <h4>11. Deleting your account</h4>
+  <p>You can delete your account any time in Settings, under Delete my account. This permanently deletes your profile, recipes, posts and the rest of your information, except copies other members already saved.</p>
+  <h4>12. Changes</h4>
+  <p>We may update these terms. When we make important changes, we'll let you know in the app. Using Fed Up after a change means you accept the updated terms.</p>
+  <h4>13. Law</h4>
+  <p>These terms are governed by the laws of the State of Texas and the United States, without regard to conflict of law rules.</p>
+  <h4>14. Contact</h4>
+  <p class="legal-contact">Questions, copyright notices or privacy requests: use Send feedback in the app (Profile, then the ☰ menu).</p>
+</div>
+        </details>
       </div>
     </details>
-    <p class="small muted" id="auth-agree" hidden>By creating an account you agree to the community guidelines.</p>
+
   </div>
 </div>
 
@@ -1512,9 +1568,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       if (!name) return fail({ message: 'Add your name. It shows on recipes you share.' });
       if (!USERNAME_OK.test(uname)) return fail({ message: 'Pick a username with 3 to 20 letters, numbers, dots or underscores.' });
       if (pass.length < 8) return fail({ message: 'Use at least 8 characters for your password.' });
+      if (!$('auth-age').checked) return fail({ message: 'Tick the box to confirm you are 13 or older and agree to the Terms of Service.' });
       return usernameFree(uname).then(function (free) {
         if (!free) throw { message: 'That username is taken. Try another one.' };
-        return sb.auth.signUp({ email: email, password: pass, options: { data: { display_name: name.slice(0, 40), username: uname }, emailRedirectTo: here } });
+        return sb.auth.signUp({ email: email, password: pass, options: { data: { display_name: name.slice(0, 40), username: uname, terms_accepted_at: new Date().toISOString(), terms_version: '2026-10-26', age_13_plus: true }, emailRedirectTo: here } });
       }).then(function (r) {
         if (r.error) return fail(r.error);
         done();
@@ -1736,6 +1793,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       note = priceNote(c.src) + (c.counted < c.rows ? ' ' + (c.rows - c.counted) + (c.rows - c.counted === 1 ? ' ingredient has' : ' ingredients have') + ' no price yet, so the real cost is a little higher.' : '') +
         (c.src.yours < c.counted ? ' Add your own prices on the Ingredients page for the most accurate cost' + (S.settings.zip ? '.' : ', or add your ZIP code in Settings to see prices from people near you.') : '');
       if (c.rough) note += ' Some amounts could not be compared with the package size. Check the ones marked below.';
+      note += ' Prices are estimates and may be different where you shop.';
       if (c.counted < c.rows && author) note += ' The recipe author estimated #' + author + '.';
     } else { line = '#' + author; note = "The recipe author's estimate. Add prices to these ingredients on the Ingredients tab to see what it costs where you shop."; }
     if (c && c.none) { line = author ? '#' + author : 'No prices yet'; note = 'Add prices below to see what it costs where you shop.'; }
@@ -1909,7 +1967,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     var parts = [cal > 0 ? cal + ' cal' : '', n && n.fat > 0 ? n.fat + ' g fat' : '', n && n.carbs > 0 ? n.carbs + ' g carbs' : '', pro > 0 ? pro + ' g protein' : ''].filter(Boolean);
     var whole = n && !n.perServing && !(r.servings > 0);
     var note = !n ? 'Entered on the recipe.' : n.counted < n.rows ? 'Worked out from ' + n.counted + ' of ' + n.rows + ' ingredients, so the real numbers are higher. Add nutrition to the rest on the Ingredients tab.' : 'Worked out from the nutrition on your ingredients.';
-    return '<div class="aisle"><h3>Nutrition ' + (whole ? 'for the whole recipe' : 'per serving') + '</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(parts.join(' · ')) + '</p><p class="small muted">' + esc(note) + '</p></div>';
+    return '<div class="aisle"><h3>Nutrition ' + (whole ? 'for the whole recipe' : 'per serving') + '</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(parts.join(' · ')) + '</p><p class="small muted">' + esc(note + ' Nutrition is an estimate, not medical or dietary advice.') + '</p></div>';
   }
   function pickedIds() { return Object.keys(ALL).filter(function (id) { return portions(id) > 0; }); }
 
@@ -2397,6 +2455,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     $('cook-body').innerHTML = (photoOf(cookId) ? '<img class="fr-img" src="' + esc(photoOf(cookId)) + '" alt="Photo of ' + esc(r.name) + '">' : '') + '<div class="stack full" style="gap:4px"><h2>' + esc(r.name) + '</h2><p class="muted">' + esc([r.group ? 'Shared by ' + who(r.owner) : '', isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), line].filter(Boolean).join(' · ')) + '</p>' + (showTags(r).length ? '<p class="hash">' + esc(showTags(r).map(function (t) { return '#' + t; }).join('  ')) + '</p>' : '') + '</div>' +
       ([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).length ? '<p class="small muted full">' + esc([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).join(' · ')) + '</p>' : '') +
       (goodOf(r).length ? '<div class="aisle"><h3>Good source of</h3><div class="chips" style="padding-top:6px">' + goodOf(r).map(function (n) { return '<span class="chip">' + esc(n) + '</span>'; }).join('') + '</div><p class="small muted">' + (Array.isArray(r.goodFor) ? 'Chosen by the recipe author.' : 'A general guide based on the ingredients.') + ' Not medical advice.</p></div>' : '') +
+      safetyBlock(r, !!r.group) +
       costBlock(r) +
       nutBlock(r) +
       '<div class="aisle"><h3>Ingredients</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients yet.</li>') + '</ul></div>' +
@@ -2423,11 +2482,31 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     document.querySelector('.tabs').style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
   }
   function closeAdd() { $('add-sheet').hidden = true; $('new-post').setAttribute('aria-expanded', 'false'); }
+  function hasHoney(r) { return (r.ingredients || []).some(function (g) { return /\bhoney\b/i.test(g.name || '') && !/honeydew|honeycrisp|honey ?nut cheerios/i.test(g.name || ''); }); }
+  function safetyBlock(r, theirs) {
+    var out = '';
+    if (isBaby(r) && hasHoney(r)) out += '<p class="note warn-note"><strong>Honey warning:</strong> never give honey to a baby under 1 year old. It can cause infant botulism, a serious illness. Leave the honey out or save this for older kids.</p>';
+    if (isBaby(r)) out += '<p class="small muted safety-note">Baby food tips are general information, not medical advice. Ask your pediatrician about when to start foods, allergens and textures. Serve foods soft and in safe sizes to prevent choking, and always stay with your baby while they eat.</p>';
+    else if (theirs) out += '<p class="small muted safety-note">Shared by a Fed Up member and not tested by Fed Up. Check ingredients for allergies and cook food to safe temperatures.</p>';
+    return out;
+  }
+  function legalContact() {
+    var em = String((window.FED_UP_CONFIG || {}).contactEmail || '').trim();
+    if (!/^\S+@\S+\.\S+$/.test(em)) return;
+    Array.prototype.forEach.call(document.querySelectorAll('.legal-contact'), function (el) { el.textContent = 'Questions, copyright notices or privacy requests: email ' + em + ', or use Send feedback in the app.'; });
+  }
+  function renderTerms() {
+    var src = document.getElementById('terms-text');
+    $('terms-body').innerHTML = src ? src.innerHTML : '<p>The Terms of Service are shown when you create an account on fedupmeals.com.</p>';
+    legalContact();
+  }
   function show(t) {
     profMenu = false; closeAdd();
+    if (t === 'terms') renderTerms();
+    if (t === 'guide') legalContact();
     if (tab === 'cook' && t !== 'cook' && wake) { try { wake.release(); } catch (e) {} wake = null; }
     tab = t;
-    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'guide', 'feedback', 'feedbacks', 'members'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
+    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'guide', 'terms', 'feedback', 'feedbacks', 'members'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
     var sec = secOf(t, 0);
     ['feed', 'explore', 'meals', 'list', 'profile'].forEach(function (v) { $('tab-' + v).setAttribute('aria-selected', v === sec ? 'true' : 'false'); });
     if (t === 'explore') renderExplore();
@@ -3176,6 +3255,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       (feedAdmin && feedApi.members ? menuRow('members', 'Members', members ? members.length + (members.length === 1 ? ' person has' : ' people have') + ' joined' : 'Everyone who has signed up', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg>') : '') +
       (feedAdmin && feedApi.feedbackList ? menuRow('feedbacks', 'Feedback from users', feedbackRows.length ? feedbackRows.length + (feedbackRows.length === 1 ? ' message' : ' messages') : 'No messages yet', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>') : '') +
       (feedAdmin ? menuRow('reports', 'Reported posts', reportCount() ? reportCount() + (reportCount() === 1 ? ' post needs' : ' posts need') + ' a look' : 'Nothing to review', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>') : '') +
+      menuRow('terms', 'Terms of Service', 'The rules for using Fed Up', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>') +
       (feedApi ? menuRow('guide', 'Community guidelines', 'What to post, and how your information is used', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg>') : '') +
       menuRow('settings', 'Settings', babyOn() ? 'Baby features are on' : 'Baby features and your account', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>') + '</ul>';
     var alerts = (feedAdmin ? reportCount() + feedbackRows.length : 0);
@@ -3233,7 +3313,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       var ings = (r.ingredients || []).map(function (g) {
         return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
       }).join('');
-      html += '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
+      html += safetyBlock(r, fview.post.owner !== uid) + '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps and notes</h3><p class="steps">' + (r.notes ? esc(r.notes) : '<span class="muted">No steps written.</span>') + '</p></div>';
     }
@@ -3946,6 +4026,7 @@ var babyEd = $('ed-kind').value === 'baby';
     show(backTo); render();
     if (portions(id) > 0 && rec.sides) { pairSides(id); render(); }
     if (pairWith && ALL[id]) { S.week.with[id] = pairWith; setPortions(id, Math.max(portions(pairWith), 1)); render(); toast('Saved ' + name + ' and added it as a side for ' + ALL[pairWith].name + '.'); }
+    else if (rec.kind === 'baby' && hasHoney(rec)) toast('Saved ' + name + '. Heads up: honey is not safe for babies under 1 year old.');
     else toast('Saved ' + name + '.');
   });
   $('ed-delete').addEventListener('click', function () {
