@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261026220259">
+<meta name="fedup-version" content="20261027121250">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -355,6 +355,11 @@ dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto;
 .warn-note { background: #fff1e6; color: #7a3300; border-color: #f5c9a3; }
 .legal h4 { margin: 8px 0 0; font-size: 0.95rem; }
 .legal p { margin: 0; }
+.art-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.art-pick { flex: none; width: 84px; display: flex; flex-direction: column; gap: 3px; align-items: center; padding: 3px; border: 2px solid transparent; border-radius: 14px; background: none; font: inherit; font-size: 0.68rem; color: var(--muted); cursor: pointer; scroll-snap-align: start; }
+.art-pick img, .art-pick .art-none { width: 74px; height: 56px; border-radius: 10px; object-fit: cover; display: grid; place-items: center; }
+.art-pick .art-none { background: var(--soft); color: var(--accent); font-family: var(--display); font-size: 1.2rem; }
+.art-pick[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); font-weight: 600; }
 .steal-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 7px 16px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
 .steal-btn:active { background: var(--accent-soft); }
 .steal-btn span { font-size: 1rem; line-height: 1; }
@@ -651,6 +656,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           <input class="vh" type="file" id="ed-photo-file" accept="image/*">
           <button class="btn quiet danger small" id="ed-photo-remove" type="button" hidden>Remove photo</button>
         </div>
+      </div>
+      <div class="stack" id="ed-art-wrap" style="gap:6px">
+        <div class="small" style="font-weight:600">No food photo? Pick a drawing <span class="muted" style="font-weight:400" id="ed-art-note"></span></div>
+        <div class="art-row" id="ed-art" role="group" aria-label="Pick a drawing"></div>
       </div>
       <label class="f" for="ed-name">Recipe name
         <input type="text" id="ed-name" placeholder="Chicken and rice bowls" required>
@@ -1866,12 +1875,124 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   function fmtN(n) { return String(Math.round(n * 100) / 100); }
   var groupPhotos = {}, photoSubs = {};
-  function photoOf(id) {
+/* ---------- pink plate drawings for recipes without a photo (400x300) ---------- */
+var ARTP = { bg: '#FCE7F1', bg2: '#F9D3E5', plate: '#FFFFFF', rim: '#F6C6DC', a: '#F9A8CB', b: '#F472B6', c: '#EC4899', d: '#BE185D', e: '#FFD6E8', w: '#FFF7FB' };
+function frame(inner, opts) {
+  opts = opts || {};
+  var plate = opts.noPlate ? '' : '<ellipse cx="200" cy="162" rx="128" ry="104" fill="#F3B5D0" opacity=".45"/><circle cx="200" cy="150" r="112" fill="' + ARTP.plate + '"/><circle cx="200" cy="150" r="92" fill="none" stroke="' + ARTP.rim + '" stroke-width="3"/>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="' + ARTP.bg + '"/><path d="M300 0h100v110z" fill="' + ARTP.bg2 + '"/><circle cx="40" cy="262" r="56" fill="' + ARTP.bg2 + '"/>' + plate + inner + '</svg>';
+}
+var ART = {
+  pasta: { label: 'Pasta', svg: frame(
+    '<g fill="none" stroke="' + ARTP.a + '" stroke-width="9" stroke-linecap="round"><path d="M140 150c20-30 60-30 80-5s50 20 50-10"/><path d="M135 170c25 20 55 15 70-5s45-25 65 5"/><path d="M150 125c25-15 45 10 70 0s35-20 50 5"/><path d="M155 190c20 10 40 5 55-10s40-10 55 10"/></g>' +
+    '<circle cx="175" cy="140" r="13" fill="' + ARTP.c + '"/><circle cx="225" cy="160" r="13" fill="' + ARTP.c + '"/><circle cx="200" cy="120" r="11" fill="' + ARTP.d + '"/><circle cx="240" cy="132" r="9" fill="' + ARTP.c + '"/>' +
+    '<ellipse cx="185" cy="175" rx="9" ry="5" fill="' + ARTP.d + '" transform="rotate(-30 185 175)"/><ellipse cx="248" cy="178" rx="9" ry="5" fill="' + ARTP.d + '" transform="rotate(25 248 178)"/>' +
+    '<path d="M330 70l-10 170" stroke="#E9A9C6" stroke-width="7" stroke-linecap="round"/><path d="M322 70v35M330 68v37M338 70v35" stroke="#E9A9C6" stroke-width="4" stroke-linecap="round"/>') },
+  tacos: { label: 'Tacos', svg: frame(
+    '<g><path d="M110 185a65 65 0 0 1 130 0z" fill="#FBD38D" stroke="' + ARTP.b + '" stroke-width="4"/><path d="M122 180c10-25 30-38 53-38s43 13 53 38" fill="none" stroke="' + ARTP.c + '" stroke-width="10" stroke-linecap="round"/><circle cx="150" cy="160" r="6" fill="' + ARTP.d + '"/><circle cx="175" cy="152" r="6" fill="' + ARTP.w + '"/><circle cx="200" cy="160" r="6" fill="' + ARTP.d + '"/><path d="M135 172c12-6 22-4 30 0M185 168c12-6 22-4 30 2" stroke="#86EFAC" stroke-width="5" stroke-linecap="round" fill="none"/></g>' +
+    '<g transform="translate(80 -10)"><path d="M110 185a65 65 0 0 1 130 0z" fill="#FBD38D" stroke="' + ARTP.b + '" stroke-width="4"/><path d="M122 180c10-25 30-38 53-38s43 13 53 38" fill="none" stroke="' + ARTP.c + '" stroke-width="10" stroke-linecap="round"/><circle cx="160" cy="158" r="6" fill="' + ARTP.w + '"/><circle cx="190" cy="155" r="6" fill="' + ARTP.d + '"/><path d="M140 170c12-6 22-4 30 0M185 168c12-6 22-4 30 2" stroke="#86EFAC" stroke-width="5" stroke-linecap="round" fill="none"/></g>' +
+    '<path d="M250 210a16 16 0 1 0 0.1 0" fill="#BEF264"/><path d="M250 212v28M236 226h28" stroke="#84CC16" stroke-width="2"/>') },
+  soup: { label: 'Soup', svg: frame(
+    '<circle cx="200" cy="150" r="78" fill="' + ARTP.b + '"/><circle cx="200" cy="150" r="64" fill="' + ARTP.a + '"/><circle cx="178" cy="135" r="8" fill="' + ARTP.w + '"/><circle cx="222" cy="160" r="7" fill="' + ARTP.w + '"/><circle cx="200" cy="175" r="5" fill="' + ARTP.d + '"/><circle cx="215" cy="128" r="5" fill="' + ARTP.d + '"/><path d="M175 165c6-3 12-3 16 1M210 140c6-3 12-3 16 1" stroke="#86EFAC" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+    '<path d="M300 210l55-55" stroke="#E9A9C6" stroke-width="9" stroke-linecap="round"/><ellipse cx="292" cy="218" rx="20" ry="13" fill="#E9A9C6" transform="rotate(-45 292 218)"/>' +
+    '<path d="M180 60c-8-12 8-16 0-28M205 56c-8-12 8-16 0-28M230 60c-8-12 8-16 0-28" stroke="' + ARTP.a + '" stroke-width="4" stroke-linecap="round" fill="none"/>') },
+  salad: { label: 'Salad', svg: frame(
+    '<g fill="#86EFAC"><ellipse cx="170" cy="130" rx="38" ry="22" transform="rotate(-25 170 130)"/><ellipse cx="230" cy="125" rx="38" ry="22" transform="rotate(30 230 125)"/><ellipse cx="200" cy="175" rx="40" ry="22"/><ellipse cx="150" cy="170" rx="30" ry="18" transform="rotate(20 150 170)"/><ellipse cx="250" cy="170" rx="30" ry="18" transform="rotate(-20 250 170)"/></g>' +
+    '<g fill="#4ADE80" opacity=".7"><ellipse cx="200" cy="140" rx="26" ry="14"/><ellipse cx="175" cy="155" rx="20" ry="10" transform="rotate(30 175 155)"/></g>' +
+    '<circle cx="185" cy="135" r="12" fill="' + ARTP.c + '"/><circle cx="230" cy="155" r="12" fill="' + ARTP.c + '"/><circle cx="160" cy="160" r="10" fill="' + ARTP.d + '"/><circle cx="215" cy="180" r="10" fill="' + ARTP.c + '"/>' +
+    '<circle cx="245" cy="135" r="9" fill="' + ARTP.w + '" stroke="' + ARTP.a + '" stroke-width="3"/><circle cx="200" cy="155" r="9" fill="' + ARTP.w + '" stroke="' + ARTP.a + '" stroke-width="3"/>') },
+  bowl: { label: 'Rice bowl', svg: frame(
+    '<circle cx="200" cy="150" r="80" fill="' + ARTP.w + '"/><g fill="#FFFFFF" stroke="#F3D4E2" stroke-width="2"><ellipse cx="170" cy="175" rx="7" ry="4"/><ellipse cx="185" cy="185" rx="7" ry="4"/><ellipse cx="160" cy="160" rx="7" ry="4"/><ellipse cx="200" cy="190" rx="7" ry="4"/><ellipse cx="175" cy="196" rx="7" ry="4"/></g>' +
+    '<g fill="' + ARTP.c + '"><rect x="200" y="110" width="24" height="18" rx="5" transform="rotate(15 212 119)"/><rect x="226" y="125" width="24" height="18" rx="5" transform="rotate(-10 238 134)"/><rect x="210" y="140" width="24" height="18" rx="5" transform="rotate(20 222 149)"/><rect x="235" y="155" width="22" height="16" rx="5"/></g>' +
+    '<g fill="#4ADE80"><circle cx="160" cy="125" r="11"/><circle cx="175" cy="115" r="10"/><circle cx="150" cy="140" r="9"/><circle cx="178" cy="132" r="8"/></g>' +
+    '<path d="M215 185c10-8 25-8 35 0" stroke="' + ARTP.d + '" stroke-width="5" fill="none" stroke-linecap="round"/><g fill="' + ARTP.w + '"><circle cx="230" cy="122" r="2"/><circle cx="240" cy="150" r="2"/><circle cx="220" cy="140" r="2"/></g>' +
+    '<path d="M300 60l60 150M316 56l56 150" stroke="#E9A9C6" stroke-width="6" stroke-linecap="round"/>') },
+  burger: { label: 'Burger', svg: frame(
+    '<path d="M130 135a70 50 0 0 1 140 0z" fill="#FBD38D"/><g fill="' + ARTP.w + '"><ellipse cx="170" cy="112" rx="4" ry="2.5"/><ellipse cx="200" cy="102" rx="4" ry="2.5"/><ellipse cx="230" cy="112" rx="4" ry="2.5"/><ellipse cx="215" cy="122" rx="4" ry="2.5"/><ellipse cx="185" cy="122" rx="4" ry="2.5"/></g>' +
+    '<path d="M126 140c20 12 40-6 60 4s40-8 60 2 30-6 30-6v8H126z" fill="#86EFAC"/><rect x="126" y="148" width="148" height="12" rx="4" fill="' + ARTP.c + '"/><rect x="122" y="160" width="156" height="22" rx="11" fill="' + ARTP.d + '"/><path d="M128 182h144l-10 12H138z" fill="#FDE68A"/><rect x="130" y="192" width="140" height="22" rx="10" fill="#FBD38D"/>') },
+  pizza: { label: 'Pizza', svg: frame(
+    '<circle cx="200" cy="150" r="85" fill="#FBD38D"/><circle cx="200" cy="150" r="72" fill="' + ARTP.b + '"/><circle cx="200" cy="150" r="66" fill="#FFF1C1" opacity=".8"/>' +
+    '<g fill="' + ARTP.c + '"><circle cx="175" cy="125" r="13"/><circle cx="228" cy="130" r="13"/><circle cx="200" cy="170" r="13"/><circle cx="160" cy="170" r="11"/><circle cx="240" cy="172" r="11"/><circle cx="205" cy="105" r="10"/></g>' +
+    '<g fill="#4ADE80"><ellipse cx="190" cy="145" rx="7" ry="4" transform="rotate(30 190 145)"/><ellipse cx="220" cy="150" rx="7" ry="4" transform="rotate(-30 220 150)"/><ellipse cx="180" cy="190" rx="7" ry="4"/></g>' +
+    '<path d="M200 150L200 65M200 150L273 192M200 150L127 192" stroke="#F1C27D" stroke-width="3"/>') },
+  sandwich: { label: 'Sandwich', svg: frame(
+    '<g transform="rotate(-8 200 150)"><path d="M120 190l80-90 80 90z" fill="#FBD38D"/><path d="M128 184l72-80 72 80z" fill="#FFF1C1"/><path d="M128 184h144" stroke="#86EFAC" stroke-width="10" stroke-linecap="round"/><path d="M130 176h140" stroke="' + ARTP.c + '" stroke-width="9"/><path d="M134 168h132" stroke="#FDE68A" stroke-width="8"/></g>' +
+    '<g transform="rotate(10 240 170) translate(40 25)"><path d="M120 190l80-90 80 90z" fill="#FBD38D" opacity=".9"/><path d="M128 184l72-80 72 80z" fill="#FFF1C1" opacity=".9"/><path d="M128 184h144" stroke="#86EFAC" stroke-width="10" stroke-linecap="round"/><path d="M130 176h140" stroke="' + ARTP.c + '" stroke-width="9"/></g>') },
+  pancakes: { label: 'Pancakes', svg: frame(
+    '<g><ellipse cx="200" cy="190" rx="78" ry="22" fill="#F1C27D"/><ellipse cx="200" cy="180" rx="78" ry="22" fill="#FBD38D"/><ellipse cx="200" cy="165" rx="78" ry="22" fill="#F1C27D"/><ellipse cx="200" cy="155" rx="78" ry="22" fill="#FBD38D"/><ellipse cx="200" cy="140" rx="78" ry="22" fill="#F1C27D"/><ellipse cx="200" cy="130" rx="78" ry="22" fill="#FBD38D"/></g>' +
+    '<path d="M150 128c10 10 20 18 30 16s15-10 30-8 25 14 40 8" fill="none" stroke="' + ARTP.d + '" stroke-width="7" stroke-linecap="round"/><path d="M178 144v18M232 140v24" stroke="' + ARTP.d + '" stroke-width="6" stroke-linecap="round"/>' +
+    '<rect x="188" y="114" width="24" height="16" rx="4" fill="#FEF3C7"/><circle cx="160" cy="122" r="9" fill="' + ARTP.c + '"/><circle cx="245" cy="126" r="9" fill="' + ARTP.c + '"/><circle cx="228" cy="114" r="7" fill="' + ARTP.b + '"/>') },
+  breakfast: { label: 'Eggs & toast', svg: frame(
+    '<path d="M140 140c-5-30 30-45 50-30 20-15 50 0 45 30s-15 50-50 48-40-18-45-48z" fill="' + ARTP.w + '" stroke="#F3D4E2" stroke-width="3"/><circle cx="188" cy="140" r="20" fill="#FBBF24"/><circle cx="182" cy="134" r="6" fill="#FDE68A"/>' +
+    '<rect x="222" y="148" width="62" height="56" rx="14" fill="#F1C27D" transform="rotate(12 253 176)"/><rect x="230" y="156" width="46" height="40" rx="9" fill="#FBD38D" transform="rotate(12 253 176)"/>' +
+    '<g fill="' + ARTP.c + '"><rect x="120" y="182" width="70" height="12" rx="6" transform="rotate(-8 155 188)"/><rect x="124" y="200" width="70" height="12" rx="6" transform="rotate(-4 159 206)"/></g><g fill="' + ARTP.a + '"><rect x="130" y="184" width="14" height="6" rx="3" transform="rotate(-8 137 187)"/><rect x="160" y="202" width="14" height="6" rx="3"/></g>') },
+  plate: { label: 'Chicken & veggies', svg: frame(
+    '<path d="M150 120c20-20 60-15 70 5s0 45-25 50-45-5-52-20-8-24 7-35z" fill="#F1C27D"/><path d="M160 128c15-12 45-8 50 6" stroke="#E0A85C" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M165 150c15-8 30-6 40 2" stroke="#E0A85C" stroke-width="5" fill="none" stroke-linecap="round"/>' +
+    '<g fill="#4ADE80"><circle cx="245" cy="125" r="13"/><circle cx="262" cy="140" r="12"/><circle cx="240" cy="145" r="11"/><rect x="246" y="146" width="8" height="18" rx="3" fill="#22C55E"/></g>' +
+    '<g fill="' + ARTP.b + '"><rect x="170" y="185" width="16" height="16" rx="4"/><rect x="190" y="192" width="16" height="16" rx="4"/><rect x="210" y="186" width="16" height="16" rx="4"/><rect x="230" y="178" width="16" height="16" rx="4"/></g><g fill="' + ARTP.d + '" opacity=".5"><rect x="174" y="189" width="6" height="6" rx="2"/><rect x="214" y="190" width="6" height="6" rx="2"/></g>') },
+  burrito: { label: 'Burrito', svg: frame(
+    '<g transform="rotate(-20 200 150)"><rect x="110" y="118" width="180" height="70" rx="35" fill="#FBD38D"/><path d="M130 125c20 10 40-6 60 4s40-8 60 2 25-4 25-4" stroke="#F1C27D" stroke-width="4" fill="none"/><ellipse cx="282" cy="153" rx="18" ry="35" fill="' + ARTP.c + '"/><ellipse cx="282" cy="153" rx="12" ry="28" fill="' + ARTP.b + '"/><circle cx="278" cy="140" r="4" fill="#4ADE80"/><circle cx="285" cy="160" r="4" fill="' + ARTP.w + '"/><circle cx="279" cy="170" r="4" fill="#4ADE80"/></g>' +
+    '<path d="M150 215a14 14 0 1 0 .1 0" fill="#BEF264"/><path d="M190 225c0-12 25-12 25 0z" fill="' + ARTP.d + '"/>') },
+  smoothie: { label: 'Smoothie', svg: frame(
+    '<path d="M160 90h80l-12 130a10 10 0 0 1-10 9h-36a10 10 0 0 1-10-9z" fill="' + ARTP.b + '"/><path d="M164 112h72" stroke="' + ARTP.a + '" stroke-width="10"/><path d="M160 90h80" stroke="' + ARTP.d + '" stroke-width="6" stroke-linecap="round"/>' +
+    '<path d="M215 90l25-50" stroke="' + ARTP.w + '" stroke-width="9" stroke-linecap="round"/><path d="M215 90l25-50" stroke="' + ARTP.c + '" stroke-width="9" stroke-dasharray="6 8" stroke-linecap="round"/>' +
+    '<circle cx="168" cy="90" r="14" fill="' + ARTP.c + '"/><path d="M160 80c4-6 10-6 14 0" stroke="#4ADE80" stroke-width="4" fill="none"/><circle cx="185" cy="150" r="5" fill="' + ARTP.a + '"/><circle cx="210" cy="175" r="5" fill="' + ARTP.a + '"/><circle cx="195" cy="200" r="4" fill="' + ARTP.a + '"/>', { noPlate: true }) },
+  cake: { label: 'Cake', svg: frame(
+    '<path d="M140 190l40-90 100 40v50z" fill="#FDE68A"/><path d="M140 190l40-90 100 40v50z" fill="none" stroke="#FBD38D" stroke-width="2"/><path d="M180 100l100 40" stroke="' + ARTP.c + '" stroke-width="16" stroke-linecap="round"/><path d="M145 168h135M150 148l130 0" stroke="' + ARTP.b + '" stroke-width="8"/>' +
+    '<path d="M186 104c-3 12 4 20 8 26M210 113c-3 12 4 20 8 26M236 123c-3 12 4 20 8 26" stroke="' + ARTP.c + '" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="240" cy="110" r="14" fill="' + ARTP.d + '"/><path d="M240 96c4-10 12-12 16-10" stroke="#22C55E" stroke-width="3" fill="none"/>') },
+  cookies: { label: 'Cookies', svg: frame(
+    '<g><circle cx="165" cy="140" r="42" fill="#F1C27D"/><circle cx="165" cy="140" r="36" fill="#FBD38D"/><g fill="' + ARTP.d + '"><circle cx="150" cy="128" r="6"/><circle cx="178" cy="122" r="5"/><circle cx="170" cy="150" r="6"/><circle cx="148" cy="158" r="5"/><circle cx="188" cy="146" r="4"/></g></g>' +
+    '<g><circle cx="240" cy="168" r="42" fill="#F1C27D"/><circle cx="240" cy="168" r="36" fill="#FBD38D"/><g fill="' + ARTP.c + '"><circle cx="225" cy="156" r="6"/><circle cx="252" cy="150" r="5"/><circle cx="246" cy="178" r="6"/><circle cx="222" cy="184" r="5"/><circle cx="262" cy="172" r="4"/></g></g>' +
+    '<g><circle cx="230" cy="98" r="28" fill="#F1C27D"/><circle cx="230" cy="98" r="23" fill="#FBD38D"/><g fill="' + ARTP.d + '"><circle cx="222" cy="92" r="4"/><circle cx="238" cy="104" r="4"/></g></g>') },
+  baby: { label: 'Baby food', svg: frame(
+    '<circle cx="190" cy="155" r="70" fill="' + ARTP.e + '"/><circle cx="190" cy="155" r="58" fill="#FDBA8C"/><path d="M160 150c10-22 50-22 60 0s-30 35-40 15 15-25 22-10" stroke="#FED7AA" stroke-width="7" fill="none" stroke-linecap="round"/>' +
+    '<path d="M260 210l50-80" stroke="' + ARTP.b + '" stroke-width="11" stroke-linecap="round"/><ellipse cx="252" cy="222" rx="18" ry="12" fill="' + ARTP.b + '" transform="rotate(-58 252 222)"/>' +
+    '<g fill="' + ARTP.c + '"><circle cx="300" cy="70" r="8"/><circle cx="320" cy="85" r="6"/><circle cx="96" cy="70" r="6"/></g>') },
+  steak: { label: 'Steak', svg: frame(
+    '<path d="M140 130c10-30 70-40 100-20s30 60 0 75-90 10-100-15 0-25 0-40z" fill="' + ARTP.d + '"/><path d="M150 132c10-24 62-32 88-16s26 50 0 62-78 8-86-12 0-20-2-34z" fill="' + ARTP.c + '"/><path d="M165 130l60 40M180 118l60 40M160 150l50 34" stroke="' + ARTP.d + '" stroke-width="5" stroke-linecap="round"/>' +
+    '<g fill="#FDE68A"><rect x="250" y="160" width="12" height="44" rx="5" transform="rotate(20 256 182)"/><rect x="266" y="156" width="12" height="44" rx="5" transform="rotate(8 272 178)"/><rect x="280" y="160" width="12" height="40" rx="5" transform="rotate(-6 286 180)"/></g><circle cx="275" cy="120" r="10" fill="#4ADE80"/>') },
+  cupcake: { label: 'Muffins & treats', svg: frame(
+    '<path d="M160 160h80l-10 60h-60z" fill="' + ARTP.a + '"/><path d="M170 160v60M190 160v60M210 160v60M230 160v58" stroke="' + ARTP.b + '" stroke-width="3"/><path d="M152 162c-10-30 20-40 30-34 5-25 45-28 52-4 18-6 35 15 18 38z" fill="' + ARTP.w + '"/><path d="M160 150c20 6 60 6 85-2" stroke="' + ARTP.e + '" stroke-width="6" fill="none"/><circle cx="200" cy="112" r="11" fill="' + ARTP.c + '"/><path d="M200 101c3-8 9-10 12-8" stroke="#22C55E" stroke-width="3" fill="none"/>' +
+    '<g fill="' + ARTP.b + '"><rect x="175" y="135" width="8" height="3" rx="1.5" transform="rotate(30 179 136)"/><rect x="215" y="138" width="8" height="3" rx="1.5" transform="rotate(-30 219 139)"/><rect x="195" y="145" width="8" height="3" rx="1.5"/></g>', { noPlate: false }) }
+};
+
+  var ART_KEYS = Object.keys(ART), artCache = {};
+  function artUrl(k) { if (!ART[k]) return ''; return artCache[k] || (artCache[k] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ART[k].svg)); }
+  var ART_WORDS = [
+    ['baby', /pur[eé]e|mash|baby/], ['smoothie', /smoothie|shake|juice|agua fresca|horchata|latte|licuado/],
+    ['bowl', /\bbowls?\b|poke|stir ?fry|teriyaki|fried rice|arroz|risotto|oat|yogurt|parfait|grain/],
+    ['pasta', /pasta|spaghetti|penne|rotini|macaroni|mac and|mac & |lasagn|noodle|fettuccine|alfredo|fideo|ziti|linguine|orzo|ravioli|tortellini|gnocchi/],
+    ['tacos', /taco|tostada|tinga/], ['burrito', /burrito|enchilada|quesadilla|fajita|wrap|chimichanga|flauta|tamale/],
+    ['soup', /soup|caldo|pozole|menudo|chili|stew|ramen|pho|chowder|bisque|sopa/], ['salad', /salad|slaw|ensalada/],
+    ['burger', /burger|sliders?/], ['pizza', /pizza|flatbread/], ['sandwich', /sandwich|\bsub\b|panini|torta|grilled cheese|blt|toastie/],
+    ['pancakes', /pancake|waffle|french toast|crepe/], ['breakfast', /egg|omelet|frittata|breakfast|chilaquiles|huevos|hash/],
+    ['cake', /cake|pie|flan|tres leches|pastel|cheesecake|tart|pudding/], ['cookies', /cookie|brownie|\bbars?\b|biscotti|snickerdoodle/],
+    ['cupcake', /muffin|cupcake|pan dulce|concha|bread|donut|scone|roll/],
+    ['steak', /steak|bistec|carne asada|arrachera|beef|ribs?\b|brisket|pork chop/],
+    ['plate', /chicken|pollo|salmon|fish|shrimp|pork|turkey|meatball|tilapia|cod|tofu/]
+  ];
+  function guessArt(r) {
+    if (!r) return 'plate';
+    if (isBaby(r)) return 'baby';
+    var n = String(r.name || '').toLowerCase();
+    for (var i = 0; i < ART_WORDS.length; i++) if (ART_WORDS[i][1].test(n)) return ART_WORDS[i][0];
+    var c = catsOf(r);
+    if (c.indexOf('Breakfast') >= 0) return 'breakfast';
+    if (c.indexOf('Dessert') >= 0) return 'cake';
+    if (c.indexOf('Snack') >= 0) return 'cookies';
+    if (c.indexOf('Side') >= 0) return 'salad';
+    return 'plate';
+  }
+  function artOf(r) { if (!r || r.art === 'none') return ''; return ART[r.art] ? r.art : guessArt(r); }
+  /* a real photo someone added, or '' */
+  function realPhotoOf(id) {
     if (S.rphotos[id]) return S.rphotos[id];
     var r = ALL[id];
     if (r && r.group) { var rid = id.slice(('g~' + r.owner + '~').length); return (groupPhotos[r.owner] || {})[rid] || ''; }
     return '';
   }
+  /* what to show: their photo, otherwise the drawing they picked (or one that matches the recipe) */
+  function photoOf(id) { return realPhotoOf(id) || artUrl(artOf(ALL[id])); }
   var ICON = {
     book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg>',
     edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
@@ -2055,6 +2176,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (r.kind === 'baby' && Array.isArray(r.goodFor)) out.goodFor = GOOD.filter(function (n) { return r.goodFor.indexOf(n) >= 0; });
     if (r.mins > 0) out.mins = r.mins;
     if (METHODS.indexOf(r.method) >= 0) out.method = r.method;
+    if (r.art === 'none' || ART[r.art]) out.art = r.art;
     if (r.cal > 0) out.cal = r.cal;
     if (r.protein > 0) out.protein = r.protein;
     var keep = cleanNut(nutOf(r)); if (keep) out.nut = keep;
@@ -2076,7 +2198,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (!r) return;
     var nid = newId();
     S.recipes[nid] = plain(r); if (r.owner) S.recipes[nid].savedFrom = r.owner; save('recipe:' + nid);
-    var cph = photoOf(id); if (cph) { S.rphotos[nid] = cph; save('rphoto:' + nid); }
+    var cph = realPhotoOf(id); if (cph) { S.rphotos[nid] = cph; save('rphoto:' + nid); }
     toast('Saved to My recipes. Your copy is private and yours to edit.');
   }
 
@@ -3233,13 +3355,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       var r = ALL[id], owner = r.group ? r.owner : (S.recipes[id] && S.recipes[id].shared ? uid : null);
       if (!owner) return;
       var k = owner + '|' + norm(r.name); if (seen[k]) return; seen[k] = true;
-      out.push({ type: 'recipe', id: id, name: r.name, owner: owner, photo: photoOf(id), tags: tagsOf(r), baby: isBaby(r), text: (r.ingredients || []).map(function (g) { return g.name; }).join(' '), sub: [isBaby(r) ? r.stage : catsOf(r).join(' & '), r.mins > 0 ? r.mins + ' min' : ''].filter(Boolean).join(' · ') });
+      out.push({ type: 'recipe', id: id, name: r.name, owner: owner, photo: photoOf(id), real: !!realPhotoOf(id), tags: tagsOf(r), baby: isBaby(r), text: (r.ingredients || []).map(function (g) { return g.name; }).join(' '), sub: [isBaby(r) ? r.stage : catsOf(r).join(' & '), r.mins > 0 ? r.mins + ' min' : ''].filter(Boolean).join(' · ') });
     });
     feedPosts.forEach(function (p) {
       var k = p.owner + '|' + norm(p.title); if (seen[k]) return; seen[k] = true;
-      out.push({ type: 'post', id: p.id, name: p.title, owner: p.owner, credit: p.credit, photo: safeImg(p.photo), tags: p.tags || [], baby: p.kind === 'baby', text: p.description || '', sub: '', at: p.at });
+      out.push({ type: 'post', id: p.id, name: p.title, owner: p.owner, credit: p.credit, photo: safeImg(p.photo), real: !!safeImg(p.photo), tags: p.tags || [], baby: p.kind === 'baby', text: p.description || '', sub: '', at: p.at });
     });
-    return out.sort(function (a, b) { return (b.photo ? 1 : 0) - (a.photo ? 1 : 0) || (b.at || '').localeCompare(a.at || '') || a.name.localeCompare(b.name); });
+    return out.sort(function (a, b) { return (b.real ? 1 : 0) - (a.real ? 1 : 0) || (b.at || '').localeCompare(a.at || '') || a.name.localeCompare(b.name); });
   }
   function commCard(x) {
     var by = x.credit && x.credit !== x.owner ? x.credit : x.owner, label = x.name + ' by ' + (by === uid ? 'you' : atName(by));
@@ -3430,7 +3552,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function fillPostTags() {
     var pid = $('post-recipe').value, r = S.recipes[pid];
     if (r && !postTagsTouched) $('post-tags').value = tagsOf(r).join(', ');
-    if (!postPhotoPicked) { postPhoto = S.rphotos[pid] || null; postPreview(); }
+    if (!postPhotoPicked) { postPhoto = S.rphotos[pid] || (r ? artUrl(artOf(r)) : '') || null; postPreview(); }
     var cr = r && r.savedFrom && r.savedFrom !== uid ? r.savedFrom : null;
     $('post-credit').hidden = !cr;
     if (cr) $('post-credit').textContent = 'You saved this recipe from ' + atName(cr) + ', so your post will say "Recipe by ' + atName(cr) + '" and link to their profile.';
@@ -3481,12 +3603,23 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     $('ed-kind').value = r ? (isBaby(r) ? 'baby' : 'adult') : mode; $('ed-stage').value = r && STAGES.indexOf(r.stage) >= 0 ? r.stage : ''; syncKind();
     $('ed-delete').hidden = !r;
     $('ed-share-wrap').hidden = !canShare; $('ed-share').checked = r ? !!r.shared : true;
-    renderIngs(); renderEdTags(); show('editor');
+    renderIngs(); renderEdTags(); edPhotoPreview(); show('editor');
     if (!r) $('ed-name').focus();
     window.scrollTo(0, 0);
   }
+  function draftArtKey() { return draft.art === 'none' ? '' : ART[draft.art] ? draft.art : guessArt({ name: $('ed-name').value, kind: $('ed-kind').value === 'baby' ? 'baby' : '', categories: draft.cats }); }
+  function renderEdArt() {
+    if (!draft) return;
+    var k = draftArtKey();
+    $('ed-art').innerHTML = ART_KEYS.map(function (a) {
+      return '<button type="button" class="art-pick" data-art="' + a + '" aria-pressed="' + (a === k) + '" aria-label="' + esc(ART[a].label) + '"><img src="' + artUrl(a) + '" alt=""><span>' + esc(ART[a].label) + '</span></button>';
+    }).join('') + '<button type="button" class="art-pick none" data-art="none" aria-pressed="' + (draft.art === 'none') + '"><span class="art-none">Aa</span><span>No drawing</span></button>';
+    $('ed-art-note').textContent = draft.photo ? '(your photo shows first)' : draft.art ? '' : '(we picked one from the name, tap to change)';
+  }
   function edPhotoPreview() {
-    $('ed-photo-preview').innerHTML = draft.photo ? '<img src="' + esc(draft.photo) + '" alt="Photo of this recipe">' : 'No photo';
+    var ak = draftArtKey();
+    $('ed-photo-preview').innerHTML = draft.photo ? '<img src="' + esc(draft.photo) + '" alt="Photo of this recipe">' : ak ? '<img src="' + artUrl(ak) + '" alt="Drawing for this recipe">' : 'No photo';
+    renderEdArt();
     $('ed-photo-label').textContent = draft.photo ? 'Change photo' : 'Add a photo';
     $('ed-photo-remove').hidden = !draft.photo;
   }
@@ -3629,8 +3762,10 @@ var babyEd = $('ed-kind').value === 'baby';
     if (ec && draft) {
       var cv = ec.dataset.edcat, ci = draft.cats.indexOf(cv);
       if (ci >= 0) draft.cats.splice(ci, 1); else if (draft.cats.length < 2) draft.cats.push(cv); else toast('Pick up to 2 categories. Untick one to switch.');
-      renderEdCats(); return;
+      renderEdCats(); edPhotoPreview(); return;
     }
+    var ar = ev.target.closest('[data-art]');
+    if (ar && draft) { var ak = ar.dataset.art; if (draft.art === ak) delete draft.art; else draft.art = ak; edPhotoPreview(); return; }
     var ep = ev.target.closest('[data-edpair]');
     if (ep && draft) {
       var pv = ep.dataset.edpair, pi = draft.sides.indexOf(pv);
@@ -3938,11 +4073,12 @@ var babyEd = $('ed-kind').value === 'baby';
     };
     var withThumb = function () { if (postPhoto) shrinkData(postPhoto, 360, 40000, go); else go(null); };
     /* a recipe photo that already lives in photo storage is fetched back so the post gets its own copy */
-    if (postPhoto && /^https?:/.test(postPhoto)) shrinkData(postPhoto, 1080, 280000, function (d) { postPhoto = d; withThumb(); });
+    if (postPhoto && (/^https?:/.test(postPhoto) || /^data:image\/svg/.test(postPhoto))) shrinkData(postPhoto, 1080, 280000, function (d) { postPhoto = d; withThumb(); });
     else withThumb();
   });
   $('ed-tag-add').addEventListener('click', addOwnTag);
-  $('ed-kind').addEventListener('change', function () { syncKind(); renderEdTags(); });
+  $('ed-kind').addEventListener('change', function () { syncKind(); renderEdTags(); edPhotoPreview(); });
+  $('ed-name').addEventListener('input', function () { if (draft && !draft.art && !draft.photo) edPhotoPreview(); });
   $('ed-good-suggest').addEventListener('click', function () {
     readIngs(); draft.good = suggestGood(draft.ingredients); draft.goodTouched = false; renderEdGood();
     toast(draft.good.length ? 'Suggested from your ingredients. It will keep updating as the ingredients change.' : 'No suggestions yet. Add the ingredients first.');
@@ -4082,6 +4218,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (rec.kind !== 'baby' && !isExtra(rec)) { var sds = (draft.sides || []).filter(function (x) { return x !== id && ALL[x] && isExtra(ALL[x]); }).slice(0, 3); if (sds.length) rec.sides = sds; }
     addOwnTag();
     if (draft.tags.length) rec.tags = draft.tags.slice();
+    if (draft.art === 'none' || ART[draft.art]) rec.art = draft.art;
     /* keep this week's amount sensible if the batch size changed while it was picked the old way */
     if (S.week.meals[id] && S.week.servings[id] == null) setPortions(id, S.week.meals[id] * base(rec));
     var wasShared = !!(S.recipes[id] && S.recipes[id].shared);
