@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261026215710">
+<meta name="fedup-version" content="20261026220259">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1403,7 +1403,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     /* recipe photos live in photo storage; the database keeps only the link */
     uploadPhoto: function (dataUrl, name) {
       var path = uid + '/r/' + String(name).replace(/[^a-zA-Z0-9_-]/g, '') + '.jpg';
-      return sb.storage.from('feed').upload(path, dataUrlToBlob(dataUrl), { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' }).then(function (r) {
+      return sb.storage.from('feed').upload(path, dataUrlToBlob(dataUrl), { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' }).then(function (r) {
         check(r); return sb.storage.from('feed').getPublicUrl(path).data.publicUrl;
       });
     },
