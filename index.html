@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261027133135">
+<meta name="fedup-version" content="20261027135605">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -202,6 +202,11 @@ label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; fon
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 dialog.zoom { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 14px; width: min(420px, calc(100% - 32px)); }
 dialog.zoom::backdrop { background: rgba(0, 0, 0, 0.55); }
+dialog.tip { border: 2px solid var(--accent); background: var(--accent-tint); }
+dialog.tip .tip-badge { align-self: flex-start; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; }
+dialog.tip h2 { font-size: 1.15rem; margin: 0; color: var(--accent); }
+dialog.tip ol { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+dialog.tip .tip-ex { background: var(--surface); border-radius: 10px; padding: 10px; border: 1px dashed var(--accent); }
 dialog.zoom img { width: 100%; border-radius: 8px; display: block; }
 dialog.zoom .stack { gap: 10px; }
 .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 500; font-size: 0.9rem; max-width: calc(100% - 32px); z-index: 10; pointer-events: none; }
@@ -1142,6 +1147,18 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   <button class="add-opt" type="button" data-act="add-post"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="12" r="3.5"/></svg><span>+ POST</span></button>
   <button class="add-opt" type="button" data-act="add-recipe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg><span>+ RECIPE</span></button>
 </div>
+<dialog class="zoom tip" id="step-tip" aria-labelledby="step-tip-h"><div class="stack">
+  <span class="tip-badge">📌 IMPORTANT</span>
+  <h2 id="step-tip-h">How to write your steps</h2>
+  <p class="small" style="margin:0">So your recipe works for everyone, please:</p>
+  <ol class="small">
+    <li><b>Add your ingredients first.</b> Fill in the name, amount and unit for each one.</li>
+    <li><b>Put one step in each box.</b> Tap &ldquo;+ Add step&rdquo; for the next one.</li>
+    <li><b>Tap an ingredient&rsquo;s button instead of typing its name.</b> When a step uses an ingredient, tap that ingredient&rsquo;s button under the steps. Then the amounts change on their own when someone changes the number of servings.</li>
+  </ol>
+  <div class="small tip-ex"><i>Example:</i> &ldquo;Add <b>2 cups</b> rice and <b>4 cups</b> water&rdquo; automatically becomes &ldquo;<b>4 cups</b> rice and <b>8 cups</b> water&rdquo; when someone doubles it.</div>
+  <button class="btn primary" id="step-tip-ok" type="button">Got it!</button>
+</div></dialog>
 <dialog class="zoom side-pick" id="side-pick" aria-label="Add a side"><div class="stack" id="side-pick-body"></div></dialog>
 <dialog class="zoom" id="zoom" aria-label="Ingredient photo"><div class="stack"><div id="zoom-body" class="stack"></div><button class="btn" id="zoom-close" type="button">Close</button></div></dialog>
 <div class="welcome" id="welcome" hidden>
@@ -3650,6 +3667,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     Array.prototype.forEach.call($('ed-steps').querySelectorAll('textarea'), growArea);
     if (!r) $('ed-name').focus();
     window.scrollTo(0, 0);
+    if (!r) { var seenTip = false; try { seenTip = localStorage.getItem('fed-up-step-tip') === '1'; } catch (e) {} if (!seenTip) { try { $('step-tip').showModal(); } catch (e) {} } }
   }
   function draftArtKey() { return draft.art === 'none' ? '' : ART[draft.art] ? draft.art : guessArt({ name: $('ed-name').value, kind: $('ed-kind').value === 'baby' ? 'baby' : '', categories: draft.cats }); }
   function renderEdArt() {
@@ -4101,6 +4119,7 @@ var babyEd = $('ed-kind').value === 'baby';
       btn.disabled = false; btn.textContent = 'Delete my account'; toast("Couldn't delete your account. Check your connection and try again.");
     });
   });
+  $('step-tip-ok').addEventListener('click', function () { try { localStorage.setItem('fed-up-step-tip', '1'); } catch (e) {} $('step-tip').close(); $('ed-name').focus(); });
   $('a2hs-close').addEventListener('click', function () { $('a2hs').hidden = true; try { localStorage.setItem('fed-up-a2hs', 'no'); } catch (e) {} });
   $('user-back').addEventListener('click', function () { show(userBack === 'frecipe' && !fview ? 'feed' : userBack); });
   $('feed-search').addEventListener('input', function () { feedSearch = this.value; renderExplore(); });
