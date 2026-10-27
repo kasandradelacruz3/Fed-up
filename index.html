@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261026215235">
+<meta name="fedup-version" content="20261026215710">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1614,26 +1614,47 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 })();
 </script>
 
-<button class="update-bar" id="update-bar" type="button" hidden>A new version of Fed Up is ready. <strong>Tap to refresh</strong></button>
+<button class="update-bar" id="update-bar" type="button" hidden>A new version of Fed Up is ready. <strong>Tap to update</strong></button>
 <script>
-/* Fed Up: tell people when a newer version of the website is live. It never reloads on its own. */
+/* Fed Up: when a newer version of the website is live, switch to it on its own,
+   but only when nobody is in the middle of typing or saving something. */
 (function () {
   var mine = (document.querySelector('meta[name="fedup-version"]') || {}).content || '';
   if (!mine || !window.fetch || location.protocol === 'file:') return;
-  var bar = document.getElementById('update-bar'), last = 0;
+  var bar = document.getElementById('update-bar'), last = 0, waiting = null, tries = 0;
+  try { if (/[?&]v=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+  function busy() {
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox') return true;
+    var auth = document.getElementById('auth');
+    if (auth && !auth.hidden && Array.prototype.some.call(auth.querySelectorAll('input[type=text], input[type=password]'), function (i) { return i.value; })) return true;
+    try { return !!(window.fedupBusy && window.fedupBusy()); } catch (e) { return false; }
+  }
+  function go() {
+    if (!waiting) return;
+    if (busy()) { bar.hidden = false; return; }
+    var key = 'fedup-upd-' + waiting, n = 0;
+    try { n = +(sessionStorage.getItem(key) || 0); if (n >= 2) { bar.hidden = false; return; } sessionStorage.setItem(key, n + 1); } catch (e) {}
+    try { if (window.fedupRemember) window.fedupRemember(); } catch (e) {}
+    bar.hidden = false; bar.textContent = 'Updating Fed Up…';
+    location.replace(location.pathname + '?v=' + encodeURIComponent(waiting) + location.hash);
+  }
   function check() {
-    if (!bar.hidden || Date.now() - last < 60000) return;
+    if (waiting) return go();
+    if (Date.now() - last < 60000) return;
     last = Date.now();
     fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
       var m = /<meta name="fedup-version" content="([^"]+)"/.exec(html || '');
-      if (m && m[1] !== mine) bar.hidden = false;
+      if (m && m[1] !== mine && m[1] > mine) { waiting = m[1]; go(); }
     }, function () {});
   }
-  bar.addEventListener('click', function () { bar.textContent = 'Refreshing…'; location.reload(); });
+  bar.addEventListener('click', function () { if (!waiting) return location.reload(); try { sessionStorage.removeItem('fedup-upd-' + waiting); } catch (e) {} bar.textContent = 'Updating Fed Up…'; if (window.fedupRemember) try { window.fedupRemember(); } catch (e) {} location.replace(location.pathname + '?v=' + encodeURIComponent(waiting) + location.hash); });
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
   window.addEventListener('focus', check);
-  setInterval(check, 5 * 60000);
-  setTimeout(check, 20000);
+  document.addEventListener('focusout', function () { if (waiting) setTimeout(go, 1500); });
+  setInterval(function () { if (waiting) go(); else check(); }, 2 * 60000);
+  setInterval(function () { if (waiting) go(); }, 15000);
+  setTimeout(check, 15000);
 })();
 </script>
 
@@ -2919,12 +2940,29 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (!priv || !feedApi || !feedApi.uploadPhoto) return;
     Object.keys(S.rphotos).forEach(function (id) { if (/^data:image\/jpe?g;base64,/.test(S.rphotos[id] || '')) save('rphoto:' + id); });
   }
+  /* automatic updates: say when it's not a good moment, and come back to the same screen afterwards */
+  var BUSY_VIEWS = ['editor', 'post', 'editprofile', 'ingedit', 'feedback', 'cook'];
+  window.fedupBusy = function () {
+    if (BUSY_VIEWS.indexOf(tab) >= 0) return true;
+    if (Object.keys(writers).some(function (k) { return busy(k); })) return true;
+    var sp = document.getElementById('side-pick'); if (sp && sp.open) return true;
+    return false;
+  };
+  window.fedupRemember = function () { try { sessionStorage.setItem('fedup-return', JSON.stringify({ tab: tab, y: window.scrollY || 0, at: Date.now() })); } catch (e) {} };
+  function restoreView() {
+    var r = null; try { r = JSON.parse(sessionStorage.getItem('fedup-return') || 'null'); sessionStorage.removeItem('fedup-return'); } catch (e) {}
+    if (!r || Date.now() - r.at > 120000) return;
+    var ok = ['feed', 'explore', 'list', 'profile', 'meals', 'mine', 'ings', 'settings', 'more', 'prep', 'freezer', 'tracker', 'pantry', 'guide', 'terms'];
+    if (ok.indexOf(r.tab) < 0) return;
+    setTimeout(function () { if (r.tab === 'tracker') goView('tracker'); else show(r.tab); window.scrollTo(0, r.y || 0); }, 300);
+  }
   function initFeed(api) {
     feedApi = api;
     if (ready) movePhotos(); else { var waitMove = setInterval(function () { if (ready) { clearInterval(waitMove); movePhotos(); } }, 500); setTimeout(function () { clearInterval(waitMove); }, 60000); }
     $('tab-feed').hidden = false; $('tab-explore').hidden = false; $('new-post').hidden = false; $('tab-meals').hidden = true; syncNav();
     document.body.classList.add('has-feed');
     if (tab === 'meals') { show('feed'); window.scrollTo(0, 0); }
+    restoreView();
     loadFollows(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
     api.isAdmin().then(function (a) { if (a) { loadReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
     if (api.deleteAccount) $('del-wrap').hidden = false;
