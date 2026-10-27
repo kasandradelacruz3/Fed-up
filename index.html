@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261027122842">
+<meta name="fedup-version" content="20261027123510">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -363,6 +363,20 @@ dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto;
 .serv-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 14px; background: var(--soft); }
 .serv-row > span:first-child { display: flex; flex-direction: column; }
 b.scaled { color: var(--accent); font-weight: 700; }
+.steps-list, .step-edit { list-style: none; margin: 0; padding: 0; }
+.steps-list { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+.step-item { display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 12px 14px; border: 0; border-radius: 14px; background: var(--soft); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.step-n { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 0.85rem; }
+.step-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.step-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.step-t { white-space: pre-line; line-height: 1.45; }
+.steps-list li.done .step-item { opacity: 0.55; }
+.steps-list li.done .step-t { text-decoration: line-through; }
+.steps-list li.done .step-n { background: var(--muted); }
+.step-edit { display: flex; flex-direction: column; gap: 8px; }
+.step-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 36px; gap: 8px; align-items: start; }
+.step-row .step-n { margin-top: 10px; }
+.step-row textarea { min-height: 64px; resize: none; overflow: hidden; }
 .steal-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 7px 16px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
 .steal-btn:active { background: var(--accent-soft); }
 .steal-btn span { font-size: 1rem; line-height: 1; }
@@ -736,9 +750,12 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         <div class="small muted">People who have prices on their own ingredients see the cost worked out from their prices instead.</div>
         <div class="chips" id="ed-price-tags"></div>
       </div>
-      <label class="f" for="ed-notes">Steps and notes (optional)
-        <textarea id="ed-notes" placeholder="How you make it, brands you like, oven temp, how long to microwave…"></textarea>
-      </label>
+      <div class="stack" id="ed-steps-wrap" style="gap:8px">
+        <div class="small" style="font-weight:600">Steps <span class="muted" style="font-weight:400">(optional, one step per box)</span></div>
+        <ol class="plain step-edit" id="ed-steps"></ol>
+        <div><button class="btn small" id="ed-step-add" type="button">+ Add step</button></div>
+        <textarea id="ed-notes" hidden></textarea>
+      </div>
       <label class="check" for="ed-share" id="ed-share-wrap" hidden>
         <input type="checkbox" id="ed-share">
         <span><strong>Share with everyone on Fed Up</strong><span class="small muted">Everyone signed in to Fed Up can see and use this recipe, but only you can change it. Untick it any time to make it private again.</span></span>
@@ -2536,6 +2553,41 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('list-body').innerHTML = html;
   }
 
+  /* steps are kept as text, one step per paragraph; older recipes are split up sensibly */
+  function splitSteps(text) {
+    var t = String(text || '').replace(/\r/g, '').trim();
+    if (!t) return [];
+    var parts;
+    var numbered = t.split('\n').filter(function (l) { return /^\s*(step\s*)?\d+\s*[.):\-]\s*\S/i.test(l); }).length >= 2;
+    if (/\n\s*\n/.test(t)) parts = t.split(/\n\s*\n+/);
+    else if (numbered) { parts = []; t.split('\n').forEach(function (l) { if (/^\s*(step\s*)?\d+\s*[.):\-]\s*\S/i.test(l) || !parts.length) parts.push(l); else parts[parts.length - 1] += '\n' + l; }); }
+    else parts = t.split('\n');
+    return parts.map(function (p) { return p.replace(/^\s*(step\s*)?\d+\s*[.):\-]\s*/i, '').trim(); }).filter(Boolean);
+  }
+  function joinSteps(arr) { return arr.map(function (x) { return String(x || '').replace(/\r/g, '').replace(/\n\s*\n+/g, '\n').trim(); }).filter(Boolean).join('\n\n'); }
+  function stepsHtml(r, factor) {
+    var steps = splitSteps(r.notes);
+    if (!steps.length) return '';
+    return '<ol class="plain steps-list">' + steps.map(function (st, i) {
+      return '<li><button type="button" class="step-item" data-act="step-tick" aria-pressed="false"><span class="step-n" aria-hidden="true">' + (i + 1) + '</span><span class="step-body"><span class="step-label">Step ' + (i + 1) + '</span><span class="step-t">' + (factor && factor !== 1 ? scaleSteps(st, factor, r) : esc(st)) + '</span></span></button></li>';
+    }).join('') + '</ol>';
+  }
+  var STEP_HINTS = ['Heat oil in a big pot and brown the meat', 'Add the tomatoes, onion and peppers', 'Pour in the sauce and let it simmer', 'Serve with rice or tortillas'];
+  function renderEdSteps(focusLast) {
+    var steps = splitSteps($('ed-notes').value);
+    if (!steps.length) steps = [''];
+    $('ed-steps').innerHTML = steps.map(function (st, i) {
+      return '<li class="step-row"><span class="step-n" aria-hidden="true">' + (i + 1) + '</span><label class="vh" for="ed-step-' + i + '">Step ' + (i + 1) + '</label><textarea id="ed-step-' + i + '" data-step="' + i + '" rows="2" placeholder="Step ' + (i + 1) + ': ' + esc(STEP_HINTS[i] || 'What to do next') + '">' + esc(st) + '</textarea><button class="x" type="button" data-rmstep="' + i + '" aria-label="Remove step ' + (i + 1) + '">×</button></li>';
+    }).join('');
+    Array.prototype.forEach.call($('ed-steps').querySelectorAll('textarea'), growArea);
+    if (focusLast) { var all = $('ed-steps').querySelectorAll('textarea'); if (all.length) all[all.length - 1].focus(); }
+  }
+  function growArea(el) { el.style.height = 'auto'; el.style.height = Math.max(64, el.scrollHeight + 2) + 'px'; }
+  function syncSteps(keepBlank) {
+    var vals = Array.prototype.map.call($('ed-steps').querySelectorAll('textarea'), function (t) { return t.value; });
+    $('ed-notes').value = vals.map(function (v) { return v.replace(/\n\s*\n+/g, '\n').trim() || (keepBlank ? ' ' : ''); }).filter(Boolean).join('\n\n');
+    return vals;
+  }
   var cookServ = null;
   var STEP_UNITS = /^(cups?|c|tbsps?|tablespoons?|tbs|tsps?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|kilos?|ml|l|liters?|litres?|cans?|jars?|cloves?|pinch(es)?|dash(es)?|slices?|pieces?|sticks?|packages?|pkgs?|bunch(es)?|handfuls?|heads?|stalks?|sprigs?|quarts?|pints?|gallons?|scoops?|eggs?|fl)$/;
   var STEP_SKIP = /^(minutes?|mins?|hours?|hrs?|seconds?|secs?|degrees?|°|f|inch(es)?|in|x|times?|days?|weeks?|months?|years?|step|steps|am|pm)$/;
@@ -2576,7 +2628,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       costBlock(r, factor) +
       nutBlock(r) +
       '<div class="aisle"><h3>Ingredients</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients yet.</li>') + '</ul></div>' +
-      '<div class="aisle"><h3>Steps and notes</h3>' + (r.notes && factor !== 1 && /\d|[½⅓⅔¼¾⅛⅜⅝⅞]/.test(r.notes) ? '<p class="small muted">Amounts in <b class="scaled">pink</b> are changed for ' + servingsLabel(r, shown) + '.</p>' : '') + '<p class="steps">' + (r.notes ? scaleSteps(r.notes, factor, r) : '<span class="muted">No steps written yet. Tap Edit to add them.</span>') + '</p></div>';
+      '<div class="aisle"><h3>Steps</h3>' + (r.notes && factor !== 1 && /\d|[½⅓⅔¼¾⅛⅜⅝⅞]/.test(r.notes) ? '<p class="small muted">Amounts in <b class="scaled">pink</b> are changed for ' + servingsLabel(r, shown) + '.</p>' : '') + (r.notes ? stepsHtml(r, factor) : '<p class="steps"><span class="muted">No steps written yet. Tap Edit to add them.</span></p>') + '</div>';
   }
   function openCook(id) {
     if (tab === 'mine' || tab === 'meals' || tab === 'pantry' || tab === 'profile' || tab === 'explore') backTo = tab;
@@ -2914,7 +2966,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         return '<li class="cook-ing"><button class="pick" type="button" data-act="cook-tick" aria-pressed="false"><span class="box" aria-hidden="true"></span><span class="txt">' + esc(g.name) + '</span><span class="q">' + esc(amt) + '</span></button></li>';
       }).join('');
       return '<div class="prep-card"><div class="stack" style="gap:2px"><h3>' + esc(r.name) + '</h3><span class="small muted">' + esc([servingsLabel(r, n)].concat(facts(r).slice(0, 2)).join(' · ')) + '</span></div>' +
-        '<ul class="plain">' + (ings || '<li class="muted">No ingredients yet.</li>') + '</ul>' + (r.notes ? '<p class="steps">' + esc(r.notes) + '</p>' : '') +
+        '<ul class="plain">' + (ings || '<li class="muted">No ingredients yet.</li>') + '</ul>' + (r.notes ? stepsHtml(r, factor) : '') +
         '<div><button class="btn small" type="button" data-act="freeze" data-id="' + esc(id) + '">Put some in the freezer</button></div></div>';
     }).join('');
     $('prep-body').innerHTML = html;
@@ -3468,7 +3520,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       }).join('');
       html += safetyBlock(r, fview.post.owner !== uid) + '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
-        '<div class="aisle"><h3>Steps and notes</h3><p class="steps">' + (r.notes ? esc(r.notes) : '<span class="muted">No steps written.</span>') + '</p></div>';
+        '<div class="aisle"><h3>Steps</h3>' + (r.notes ? stepsHtml(r, 1) : '<p class="steps"><span class="muted">No steps written.</span></p>') + '</div>';
     }
     $('fr-body').innerHTML = html;
   }
@@ -3552,7 +3604,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     draft.photo = r ? (S.rphotos[id] || null) : null; draft.photoChanged = false; $('ed-photo-file').value = ''; edPhotoPreview();
     if (!draft.ingredients || !draft.ingredients.length) draft.ingredients = [blankIng(), blankIng(), blankIng()];
     $('editor-title').textContent = r ? 'Edit recipe' : 'New recipe';
-    $('ed-name').value = draft.name || ''; $('ed-notes').value = draft.notes || '';
+    $('ed-name').value = draft.name || ''; $('ed-notes').value = draft.notes || ''; renderEdSteps();
     $('ed-servings').value = draft.servings > 0 ? draft.servings : '';
     $('ed-mins').value = draft.mins > 0 ? draft.mins : ''; $('ed-method').value = METHODS.indexOf(draft.method) >= 0 ? draft.method : '';
     $('ed-cal').value = draft.cal > 0 ? draft.cal : ''; $('ed-protein').value = draft.protein > 0 ? draft.protein : '';
@@ -3562,6 +3614,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('ed-delete').hidden = !r;
     $('ed-share-wrap').hidden = !canShare; $('ed-share').checked = r ? !!r.shared : true;
     renderIngs(); renderEdTags(); edPhotoPreview(); show('editor');
+    Array.prototype.forEach.call($('ed-steps').querySelectorAll('textarea'), growArea);
     if (!r) $('ed-name').focus();
     window.scrollTo(0, 0);
   }
@@ -3861,6 +3914,7 @@ var babyEd = $('ed-kind').value === 'baby';
       save('freezer'); render(); return;
     }
     if (act === 'tk-del') { S.tracker.foods = S.tracker.foods.filter(function (f) { return f.id !== id; }); save('tracker'); render(); return; }
+    if (act === 'step-tick') { var on2 = b.parentNode.classList.toggle('done'); b.setAttribute('aria-pressed', on2 ? 'true' : 'false'); return; }
     if (act === 'cook-tick') { var li = b.parentNode, on = li.classList.toggle('done'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('.box').textContent = on ? '✓' : ''; return; }
     if (act === 'copy') { copyRecipe(id); render(); return; }
     if (act === 'toggle') {
@@ -3957,8 +4011,8 @@ var babyEd = $('ed-kind').value === 'baby';
     draft.ingredients = draft.ingredients.filter(function (g) { return g.name; }).concat(got.ingredients);
     if (!draft.ingredients.length) draft.ingredients = [blankIng()];
     if (got.name && !$('ed-name').value.trim()) $('ed-name').value = got.name;
-    if (got.notes.length) $('ed-notes').value = ($('ed-notes').value.trim() ? $('ed-notes').value.trim() + '\n' : '') + got.notes.join('\n');
-    renderIngs(); $('ed-paste').value = ''; $('ed-paste-box').hidden = true;
+    if (got.notes.length) $('ed-notes').value = joinSteps(splitSteps($('ed-notes').value).concat(got.notes));
+    renderIngs(); renderEdSteps(); $('ed-paste').value = ''; $('ed-paste-box').hidden = true;
     toast('Filled in ' + got.ingredients.length + (got.ingredients.length === 1 ? ' ingredient' : ' ingredients') + '. Check the amounts and aisles.');
   });
   $('post-cancel').addEventListener('click', function () { show(postFrom); });
@@ -4041,6 +4095,19 @@ var babyEd = $('ed-kind').value === 'baby';
     else withThumb();
   });
   $('ed-tag-add').addEventListener('click', addOwnTag);
+  $('ed-steps').addEventListener('input', function (ev) { if (ev.target.dataset.step != null) { growArea(ev.target); syncSteps(true); } });
+  $('ed-steps').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-rmstep]'); if (!b) return;
+    var vals = syncSteps(true); vals.splice(+b.dataset.rmstep, 1);
+    $('ed-notes').value = joinSteps(vals); renderEdSteps();
+  });
+  $('ed-step-add').addEventListener('click', function () {
+    var vals = syncSteps(true);
+    if (vals.length && !vals[vals.length - 1].trim()) { var all = $('ed-steps').querySelectorAll('textarea'); all[all.length - 1].focus(); return; }
+    vals.push('');
+    $('ed-steps').insertAdjacentHTML('beforeend', '<li class="step-row"><span class="step-n" aria-hidden="true">' + vals.length + '</span><label class="vh" for="ed-step-' + (vals.length - 1) + '">Step ' + vals.length + '</label><textarea id="ed-step-' + (vals.length - 1) + '" data-step="' + (vals.length - 1) + '" rows="2" placeholder="Step ' + vals.length + ': ' + esc(STEP_HINTS[vals.length - 1] || 'What to do next') + '"></textarea><button class="x" type="button" data-rmstep="' + (vals.length - 1) + '" aria-label="Remove step ' + vals.length + '">×</button></li>');
+    var all2 = $('ed-steps').querySelectorAll('textarea'); all2[all2.length - 1].focus();
+  });
   $('ed-kind').addEventListener('change', function () { syncKind(); renderEdTags(); edPhotoPreview(); });
   $('ed-name').addEventListener('input', function () { if (draft && !draft.art && !draft.photo) edPhotoPreview(); });
   $('ed-good-suggest').addEventListener('click', function () {
@@ -4167,6 +4234,7 @@ var babyEd = $('ed-kind').value === 'baby';
     readIngs();
     var id = draft.id || newId(), sv = Math.round(parseFloat($('ed-servings').value));
     var idx = libIndex();
+    syncSteps();
     var rec = { name: name, notes: $('ed-notes').value.trim(), ingredients: draft.ingredients.filter(function (g) { return g.name; }).map(function (g) {
       var lid = idx[norm(g.name)];
       if (!lid) { lid = addToLibrary(g.name, g.aisle); idx[norm(g.name)] = lid; }
