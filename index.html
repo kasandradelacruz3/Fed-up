@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261026213238">
+<meta name="fedup-version" content="20261026215235">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1363,6 +1363,14 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     id: function () { return Promise.resolve(uid); },
     can: function () { return Promise.resolve(true); },
     isOwner: function () { return Promise.resolve(false); },
+    /* find anyone by username or name, not just people who have posted */
+    searchPeople: function (q) {
+      q = String(q || '').toLowerCase().replace(/^@/, '').replace(/[^a-z0-9._ \-áéíóúñü]/g, '').trim().slice(0, 30);
+      if (q.length < 2) return Promise.resolve([]);
+      return sb.from('profiles').select('id,display_name,username,bio,avatar_url').or('username.ilike.%' + q + '%,display_name.ilike.%' + q + '%').limit(20).then(function (r) {
+        check(r); return r.data || [];
+      });
+    },
     profiles: function (ids) {
       ids = typeof ids === 'string' ? [ids] : ids.slice();
       var now = Date.now(), need = ids.filter(function (i) { return !namesAt[i] || now - namesAt[i] > 300000; });
@@ -3213,6 +3221,21 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (!list.length) return '<p class="muted">No recipes match that.</p>';
     return '<ul class="grid3">' + list.map(commCard).join('') + '</ul>';
   }
+  var peopleHits = {}, peopleTimer = null;
+  function askPeople(qh) {
+    clearTimeout(peopleTimer);
+    peopleTimer = setTimeout(function () {
+      if (peopleHits[qh]) return;
+      user.searchPeople(qh).then(function (rows) {
+        peopleHits[qh] = rows.map(function (p) {
+          if (p.display_name) names[p.id] = p.display_name; if (p.username) unames[p.id] = p.username;
+          if (typeof p.bio === 'string') bios[p.id] = p.bio; if (p.avatar_url) avatars[p.id] = p.avatar_url;
+          return p.id;
+        });
+        if (tab === 'explore' && norm(feedSearch).replace(/^@/, '') === qh) renderExplore();
+      }, function () { peopleHits[qh] = []; });
+    }, 250);
+  }
   function renderExplore() {
     if (!feedApi) return;
     Array.prototype.forEach.call($('comm-seg').children, function (c) { c.setAttribute('aria-pressed', c.dataset.cmode === commMode ? 'true' : 'false'); });
@@ -3226,10 +3249,14 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     });
     var people = [];
     var qh = q.replace(/^@/, '');
-    if (q && q.charAt(0) !== '#') feedPosts.forEach(function (p) { if (p.owner !== uid && people.indexOf(p.owner) < 0 && (norm(who(p.owner)).indexOf(qh) >= 0 || (unames[p.owner] || '').indexOf(qh) >= 0)) people.push(p.owner); });
+    if (q && q.charAt(0) !== '#') {
+      (peopleHits[qh] || []).forEach(function (o) { if (o !== uid && people.indexOf(o) < 0) people.push(o); });
+      feedPosts.forEach(function (p) { if (p.owner !== uid && people.indexOf(p.owner) < 0 && (norm(who(p.owner)).indexOf(qh) >= 0 || (unames[p.owner] || '').indexOf(qh) >= 0)) people.push(p.owner); });
+      if (qh.length >= 2 && !peopleHits[qh] && user && user.searchPeople) askPeople(qh);
+    }
     var html = people.length ? '<ul class="plain people">' + people.map(function (o) {
       var n = feedPosts.filter(function (p) { return p.owner === o; }).length;
-      return '<li><button class="who-btn" type="button" data-act="user" data-id="' + esc(o) + '">' + avatarHtml(o) + '<span class="post-who"><strong>' + esc(handle(o)) + '</strong><span class="small muted">' + esc(who(o)) + ' · ' + n + (n === 1 ? ' post' : ' posts') + '</span></span></button>' +
+      return '<li><button class="who-btn" type="button" data-act="user" data-id="' + esc(o) + '">' + avatarHtml(o) + '<span class="post-who"><strong>' + esc(handle(o)) + '</strong><span class="small muted">' + esc(who(o) + (n ? ' · ' + n + (n === 1 ? ' post' : ' posts') : '')) + '</span></span></button>' +
         (iFollow(o) ? '<button class="btn small" type="button" data-act="unfollow" data-id="' + esc(o) + '">Following</button>' : '<button class="btn primary small" type="button" data-act="follow" data-id="' + esc(o) + '">Follow</button>') + '</li>';
     }).join('') + '</ul>' : '';
     if (commMode === 'recipes') { $('explore-body').innerHTML = html + renderCommRecipes(q); return; }
