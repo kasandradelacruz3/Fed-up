@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261026201720">
+<meta name="fedup-version" content="20261026213238">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1555,7 +1555,15 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     var email = $('auth-email').value.trim(), pass = $('auth-pass').value, here = location.origin + location.pathname;
     var btn = $('auth-submit'); btn.disabled = true; msg('');
     var done = function () { btn.disabled = false; };
-    var fail = function (e) { done(); msg((e && e.message) || 'Something went wrong. Try again.'); };
+    var fail = function (e) {
+      done();
+      var m = (e && e.message) || '';
+      if (/rate limit|too many|429/i.test(m)) m = 'Lots of people are signing up right now. Please wait a few minutes and try again.';
+      else if (/email not confirmed/i.test(m)) m = 'Your account is almost ready. Check your email for the confirmation link (and your spam folder), then sign in.';
+      else if (/invalid login credentials/i.test(m)) m = 'That email and password don\'t match. Check them and try again, or tap Forgot your password.';
+      else if (/already registered/i.test(m)) m = 'There\'s already an account with that email. Tap Sign in instead.';
+      msg(m || 'Something went wrong. Try again.');
+    };
     if (mode === 'newpass') {
       if (pass.length < 8) return fail({ message: 'Use at least 8 characters.' });
       return sb.auth.updateUser({ password: pass }).then(function (r) { if (r.error) return fail(r.error); done(); $('auth-pass').value = ''; $('auth').hidden = true; setMode('in'); }, fail);
