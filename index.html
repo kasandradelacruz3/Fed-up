@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261027124718">
+<meta name="fedup-version" content="20261027133135">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -717,7 +717,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           <select id="ed-method"><option value="">Not set</option><option>Oven</option><option>Stovetop</option><option>Slow cooker</option><option>Pressure cooker</option><option>Air fryer</option><option>Steamer</option><option>No cook</option></select>
         </label>
       </div>
-      <div class="two">
+      <div class="two" hidden>
         <label class="f" for="ed-cal">Calories per serving
           <input type="text" id="ed-cal" inputmode="numeric" placeholder="Blank = calculated">
         </label>
@@ -813,7 +813,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <label class="f" for="ie-aisle">Store aisle
         <select id="ie-aisle"></select>
       </label>
-      <div class="stack" style="gap:8px">
+      <div class="stack" style="gap:8px" hidden>
         <div class="small" style="font-weight:600">Nutrition per serving <span class="muted" style="font-weight:400">(optional)</span></div>
         <p class="small muted">Copy these from the nutrition label. Recipes that use this ingredient work out their own totals from them.</p>
         <div class="two">
@@ -2072,9 +2072,10 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function facts(r) {
     var n = nutOf(r), cal = r.cal > 0 ? r.cal : n ? n.cal : 0, pro = r.protein > 0 ? r.protein : n ? Math.round(n.protein) : 0;
     var cst = calcCost(r);
-    return [cst && cst.counted === cst.rows ? 'about ' + money(cst.total) : '', r.mins > 0 ? r.mins + ' min' : '', r.method || '', cal > 0 ? cal + ' cal' : '', pro > 0 ? pro + 'g protein' : ''].filter(Boolean);
+    return [cst && cst.counted === cst.rows ? 'about ' + money(cst.total) : '', r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean);
   }
   function nutBlock(r) {
+    return ''; /* nutrition is turned off: Fed Up focuses on prices */
     var n = nutOf(r);
     if (!n && !(r.cal > 0) && !(r.protein > 0)) return '';
     var cal = r.cal > 0 ? r.cal : n ? n.cal : 0, pro = r.protein > 0 ? r.protein : n ? n.protein : 0;
@@ -3745,7 +3746,7 @@ var babyEd = $('ed-kind').value === 'baby';
       (ids.length ? '<ul class="plain lib">' + ids.map(function (id) {
         var g = S.ings[id];
         return '<li><button class="pick" type="button" data-act="edit-ing" data-id="' + esc(id) + '">' +
-          '<span class="txt"><span class="mname">' + esc(g.name) + (S.settings.staples[skey(g.name)] || S.settings.staples[norm(g.name)] ? '<span class="tag">Staple</span>' : '') + '</span><span class="small muted">' + esc([g.size, g.aisle, hasNut(g) ? (g.cal > 0 ? g.cal + ' cal' : 'nutrition added') + (g.nServing ? ' per ' + g.nServing : ' per serving') : ''].filter(Boolean).join(' · ')) + '</span></span>' +
+          '<span class="txt"><span class="mname">' + esc(g.name) + (S.settings.staples[skey(g.name)] || S.settings.staples[norm(g.name)] ? '<span class="tag">Staple</span>' : '') + '</span><span class="small muted">' + esc([g.size, g.aisle, ''].filter(Boolean).join(' · ')) + '</span></span>' +
           (g.price > 0 ? '<span class="cost">' + money(g.price) + '</span>' : '') + '</button></li>';
       }).join('') + '</ul>' : '<p class="muted">No ingredients match that search.</p>') + '</div>';
   }
