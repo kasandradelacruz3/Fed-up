@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261027124134">
+<meta name="fedup-version" content="20261027124718">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -579,8 +579,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         <button class="chip" type="button" data-cat="week" aria-pressed="false">This week</button>
         <button class="chip" type="button" data-cat="group" id="chip-group" aria-pressed="false" hidden>From the community</button>
         <button class="chip for-adult" type="button" data-cat="Breakfast" aria-pressed="false">Breakfast</button>
-        <button class="chip for-adult" type="button" data-cat="Lunch" aria-pressed="false">Lunch</button>
-        <button class="chip for-adult" type="button" data-cat="Dinner" aria-pressed="false">Dinner</button>
+        <button class="chip for-adult" type="button" data-cat="Main dish" aria-pressed="false">Main dish</button>
         <button class="chip for-adult" type="button" data-cat="Side" aria-pressed="false">Side</button>
         <button class="chip for-adult" type="button" data-cat="Snack" aria-pressed="false">Snack</button>
         <button class="chip for-adult" type="button" data-cat="Dessert" aria-pressed="false">Dessert</button>
@@ -1702,9 +1701,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   try { if (localStorage.getItem('fed-up-mode') === 'baby') mode = 'baby'; } catch (e) {}
   var STAGES = ['4-6 months', '6-8 months', '8-10 months', '10-12 months', '12+ months'];
   var BABY_TAGS = ['first foods', 'single ingredient', 'purée', 'mashed', 'finger food', 'baby-led weaning', 'iron rich', 'veggie', 'fruit', 'protein', 'allergen intro', 'no added sugar', 'no added salt', 'freezer friendly', 'dairy free', 'gluten free'];
-  var CATS = ['Breakfast', 'Lunch', 'Dinner', 'Side', 'Snack', 'Dessert'];
+  var CATS = ['Breakfast', 'Main dish', 'Side', 'Snack', 'Dessert'];
+  var OLD_CATS = { Lunch: 'Main dish', Dinner: 'Main dish', Main: 'Main dish' };
   function catsOf(r) {
-    var c = Array.isArray(r.categories) ? r.categories : (r.category ? [r.category] : []);
+    var c = (Array.isArray(r.categories) ? r.categories : (r.category ? [r.category] : [])).map(function (x) { return OLD_CATS[x] || x; });
     return CATS.filter(function (x) { return c.indexOf(x) >= 0; }).slice(0, 2);
   }
   function renderEdCats() {
