@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261027193144">
+<meta name="fedup-version" content="20261028113009">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -202,6 +202,19 @@ label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; fon
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 dialog.zoom { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 14px; width: min(420px, calc(100% - 32px)); }
 dialog.zoom::backdrop { background: rgba(0, 0, 0, 0.55); }
+.kit-seg { display: grid; grid-template-columns: 1fr 1fr; }
+.kit-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.kit-add .f { min-width: 0; }
+.kit-add input[type=date] { min-width: 0; width: 100%; }
+.kit-add .kit-name { grid-column: 1 / -1; }
+.kit-list .item { align-items: center; }
+.kit-date input { width: 132px; height: 36px; padding: 4px 8px; font-size: 0.82rem; border-radius: 10px; }
+.tag.warn { background: #FDE2E2; color: #B42318; }
+.have-pill { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 6px 12px; font-size: 0.88rem; font-weight: 600; margin: 0; align-self: flex-start; }
+.have-pill b { font-weight: 800; }
+.have-at { display: block; font-size: 0.75rem; color: var(--accent); font-weight: 600; }
+.tile-have { position: absolute; left: 6px; bottom: 6px; background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.kit-alert { background: var(--accent-tint); border: 1px solid var(--accent); border-radius: 14px; padding: 12px; }
 .join-hero { text-align: center; display: grid; gap: 8px; padding: 8px 0 4px; }
 .join-hero h2 { color: var(--accent); font-size: 1.5rem; margin: 0; }
 .join-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -609,18 +622,30 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   </section>
 
   <section class="view" id="view-pantry" hidden>
-    <div><button class="btn quiet" type="button" data-act="go-meals">← Back to meals</button></div>
-    <h2>What can I make?</h2>
-    <p class="small muted">Tap what you have at home and your recipes are ranked by how much of each you already have. Anything marked as a staple counts automatically.</p>
-    <form class="addform" id="pantry-form" autocomplete="off">
-      <input type="text" id="pantry-input" placeholder="Search or add: chicken, rice, eggs…" aria-label="Search or add an ingredient you have">
-      <button class="btn" type="submit">Add</button>
+    <div><button class="btn quiet" type="button" data-act="go" data-view="profile">← Profile</button></div>
+    <h2>My kitchen</h2>
+    <p class="small muted">Add what you have at home. Every recipe then shows how many of its ingredients you already have, and you'll see what to use before it expires.</p>
+    <div class="seg kit-seg" id="kit-seg" role="group" aria-label="Pantry or fridge">
+      <button type="button" data-kplace="pantry" aria-pressed="true">Pantry</button>
+      <button type="button" data-kplace="fridge" aria-pressed="false">Fridge</button>
+    </div>
+    <div id="kit-alert"></div>
+    <form class="kit-add" id="pantry-form" autocomplete="off">
+      <label class="f kit-name" for="pantry-input"><span id="kit-add-label">Add to your pantry</span>
+        <input type="text" id="pantry-input" name="search_kitchen" autocomplete="off" placeholder="Rice, black beans, tortillas…">
+      </label>
+      <label class="f" for="kit-exp">Expires <span class="muted" style="font-weight:400">(optional)</span>
+        <input type="date" id="kit-exp">
+      </label>
+      <button class="btn primary" type="submit">Add</button>
     </form>
     <div class="chips" id="pantry-chips"></div>
     <div class="row between">
       <span class="small muted" id="pantry-count"></span>
       <button class="btn quiet small" id="pantry-clear" type="button">Clear all</button>
     </div>
+    <ul class="plain kit-list" id="kit-list"></ul>
+    <h3 class="sec-h" style="margin-top:8px">What can I make?</h3>
     <div id="pantry-body" class="stack"></div>
   </section>
 
@@ -1094,7 +1119,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <li><span class="jl-ico" aria-hidden="true">📖</span><span><strong>Save your recipes</strong>Keep your own recipes in one place and steal recipes you love from the community.</span></li>
       <li><span class="jl-ico" aria-hidden="true">🍽️</span><span><strong>Cook for any crowd</strong>Change the servings and the ingredients, steps and cost all update for you.</span></li>
       <li><span class="jl-ico" aria-hidden="true">🍼</span><span><strong>Baby food too</strong>Plan baby meals alongside the family's and keep track of the foods your baby has tried.</span></li>
-      <li><span class="jl-ico" aria-hidden="true">🧊</span><span><strong>Freezer and pantry</strong>Keep track of what's in your freezer and pantry so nothing goes to waste.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">🧊</span><span><strong>Pantry, fridge and freezer</strong>Add what you have with expiration dates. Every recipe shows how many ingredients you already have, like 5/12.</span></li>
       <li><span class="jl-ico" aria-hidden="true">💕</span><span><strong>Share and follow</strong>Post the meals you make, follow people for ideas, and like and save their recipes.</span></li>
     </ul>
     <div class="join-btns">
@@ -1773,6 +1798,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   var AISLES = ['Produce', 'Meat & seafood', 'Dairy & eggs', 'Bakery', 'Pantry', 'Frozen', 'Drinks', 'Household', 'Other'];
   var EXTRA_AISLE = 'Added by you';
   var S = { recipes: {}, week: { meals: {}, servings: {}, with: {} }, list: { checked: {}, extras: [], out: {} }, settings: { staples: {}, favorites: [], prices: {}, budget: 0, baby: null, onHand: [], lastWeek: {} }, ings: {}, photos: {}, rphotos: {}, freezer: { items: [] }, tracker: { foods: [] } };
+  S.kitchen = { items: [] };
   var ready = false, db = null, tab = 'meals', draft = null, confirmKey = null, confirmTimer = null;
   var search = '', cat = '', priceMode = false, cookId = null, wake = null, ingSearch = '', draftIng = null, suggTimer = null;
   var tagFilter = '', mode = 'adult', backTo = 'meals', mineSearch = '', mineKind = '';
@@ -2416,6 +2442,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (key === 'settings') return pdoc('settings').set(clone(S.settings));
     if (key === 'freezer') return pdoc('freezer').set(clone(S.freezer));
     if (key === 'tracker') return pdoc('tracker').set(clone(S.tracker));
+    if (key === 'kitchen') return pdoc('kitchen').set(clone(S.kitchen));
     if (key === 'shared') {
       var mine = {};
       Object.keys(S.recipes).forEach(function (rid) { if (S.recipes[rid].shared) mine[rid] = plain(S.recipes[rid]); });
@@ -2496,7 +2523,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var dow = new Date().getDay();
     if (!picked.length && Object.keys(ALL).length && prepToday()) ban += '<p class="note">' + esc(prepLine()) + '</p>';
     if (S.settings.planDay === null && Object.keys(ALL).length) ban += '<div class="note stack" style="gap:8px"><strong>What day do you usually plan your meals and shop?</strong><span class="small">We\'ll remind you that it\'s prep time on that day.</span><div class="chips"><button class="chip on-note" type="button" data-planday="0" aria-pressed="false">Sun</button><button class="chip on-note" type="button" data-planday="1" aria-pressed="false">Mon</button><button class="chip on-note" type="button" data-planday="2" aria-pressed="false">Tue</button><button class="chip on-note" type="button" data-planday="3" aria-pressed="false">Wed</button><button class="chip on-note" type="button" data-planday="4" aria-pressed="false">Thu</button><button class="chip on-note" type="button" data-planday="5" aria-pressed="false">Fri</button><button class="chip on-note" type="button" data-planday="6" aria-pressed="false">Sat</button><button class="chip on-note" type="button" data-planday="any" aria-pressed="false">It changes</button></div></div>';
-    if (Object.keys(ALL).length) ban += '<div><button class="btn" type="button" data-act="go" data-view="pantry">What can I make with what I have?</button></div>';
+    if (Object.keys(ALL).length) ban += '<div><button class="btn" type="button" data-act="go" data-view="pantry">What can I make with what\'s in my kitchen?</button></div>';
     if (!picked.length && last.length) ban += '<div><button class="btn" type="button" data-act="repeat-week">Repeat last week (' + (weekText(last) || last.length + ' recipes') + ')</button></div>';
     $('meal-banners').innerHTML = ban; $('meal-banners').hidden = !ban;
     var all = Object.keys(ALL).filter(function (id) { return isBaby(ALL[id]) === (mode === 'baby'); }).sort(function (a, b) { return ALL[a].name.localeCompare(ALL[b].name); });
@@ -2535,7 +2562,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       var defSides = Array.isArray(r.sides) ? r.sides.filter(function (x) { return ALL[x]; }).map(function (x) { return ALL[x].name; }) : [];
       var withMain = extra && n && S.week.with && ALL[S.week.with[id]] ? ALL[S.week.with[id]].name : '';
       var tag = r.group ? '<span class="rc-origin">From ' + esc(who(r.owner)) + '</span>' : r.savedFrom ? '<span class="rc-origin">Saved from ' + esc(who(r.savedFrom)) + '</span>' : r.shared ? '<span class="rc-origin mine">Shared</span>' : '';
-      var sub = withMain ? 'With ' + withMain : [isBaby(r) ? r.stage : catsOf(r).join(' & '), r.mins > 0 ? r.mins + ' min' : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
+      var hv = kitOn() ? haveOf(r) : null;
+      var sub = withMain ? 'With ' + withMain : [isBaby(r) ? r.stage : catsOf(r).join(' & '), hv && hv.total ? 'Have ' + hv.have.length + '/' + hv.total : r.mins > 0 ? r.mins + ' min' : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
       return '<li class="rc' + (n ? ' on' : '') + (r.group || r.savedFrom ? ' theirs' : '') + '">' +
         '<button class="rc-main" type="button" data-act="toggle" data-id="' + esc(id) + '" aria-pressed="' + (n ? 'true' : 'false') + '" aria-label="' + esc((n ? 'Remove ' : 'Add ') + r.name + (n ? ' from' : ' to') + ' this week') + '">' +
         rcImg(id, r, '<span class="box" aria-hidden="true">' + (n ? '✓' : '+') + '</span>' + tag) +
@@ -2729,12 +2757,13 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var line = n ? 'Making ' + servingsLabel(r, n) + ' this week' + (r.servings > 0 && n !== r.servings ? ' (recipe makes ' + r.servings + ')' : '') : (r.servings > 0 ? 'Makes ' + r.servings + (r.servings === 1 ? ' serving' : ' servings') : 'Not on this week\'s plan');
     var ings = (r.ingredients || []).map(function (g) {
       var q = parseQty(g.qty), amt = !isNaN(q) ? amountText(q * factor, normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' ');
-      return '<li class="cook-ing"><button class="pick" type="button" data-act="cook-tick" aria-pressed="false"><span class="box" aria-hidden="true"></span><span class="txt">' + esc(g.name) + '</span><span class="q">' + esc(amt) + '</span></button></li>';
+      return '<li class="cook-ing"><button class="pick" type="button" data-act="cook-tick" aria-pressed="false"><span class="box" aria-hidden="true"></span><span class="txt">' + esc(g.name) + haveMark(g.name) + '</span><span class="q">' + esc(amt) + '</span></button></li>';
     }).join('');
     $('cook-body').innerHTML = (photoOf(cookId) ? '<img class="fr-img" src="' + esc(photoOf(cookId)) + '" alt="Photo of ' + esc(r.name) + '">' : '') + '<div class="stack full" style="gap:4px"><h2>' + esc(r.name) + '</h2><p class="muted">' + esc([r.group ? 'Shared by ' + who(r.owner) : '', isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), line].filter(Boolean).join(' · ')) + '</p>' + (showTags(r).length ? '<p class="hash">' + esc(showTags(r).map(function (t) { return '#' + t; }).join('  ')) + '</p>' : '') + '</div>' +
       ([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).length ? '<p class="small muted full">' + esc([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).join(' · ')) + '</p>' : '') +
       (goodOf(r).length ? '<div class="aisle"><h3>Good source of</h3><div class="chips" style="padding-top:6px">' + goodOf(r).map(function (n) { return '<span class="chip">' + esc(n) + '</span>'; }).join('') + '</div><p class="small muted">' + (Array.isArray(r.goodFor) ? 'Chosen by the recipe author.' : 'A general guide based on the ingredients.') + ' Not medical advice.</p></div>' : '') +
       '<div class="serv-row"><span><strong>Servings</strong><span class="small muted">' + (n ? 'On this week\'s plan' : r.servings > 0 ? 'Recipe makes ' + r.servings : '') + '</span></span><span class="stepper"><button type="button" data-act="cserv-less" aria-label="Fewer servings">−</button><span>' + shown + '</span><button type="button" data-act="cserv-more" aria-label="More servings">+</button></span></div>' +
+      havePill(r) +
       safetyBlock(r, !!r.group) +
       costBlock(r, factor) +
       nutBlock(r) +
@@ -2803,7 +2832,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function toast(msg) { var el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3200); }
 
   /* two-tap confirmation, since browser confirm dialogs are not shown here */
-  var CONFIRM = { 'new-week': ['Start a new week', 'Tap again to clear meals and list'], 'ed-delete': ['Delete recipe', 'Tap again to delete'], 'ie-delete': ['Delete ingredient', 'Tap again to delete'] };
+  var CONFIRM = { 'pantry-clear': ['Clear all', 'Tap again to clear'], 'new-week': ['Start a new week', 'Tap again to clear meals and list'], 'ed-delete': ['Delete recipe', 'Tap again to delete'], 'ie-delete': ['Delete ingredient', 'Tap again to delete'] };
   function resetConfirm() { clearTimeout(confirmTimer); if (confirmKey) $(confirmKey).textContent = CONFIRM[confirmKey][0]; confirmKey = null; }
   function confirmTap(id) {
     if (confirmKey === id) { resetConfirm(); return true; }
@@ -2955,57 +2984,129 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }).join(' ');
   }
   function sameFood(a, b) { return a === b || (' ' + a + ' ').indexOf(' ' + b + ' ') >= 0 || (' ' + b + ' ').indexOf(' ' + a + ' ') >= 0; }
+  /* ---------- my kitchen: what's in the pantry and fridge, with expiration dates ---------- */
+  var kitPlace = 'pantry';
+  function cleanKitchen(d) {
+    var ok = function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x || '') ? x : ''; };
+    return { items: (d && Array.isArray(d.items) ? d.items : []).filter(function (x) { return x && typeof x.name === 'string' && x.name.trim(); }).slice(0, 400).map(function (x) {
+      return { id: String(x.id || newId()), name: String(x.name).trim().slice(0, 60), place: x.place === 'fridge' ? 'fridge' : 'pantry', exp: ok(x.exp), added: ok(x.added) };
+    }) };
+  }
+  function expDays(it) { var d = toDate(it.exp), t = toDate(today()); return d ? Math.round((d - t) / 86400000) : null; }
+  function usable(it) { var d = expDays(it); return d === null || d >= 0; }
+  function isSoon(it) { var d = expDays(it); return d !== null && d >= 0 && d <= (it.place === 'fridge' ? 3 : 7); }
+  function kitOn() { return !guest && S.kitchen.items.length > 0; }
   function handKeys() {
-    var keys = S.settings.onHand.map(single);
+    var keys = S.kitchen.items.filter(usable).map(function (it) { return single(it.name); });
     Object.keys(S.settings.staples).forEach(function (k) { keys.push(single(k)); });
     return keys.filter(Boolean);
+  }
+  /* where a food is at home: 'fridge', 'pantry', 'staple' or '' */
+  function haveWhere(name) {
+    var k = single(name); if (!k) return '';
+    var it = S.kitchen.items.filter(function (x) { return usable(x) && sameFood(k, single(x.name)); })[0];
+    if (it) return it.place;
+    return Object.keys(S.settings.staples).some(function (h) { return sameFood(k, single(h)); }) ? 'staple' : '';
+  }
+  function haveOf(r) {
+    var have = [], miss = [], soon = [], seen = {}, idx = libIndex(), hand = handKeys();
+    var soonKeys = S.kitchen.items.filter(isSoon).map(function (it) { return single(it.name); });
+    (r.ingredients || []).forEach(function (g) {
+      var lid = libFor(g, idx), name = String(lid && S.ings[lid] ? S.ings[lid].name : g.name || '').trim(), k = single(name);
+      if (!k || seen[k] || /^(tap )?water$/.test(k)) return;
+      seen[k] = true;
+      if (hand.some(function (h) { return sameFood(k, h); })) { have.push(name); if (soonKeys.some(function (h) { return sameFood(k, h); })) soon.push(name); }
+      else miss.push(name);
+    });
+    return { have: have, miss: miss, soon: soon, total: have.length + miss.length };
+  }
+  function havePill(r) {
+    if (!kitOn()) return '';
+    var h = haveOf(r); if (!h.total) return '';
+    return '<p class="have-pill">' + (h.miss.length ? '🧺 You have <b>' + h.have.length + '/' + h.total + '</b> ingredients right now' : '🧺 You have all <b>' + h.total + '</b> ingredients!') +
+      (h.soon.length ? '<span class="small">Uses your ' + esc(h.soon.slice(0, 2).join(' and ')) + ' before ' + (h.soon.length === 1 ? 'it expires' : 'they expire') + '</span>' : '') + '</p>';
+  }
+  function haveMark(name) {
+    if (!kitOn()) return '';
+    var w = haveWhere(name);
+    return w ? '<span class="have-at">✓ ' + (w === 'staple' ? 'You keep this stocked' : 'In your ' + w) + '</span>' : '';
   }
   function knownFoods() {
     var seen = {}, out = [], idx = libIndex();
     var add = function (name) { var k = single(name); if (k && !seen[k]) { seen[k] = true; out.push(String(name).trim()); } };
-    S.settings.onHand.forEach(add);
     Object.keys(ALL).forEach(function (id) { (ALL[id].ingredients || []).forEach(function (g) { var lid = libFor(g, idx); add(lid ? S.ings[lid].name : g.name); }); });
     Object.keys(S.ings).forEach(function (id) { add(S.ings[id].name); });
     return out.sort(function (a, b) { return a.localeCompare(b); });
   }
-  function isOnHand(name) { var k = single(name); return S.settings.onHand.some(function (h) { return single(h) === k; }); }
+  function inKitchen(name, place) { var k = single(name); return S.kitchen.items.filter(function (x) { return (!place || x.place === place) && single(x.name) === k; })[0] || null; }
+  function addToKitchen(name, place, exp) {
+    name = String(name || '').trim().slice(0, 60); if (!name) return;
+    var have = inKitchen(name, place);
+    if (have) { if (exp) have.exp = exp; return; }
+    if (S.kitchen.items.length >= 400) return;
+    S.kitchen.items.push({ id: newId(), name: name, place: place, exp: exp || '', added: today() });
+  }
+  function expText(it) {
+    var d = expDays(it);
+    if (d === null) return it.added ? 'Added ' + niceDate(it.added).replace(/, \d{4}$/, '') + ' · no date' : 'No expiration date';
+    if (d < 0) return 'Expired ' + Math.abs(d) + (Math.abs(d) === 1 ? ' day' : ' days') + ' ago';
+    if (d === 0) return 'Expires today';
+    if (d === 1) return 'Expires tomorrow';
+    return 'Expires ' + niceDate(it.exp).replace(/, \d{4}$/, '') + ' · ' + d + ' days left';
+  }
+  function kitSub() {
+    var n = S.kitchen.items.length, soon = S.kitchen.items.filter(function (it) { return isSoon(it) || (expDays(it) !== null && expDays(it) < 0); }).length;
+    return !n ? 'Pantry & fridge' : soon ? soon + ' to use soon' : n + (n === 1 ? ' thing' : ' things');
+  }
   function renderPantry() {
-    var q = single(pantryQ), foods = knownFoods().filter(function (n) { return !q || single(n).indexOf(q) >= 0 || isOnHand(n); });
-    $('pantry-chips').innerHTML = foods.length ? foods.map(function (n) { return '<button class="chip" type="button" data-hand="' + esc(n) + '" aria-pressed="' + (isOnHand(n) ? 'true' : 'false') + '">' + esc(n) + '</button>'; }).join('')
-      : '<span class="small muted">' + (q ? 'Nothing matches. Press Add to put it on your list anyway.' : 'Add a recipe first and its ingredients show up here to tap.') + '</span>';
-    var n = S.settings.onHand.length;
-    $('pantry-count').textContent = n ? n + (n === 1 ? ' ingredient' : ' ingredients') + ' on hand' : 'Nothing picked yet';
+    Array.prototype.forEach.call($('kit-seg').children, function (b) {
+      var pl = b.dataset.kplace, n = S.kitchen.items.filter(function (x) { return x.place === pl; }).length;
+      b.setAttribute('aria-pressed', pl === kitPlace ? 'true' : 'false');
+      b.textContent = (pl === 'fridge' ? 'Fridge' : 'Pantry') + (n ? ' (' + n + ')' : '');
+    });
+    $('kit-add-label').textContent = 'Add to your ' + kitPlace;
+    $('pantry-input').placeholder = kitPlace === 'fridge' ? 'Milk, eggs, chicken, spinach…' : 'Rice, black beans, tortillas…';
+    /* things to use up first, from both places */
+    var soon = S.kitchen.items.filter(function (it) { return isSoon(it) || (expDays(it) !== null && expDays(it) < 0); }).sort(function (a, b) { return expDays(a) - expDays(b); });
+    $('kit-alert').innerHTML = soon.length ? '<div class="kit-alert small"><strong>Use these first:</strong> ' + soon.slice(0, 6).map(function (it) { var d = expDays(it); return esc(it.name) + ' <span class="muted">(' + (d < 0 ? 'expired' : d === 0 ? 'today' : d === 1 ? 'tomorrow' : d + ' days') + ')</span>'; }).join(', ') + (soon.length > 6 ? ' and ' + (soon.length - 6) + ' more' : '') + '</div>' : '';
+    /* quick add from foods in your recipes */
+    var q = single(pantryQ), foods = knownFoods().filter(function (n) { return !inKitchen(n, kitPlace) && (!q || single(n).indexOf(q) >= 0); }).slice(0, q ? 30 : 10);
+    $('pantry-chips').innerHTML = foods.length ? '<span class="small muted" style="width:100%">Tap to add from your recipes:</span>' + foods.map(function (n) { return '<button class="chip" type="button" data-hand="' + esc(n) + '">+ ' + esc(n) + '</button>'; }).join('') : '';
+    var items = S.kitchen.items.filter(function (x) { return x.place === kitPlace; }).sort(function (a, b) {
+      var da = expDays(a), dbb = expDays(b); return (da === null ? 99999 : da) - (dbb === null ? 99999 : dbb) || a.name.localeCompare(b.name);
+    });
+    var n = items.length;
+    $('pantry-count').textContent = n ? n + (n === 1 ? ' thing' : ' things') + ' in your ' + kitPlace : 'Nothing in your ' + kitPlace + ' yet';
     $('pantry-clear').hidden = !n;
-    var hand = handKeys(), idx = libIndex(), baby = babyOn();
-    if (!S.settings.onHand.length) { $('pantry-body').innerHTML = ''; return; }
-    var rows = Object.keys(ALL).map(function (id) {
-      var r = ALL[id], have = [], miss = [], seen = {};
-      (r.ingredients || []).forEach(function (g) {
-        var lid = libFor(g, idx), name = String(lid ? S.ings[lid].name : g.name).trim(), k = single(name);
-        if (!k || seen[k]) return;
-        seen[k] = true;
-        if (hand.some(function (h) { return sameFood(k, h); })) have.push(name); else miss.push(name);
-      });
-      return { id: id, r: r, have: have, miss: miss, total: have.length + miss.length };
-    }).filter(function (x) { return x.total && x.have.length && (baby || !isBaby(x.r)); })
-      .sort(function (a, b) { return (b.have.length / b.total) - (a.have.length / a.total) || a.miss.length - b.miss.length || a.r.name.localeCompare(b.r.name); });
-    if (!rows.length) { $('pantry-body').innerHTML = '<p class="note">None of your recipes use those ingredients yet. Try adding a few more.</p>'; return; }
+    $('kit-list').innerHTML = items.map(function (it) {
+      var d = expDays(it), tag = d !== null && d < 0 ? '<span class="tag warn">Expired</span>' : isSoon(it) ? '<span class="tag">Use soon</span>' : '';
+      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(it.name) + tag + '</span><span class="from">' + esc(expText(it)) + '</span></span></span>' +
+        '<label class="kit-date"><span class="vh">Expiration date for ' + esc(it.name) + '</span><input type="date" data-kexp="' + esc(it.id) + '" value="' + esc(it.exp) + '"></label>' +
+        '<button class="x" type="button" data-kdel="' + esc(it.id) + '" aria-label="Used up or remove ' + esc(it.name) + '">×</button></li>';
+    }).join('');
+    /* what can I make */
+    var baby = babyOn();
+    if (!S.kitchen.items.length) { $('pantry-body').innerHTML = '<p class="small muted">Add a few things you have and your recipes show up here, best matches first.</p>'; return; }
+    var rows = Object.keys(ALL).map(function (id) { var h = haveOf(ALL[id]); h.id = id; h.r = ALL[id]; return h; })
+      .filter(function (x) { return x.total && x.have.length && (baby || !isBaby(x.r)); })
+      .sort(function (a, b) { return (b.have.length / b.total) - (a.have.length / a.total) || b.soon.length - a.soon.length || a.miss.length - b.miss.length || a.r.name.localeCompare(b.r.name); });
+    if (!rows.length) { $('pantry-body').innerHTML = '<p class="note">None of the recipes use those ingredients yet. Try adding a few more.</p>'; return; }
     var ready2 = rows.filter(function (x) { return !x.miss.length; }).length;
-    $('pantry-body').innerHTML = '<p class="small muted">' + (ready2 ? ready2 + (ready2 === 1 ? ' recipe' : ' recipes') + ' you can make right now. ' : '') + 'Closest matches first.</p><ul class="plain meals">' + rows.map(function (x) {
+    $('pantry-body').innerHTML = '<p class="small muted">' + (ready2 ? ready2 + (ready2 === 1 ? ' recipe' : ' recipes') + ' you can make right now. ' : '') + 'Closest matches first.</p><ul class="plain meals">' + rows.slice(0, 40).map(function (x) {
       var r = x.r, on = portions(x.id) > 0;
       return '<li class="meal' + (r.group || r.savedFrom ? ' theirs' : '') + '"><div class="pick"><span class="txt"><span class="mname">' + esc(r.name) + (isBaby(r) ? '<span class="tag baby">Baby food</span>' : '') + (!x.miss.length ? '<span class="tag">Have it all</span>' : '') + '</span>' +
-        '<span class="small muted">You have ' + x.have.length + ' of ' + x.total + (x.total === 1 ? ' ingredient' : ' ingredients') + '</span>' +
+        '<span class="small" style="color:var(--accent);font-weight:600">You have ' + x.have.length + '/' + x.total + ' ingredients' + (x.soon.length ? ' · uses ' + esc(x.soon.slice(0, 2).join(' and ')) + ' before ' + (x.soon.length === 1 ? 'it expires' : 'they expire') : '') + '</span>' +
         (x.miss.length ? '<span class="small">Still need: ' + esc(x.miss.slice(0, 6).join(', ')) + (x.miss.length > 6 ? ' and ' + (x.miss.length - 6) + ' more' : '') + '</span>' : '') + '</span>' + rthumb(x.id) + '</div>' +
         '<div class="actions" style="padding-left:12px"><button class="btn mini" type="button" data-act="toggle" data-id="' + esc(x.id) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + (on ? '✓ On this week' : '+ Add to this week') + '</button>' +
         '<button class="btn quiet small push" type="button" data-act="cook" data-id="' + esc(x.id) + '">Cook</button></div></li>';
     }).join('') + '</ul>';
   }
-  function toggleHand(name) {
-    var k = single(name);
-    if (!k) return;
-    if (isOnHand(name)) S.settings.onHand = S.settings.onHand.filter(function (h) { return single(h) !== k; });
-    else if (S.settings.onHand.length < 200) S.settings.onHand.push(String(name).trim().slice(0, 60));
-    save('settings'); renderPantry();
+  function toggleHand(name) { addToKitchen(name, kitPlace, ''); save('kitchen'); renderPantry(); }
+  /* the old "what I have" list (names only) moves into the pantry once */
+  function moveOnHand() {
+    if (!S.settings.onHand || !S.settings.onHand.length) return;
+    S.settings.onHand.forEach(function (n) { addToKitchen(n, 'pantry', ''); });
+    S.settings.onHand = []; save('kitchen'); save('settings');
   }
 
   /* ---------- my recipes: everything this person made or saved ---------- */
@@ -3033,7 +3134,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('mine-body').innerHTML = '<p class="key"><span><i></i>' + made + ' made by you</span><span><i class="k"></i>' + (all.length - made) + ' saved from others</span></p><ul class="cards" style="margin-top:12px">' + ids.map(function (id) {
       var r = S.recipes[id], n = portions(id), c = (r.ingredients || []).length;
       var origin = r.savedFrom ? '<span class="rc-origin">Saved from ' + esc(who(r.savedFrom)) + '</span>' : r.shared ? '<span class="rc-origin mine">Shared</span>' : '';
-      var sub = [isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
+      var hv = kitOn() ? haveOf(r) : null;
+      var sub = [isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), hv && hv.total ? 'You have ' + hv.have.length + '/' + hv.total : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
       return '<li class="rc' + (n ? ' on' : '') + (r.savedFrom ? ' theirs' : '') + '">' +
         '<button class="rc-main" type="button" data-act="cook" data-id="' + esc(id) + '">' + rcImg(id, r, origin) +
         '<span class="rc-txt"><span class="mname">' + esc(r.name) + '</span><span class="rc-sub">' + esc(sub || ' ') + '</span></span></button>' +
@@ -3489,7 +3591,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function commCard(x) {
     var by = x.credit && x.credit !== x.owner ? x.credit : x.owner, label = x.name + ' by ' + (by === uid ? 'you' : atName(by));
     var img = x.photo ? '<img src="' + esc(x.type === 'post' ? thumbOf(x.photo) : x.photo) + '"' + (x.type === 'post' ? ' data-full="' + esc(x.photo) + '" onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}"' : '') + ' alt="" loading="lazy" decoding="async">' : '<span class="tile-txt">' + esc(x.name) + '</span>';
-    return '<li><button class="tile" type="button" data-act="' + (x.type === 'post' ? 'open-post' : 'comm-open') + '" data-id="' + esc(x.id) + '" aria-label="' + esc(label) + '">' + img + '</button></li>';
+    var hv = x.type === 'recipe' && kitOn() && ALL[x.id] ? haveOf(ALL[x.id]) : null, badge = hv && hv.total && hv.have.length ? '<span class="tile-have">' + hv.have.length + '/' + hv.total + '</span>' : '';
+    if (badge) label += ', you have ' + hv.have.length + ' of ' + hv.total + ' ingredients';
+    return '<li><button class="tile" type="button" data-act="' + (x.type === 'post' ? 'open-post' : 'comm-open') + '" data-id="' + esc(x.id) + '" aria-label="' + esc(label) + '">' + img + badge + '</button></li>';
   }
   function renderCommRecipes(q) {
     var tq = q.charAt(0) === '#' ? cleanTag(q) : '', qh = q.replace(/^@/, '');
@@ -3580,7 +3684,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     html = '<div class="prof-bar"><button class="ibtn menu-btn" type="button" data-act="prof-menu" aria-label="Menu" aria-expanded="' + profMenu + '" aria-controls="prof-drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' + (alerts ? '<span class="dot" aria-hidden="true"></span>' : '') + '</button>' + drop + '</div>' + html;
     html += '<div class="pink-btns">' +
       '<button class="pink-btn" type="button" data-act="go" data-view="mine">' + ICON.book + '<span><strong>My recipes</strong><span>' + nrec + (nrec === 1 ? ' recipe' : ' recipes') + '</span></span></button>' +
-      '<button class="pink-btn" type="button" data-act="go" data-view="ings"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="3" rx="1"/><path d="M8 6c-1.5 1-2 2.2-2 4v8a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-8c0-1.8-.5-3-2-4"/><path d="M6 12h12M6 16h12"/></svg><span><strong>Ingredients</strong><span>' + ning + ' saved</span></span></button></div>';
+      '<button class="pink-btn" type="button" data-act="go" data-view="ings"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="3" rx="1"/><path d="M8 6c-1.5 1-2 2.2-2 4v8a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-8c0-1.8-.5-3-2-4"/><path d="M6 12h12M6 16h12"/></svg><span><strong>Ingredients</strong><span>' + ning + ' saved</span></span></button>' +
+      '<button class="pink-btn" type="button" data-act="go" data-view="pantry"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg><span><strong>My kitchen</strong><span>' + kitSub() + '</span></span></button>' +
+      '<button class="pink-btn" type="button" data-act="go" data-view="freezer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4 7l16 10M20 7L4 17M9 3l3 2 3-2M9 21l3-2 3 2"/></svg><span><strong>Freezer</strong><span>' + (S.freezer.items.length ? S.freezer.items.length + (S.freezer.items.length === 1 ? ' meal' : ' meals') : 'Prepped meals') + '</span></span></button></div>';
     if (feedApi) {
       var savedPosts = saves.map(function (sid) { return feedPosts.filter(function (x) { return x.id === sid; })[0]; }).filter(Boolean);
       html += '<div class="stack" style="gap:12px"><div class="prof-tabs" role="tablist">' +
@@ -3629,9 +3735,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     else if (fview.state === 'locked') html += '<p class="note">This recipe is not available right now.</p>';
     else {
       var ings = (r.ingredients || []).map(function (g) {
-        return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
+        return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + haveMark(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
       }).join('');
-      html += safetyBlock(r, fview.post.owner !== uid) + '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
+      html += havePill(r) + safetyBlock(r, fview.post.owner !== uid) + '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps</h3>' + (r.notes ? stepsHtml(r, 1) : '<p class="steps"><span class="muted">No steps written.</span></p>') + '</div>';
     }
@@ -4085,15 +4191,34 @@ var babyEd = $('ed-kind').value === 'baby';
   $('pantry-form').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var parts = $('pantry-input').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-    if (!parts.length) return;
-    var known = knownFoods();
+    if (!parts.length) { $('pantry-input').focus(); return; }
+    var known = knownFoods(), exp = $('kit-exp').value;
     parts.forEach(function (name) {
-      var k = single(name), match = known.filter(function (n) { return single(n) === k; })[0] || name;
-      if (!isOnHand(match) && S.settings.onHand.length < 200) S.settings.onHand.push(String(match).slice(0, 60));
+      var k = single(name), match = known.filter(function (n) { return single(n) === k; })[0] || canonName(name) || name;
+      addToKitchen(match.charAt(0).toUpperCase() + match.slice(1), kitPlace, exp);
     });
-    $('pantry-input').value = ''; pantryQ = ''; save('settings'); renderPantry();
+    $('pantry-input').value = ''; $('kit-exp').value = ''; pantryQ = ''; save('kitchen'); renderPantry();
+    toast('Added to your ' + kitPlace + '.');
   });
-  $('pantry-clear').addEventListener('click', function () { S.settings.onHand = []; save('settings'); renderPantry(); });
+  $('pantry-clear').addEventListener('click', function () {
+    if (!confirmTap('pantry-clear')) return;
+    S.kitchen.items = S.kitchen.items.filter(function (x) { return x.place !== kitPlace; }); save('kitchen'); renderPantry();
+  });
+  $('view-pantry').addEventListener('click', function (ev) {
+    var pl = ev.target.closest('[data-kplace]');
+    if (pl) { kitPlace = pl.dataset.kplace; resetConfirm(); renderPantry(); return; }
+    var del = ev.target.closest('[data-kdel]');
+    if (del) {
+      var it = S.kitchen.items.filter(function (x) { return x.id === del.dataset.kdel; })[0];
+      S.kitchen.items = S.kitchen.items.filter(function (x) { return x.id !== del.dataset.kdel; }); save('kitchen'); renderPantry();
+      if (it) toast(it.name + ' removed.');
+    }
+  });
+  $('view-pantry').addEventListener('change', function (ev) {
+    var id = ev.target.dataset && ev.target.dataset.kexp; if (!id) return;
+    var it = S.kitchen.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
+    it.exp = /^\d{4}-\d{2}-\d{2}$/.test(ev.target.value) ? ev.target.value : ''; save('kitchen'); renderPantry();
+  });
   $('mine-search').addEventListener('input', function () { mineSearch = this.value; if (ready) renderMine(); });
   $('scan-file').addEventListener('change', function () { var fl = this.files; if (fl && fl.length && sampleApi) runScan(fl); this.value = ''; });
   $('scan-stop').addEventListener('click', function () { if (scanCtl) scanCtl.abort(); });
@@ -4451,7 +4576,8 @@ var babyEd = $('ed-kind').value === 'baby';
   function showNote(kind) { $('local-note').textContent = NOTES[kind]; $('local-note').hidden = false; }
   function startLocal(kind) {
     priv = false; canShare = false;
-    try { var raw = JSON.parse(localStorage.getItem('cart-kitchen') || 'null'); if (raw) { S.recipes = raw.recipes || {}; S.week = cleanWeek(raw.week); S.list = cleanList(raw.list); S.settings = cleanSettings(raw.settings); S.ings = raw.ings || {}; S.photos = raw.photos || {}; S.rphotos = raw.rphotos || {}; S.freezer = cleanFreezer(raw.freezer); S.tracker = cleanTracker(raw.tracker); } } catch (e) {}
+    try { var raw = JSON.parse(localStorage.getItem('cart-kitchen') || 'null'); if (raw) { S.recipes = raw.recipes || {}; S.week = cleanWeek(raw.week); S.list = cleanList(raw.list); S.settings = cleanSettings(raw.settings); S.ings = raw.ings || {}; S.photos = raw.photos || {}; S.rphotos = raw.rphotos || {}; S.freezer = cleanFreezer(raw.freezer); S.tracker = cleanTracker(raw.tracker); S.kitchen = cleanKitchen(raw.kitchen); } } catch (e) {}
+    if (!guest) moveOnHand();
     showNote(kind || 'off'); ready = true; tidyNames(); render();
   }
   function watchShared() {
@@ -4532,6 +4658,12 @@ var babyEd = $('ed-kind').value === 'baby';
     pdoc('settings').onSnapshot(function (d) { if (!busy('settings')) S.settings = cleanSettings(d.exists ? d.data() : null); got.s = true; go(); }, fail);
     pdoc('freezer').onSnapshot(function (d) { if (!busy('freezer')) S.freezer = cleanFreezer(d.exists ? d.data() : null); if (ready) render(); }, function () {});
     pdoc('tracker').onSnapshot(function (d) { if (!busy('tracker')) S.tracker = cleanTracker(d.exists ? d.data() : null); if (ready) render(); }, function () {});
+    var kitFirst = true;
+    pdoc('kitchen').onSnapshot(function (d) {
+      if (!busy('kitchen')) S.kitchen = cleanKitchen(d.exists ? d.data() : null);
+      if (kitFirst) { kitFirst = false; var tryMove = function () { if (got.s) moveOnHand(); else setTimeout(tryMove, 400); }; tryMove(); }
+      if (ready) render();
+    }, function () {});
   }
   /* ---------- visitors without an account: look around Community, sign up to do anything else ---------- */
   var guest = false;
