@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261027135605">
+<meta name="fedup-version" content="20261027193144">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -202,6 +202,15 @@ label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; fon
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 dialog.zoom { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 14px; width: min(420px, calc(100% - 32px)); }
 dialog.zoom::backdrop { background: rgba(0, 0, 0, 0.55); }
+.join-hero { text-align: center; display: grid; gap: 8px; padding: 8px 0 4px; }
+.join-hero h2 { color: var(--accent); font-size: 1.5rem; margin: 0; }
+.join-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.join-list li { display: flex; gap: 12px; align-items: flex-start; background: var(--accent-tint); border: 1px solid var(--accent-soft); border-radius: 14px; padding: 12px; }
+.join-list .jl-ico { font-size: 1.4rem; line-height: 1; flex: none; width: 28px; text-align: center; }
+.join-list strong { display: block; }
+.join-btns { display: grid; gap: 8px; }
+dialog.join-dlg { border: 2px solid var(--accent); background: var(--accent-tint); text-align: center; }
+dialog.join-dlg h2 { font-size: 1.2rem; margin: 0; color: var(--accent); }
 dialog.tip { border: 2px solid var(--accent); background: var(--accent-tint); }
 dialog.tip .tip-badge { align-self: flex-start; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; }
 dialog.tip h2 { font-size: 1.15rem; margin: 0; color: var(--accent); }
@@ -1040,10 +1049,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       </ul>
       <p>If you see a post that breaks these rules, or a photo or recipe that was taken from you, tap the three dots on it and choose Report. The site owner reviews every report and can remove posts and accounts.</p>
       <h3 class="sec-h">Privacy</h3>
-      <p class="small muted">Last updated October 26, 2026</p>
+      <p class="small muted">Last updated October 27, 2026</p>
       <ul>
         <li><strong>What we collect:</strong> your email, name, username, bio and profile photo; the recipes, ingredients, prices, weekly plans, shopping lists and baby log you add; your posts, likes, saves, follows, reports and feedback; and your ZIP code if you add one.</li>
-        <li><strong>What other members see:</strong> your name, username, bio, profile photo, the meals you post, the recipes you share with the community, and who you follow. New recipes are shared with the community unless you untick "Share with everyone on Fed Up".</li>
+        <li><strong>What everyone can see:</strong> your name, username, bio, profile photo, the meals you post and the recipes you share with the community. Anyone visiting fedupmeals.com can look at these, even without an account. Members can also see who you follow. New recipes are shared with the community unless you untick "Share with everyone on Fed Up".</li>
         <li><strong>What only you see:</strong> recipes you keep private, your ingredients and prices, weekly plan, shopping list and baby log.</li>
         <li><strong>Prices near you:</strong> if you add a ZIP code, the prices you enter are combined with other people's in your area (by the first 3 digits of your ZIP) to show typical local prices. Only averages from 2 or more people are shown, and your name is never attached.</li>
         <li><strong>Who stores it:</strong> your account, data and photos are stored with Supabase. The website is hosted on GitHub Pages and the web address runs through Cloudflare. They only process it to run Fed Up.</li>
@@ -1066,6 +1075,33 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   <section class="view" id="view-user" hidden>
     <div><button class="btn quiet" id="user-back" type="button">← Back</button></div>
     <div id="user-body" class="stack"></div>
+  </section>
+
+  <section class="view" id="view-join" hidden>
+    <div class="join-hero">
+      <h2>Join Fed Up. It's free!</h2>
+      <p class="muted" style="margin:0">Plan your meals for the week, see exactly what they'll cost, and shop with one list that builds itself.</p>
+    </div>
+    <div class="join-btns">
+      <button class="btn primary" type="button" data-join="up">Create a free account</button>
+      <button class="btn quiet" type="button" data-join="in">I already have an account. Sign in</button>
+    </div>
+    <h3 style="margin:8px 0 0">What you can do with an account</h3>
+    <ul class="join-list small">
+      <li><span class="jl-ico" aria-hidden="true">🗓️</span><span><strong>Plan your week</strong>Pick the meals you're making and your shopping list builds itself, sorted by aisle.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">💲</span><span><strong>Know what it costs</strong>See the price of every recipe and your whole week. Fix any price to match your store.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">🛒</span><span><strong>One shopping list</strong>Check things off at the store, add extras, and skip what you already have at home.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">📖</span><span><strong>Save your recipes</strong>Keep your own recipes in one place and steal recipes you love from the community.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">🍽️</span><span><strong>Cook for any crowd</strong>Change the servings and the ingredients, steps and cost all update for you.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">🍼</span><span><strong>Baby food too</strong>Plan baby meals alongside the family's and keep track of the foods your baby has tried.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">🧊</span><span><strong>Freezer and pantry</strong>Keep track of what's in your freezer and pantry so nothing goes to waste.</span></li>
+      <li><span class="jl-ico" aria-hidden="true">💕</span><span><strong>Share and follow</strong>Post the meals you make, follow people for ideas, and like and save their recipes.</span></li>
+    </ul>
+    <div class="join-btns">
+      <button class="btn primary" type="button" data-join="up">Create a free account</button>
+    </div>
+    <p class="small muted" style="text-align:center">You can keep looking at community recipes without an account.</p>
+    <p style="text-align:center"><button class="btn quiet small" type="button" data-act="go" data-view="guide">Community guidelines, privacy and terms</button></p>
   </section>
 
   <section class="view" id="view-post" hidden>
@@ -1147,6 +1183,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   <button class="add-opt" type="button" data-act="add-post"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="12" r="3.5"/></svg><span>+ POST</span></button>
   <button class="add-opt" type="button" data-act="add-recipe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg><span>+ RECIPE</span></button>
 </div>
+<dialog class="zoom join-dlg" id="join-dlg" aria-labelledby="join-dlg-h"><div class="stack">
+  <h2 id="join-dlg-h">Make a free account</h2>
+  <p class="small" style="margin:0" id="join-dlg-why">Make a free account to use this.</p>
+  <button class="btn primary" type="button" data-join="up">Create a free account</button>
+  <button class="btn quiet small" type="button" data-join="in">I already have an account. Sign in</button>
+  <button class="btn quiet small" type="button" id="join-dlg-close">Not now, keep looking</button>
+</div></dialog>
 <dialog class="zoom tip" id="step-tip" aria-labelledby="step-tip-h"><div class="stack">
   <span class="tip-badge">📌 IMPORTANT</span>
   <h2 id="step-tip-h">How to write your steps</h2>
@@ -1183,6 +1226,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 
 <div class="auth" id="auth" hidden>
   <div class="auth-card">
+    <button class="btn quiet small" type="button" id="auth-close" hidden style="align-self:flex-start">← Keep looking around</button>
     <h1>Fed Up</h1>
     <p class="muted" id="auth-lead">Meal prep, baby food and one shopping list for both.</p>
     <div class="launch">
@@ -1216,7 +1260,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <summary>Terms of Service, community guidelines and privacy</summary>
       <div class="stack" style="gap:8px">
         <p>Fed Up is a place to share the real meals you make. Be kind, post your own food photos and recipes, and keep it family friendly. No ads, spam or selling. Anything that breaks these rules can be reported and removed.</p>
-        <p>We keep your email, name, username, bio, recipes and posts so the app works. Your posts, shared recipes, username and bio are visible to other members. Your private recipes, shopping list and baby log are only visible to you. We never sell your information.</p>
+        <p>We keep your email, name, username, bio, recipes and posts so the app works. Your posts, shared recipes, username and bio can be seen by anyone visiting Fed Up. Your private recipes, shopping list and baby log are only visible to you. We never sell your information.</p>
         <p>Recipes, prices and nutrition are shared by members or estimated, and aren't medical or nutrition advice. Talk with your pediatrician about baby foods.</p>
         <details class="terms-full"><summary>Read the full Terms of Service</summary>
 <div id="terms-text" class="stack legal" style="gap:10px">
@@ -1279,7 +1323,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   var cfg = window.FED_UP_CONFIG || {};
   var $ = function (id) { return document.getElementById(id); };
   var resolveReady, ready = new Promise(function (res) { resolveReady = res; });
-  var sb = null, uid = null, started = false, mode = 'in';
+  var sb = null, uid = null, started = false, mode = 'in', guest = false;
   var dbShim, userShim, feedShim;
   window.claude = { use: function (name) { return ready.then(function () { return name === 'db' ? dbShim : name === 'user' ? userShim : name === 'feed' ? feedShim : null; }); } };
 
@@ -1410,7 +1454,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   var names = {}, namesAt = {}, unames = {}, bios = {}, avatars = {};
   userShim = {
     id: function () { return Promise.resolve(uid); },
-    can: function () { return Promise.resolve(true); },
+    can: function () { return Promise.resolve(!guest); },
     isOwner: function () { return Promise.resolve(false); },
     /* find anyone by username or name, not just people who have posted */
     searchPeople: function (q) {
@@ -1456,7 +1500,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         check(r); return sb.storage.from('feed').getPublicUrl(path).data.publicUrl;
       });
     },
-    isAdmin: function () { return sb.rpc('is_admin').then(function (r) { return !r.error && r.data === true; }, function () { return false; }); },
+    isAdmin: function () { if (guest) return Promise.resolve(false); return sb.rpc('is_admin').then(function (r) { return !r.error && r.data === true; }, function () { return false; }); },
     list: function () {
       return sb.from('feed_posts').select('id,owner,title,description,tags,photo_url,price_cents,kind,created_at,credit').order('created_at', { ascending: false }).limit(100).then(function (r) {
         check(r);
@@ -1485,15 +1529,15 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         return id;
       });
     },
-    myFollows: function () { return sb.from('follows').select('followee').eq('follower', uid).limit(5000).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.followee; }); }); },
+    myFollows: function () { if (guest) return Promise.resolve([]); return sb.from('follows').select('followee').eq('follower', uid).limit(5000).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.followee; }); }); },
     followCounts: function (ids) { return sb.rpc('follow_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
     follow: function (o) { return sb.from('follows').insert({ follower: uid, followee: o }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     unfollow: function (o) { return sb.from('follows').delete().eq('follower', uid).eq('followee', o).then(check); },
     likeCounts: function (ids) { return sb.rpc('post_like_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
-    myLikes: function (ids) { return sb.from('post_likes').select('post_id').eq('user_id', uid).in('post_id', ids.slice(0, 200)).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.post_id; }); }); },
+    myLikes: function (ids) { if (guest) return Promise.resolve([]); return sb.from('post_likes').select('post_id').eq('user_id', uid).in('post_id', ids.slice(0, 200)).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.post_id; }); }); },
     like: function (pid) { return sb.from('post_likes').insert({ post_id: pid, user_id: uid }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     unlike: function (pid) { return sb.from('post_likes').delete().eq('post_id', pid).eq('user_id', uid).then(check); },
-    saves: function () { return sb.from('post_saves').select('post_id,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(2000).then(function (r) { check(r); return r.data || []; }); },
+    saves: function () { if (guest) return Promise.resolve([]); return sb.from('post_saves').select('post_id,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(2000).then(function (r) { check(r); return r.data || []; }); },
     savePost: function (pid) { return sb.from('post_saves').insert({ post_id: pid, user_id: uid }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     unsavePost: function (pid) { return sb.from('post_saves').delete().eq('post_id', pid).eq('user_id', uid).then(check); },
     report: function (pid, reason) { return sb.from('post_reports').insert({ post_id: pid, reporter: uid, reason: String(reason || '').slice(0, 200) }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
@@ -1566,7 +1610,17 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   };
 
   /* ---------- sign-in ---------- */
+  /* no account yet: let them look around Community; signing in reloads into their own account */
+  function startGuest() {
+    if (started || guest) return;
+    guest = true; window.fedupGuest = true;
+    $('auth').hidden = true; $('auth-close').hidden = false;
+    resolveReady();
+  }
+  window.fedupAuth = function (m) { setMode(m === 'in' ? 'in' : 'up'); showAuth(); window.scrollTo(0, 0); var f = $(m === 'in' ? 'auth-email' : 'auth-name'); if (f) setTimeout(function () { f.focus(); }, 50); };
+  $('auth-close').addEventListener('click', function () { msg(''); $('auth').hidden = true; });
   function start(session) {
+    if (guest) { location.reload(); return; }
     if (started) return;
     started = true; uid = session.user.id;
     $('auth').hidden = true;
@@ -1623,7 +1677,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     };
     if (mode === 'newpass') {
       if (pass.length < 8) return fail({ message: 'Use at least 8 characters.' });
-      return sb.auth.updateUser({ password: pass }).then(function (r) { if (r.error) return fail(r.error); done(); $('auth-pass').value = ''; $('auth').hidden = true; setMode('in'); }, fail);
+      return sb.auth.updateUser({ password: pass }).then(function (r) { if (r.error) return fail(r.error); done(); $('auth-pass').value = ''; if (guest) { location.reload(); return; } $('auth').hidden = true; setMode('in'); }, fail);
     }
     if (!/^\S+@\S+\.\S+$/.test(email)) return fail({ message: 'Enter your email address.' });
     if (mode === 'reset') return sb.auth.resetPasswordForEmail(email, { redirectTo: here }).then(function (r) { if (r.error) return fail(r.error); done(); msg('If that email has an account, a reset link is on its way. Check your spam folder too.'); showResend('reset', email); }, fail);
@@ -1651,7 +1705,8 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   });
 
   setMode('in');
-  try { if (sessionStorage.getItem('fed-up-deleted')) { sessionStorage.removeItem('fed-up-deleted'); msg('Your account and everything in it has been deleted. Thank you for trying Fed Up.'); } } catch (e) {}
+  var justDeleted = false;
+  try { if (sessionStorage.getItem('fed-up-deleted')) { justDeleted = true; sessionStorage.removeItem('fed-up-deleted'); msg('Your account and everything in it has been deleted. Thank you for trying Fed Up.'); } } catch (e) {}
   sb.auth.onAuthStateChange(function (event, session) {
     setTimeout(function () {
       if (event === 'PASSWORD_RECOVERY') { setMode('newpass'); showAuth(); msg('Choose a new password.'); return; }
@@ -1659,7 +1714,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       if (session && !started) start(session);
     }, 0);
   });
-  sb.auth.getSession().then(function (r) { if (r.data && r.data.session) start(r.data.session); else showAuth(); }, showAuth);
+  sb.auth.getSession().then(function (r) {
+    if (r.data && r.data.session) return start(r.data.session);
+    var recovering = /type=recovery/.test(location.hash);
+    if (recovering) return showAuth();
+    if (justDeleted) { startGuest(); showAuth(); return; }
+    startGuest();
+  }, showAuth);
 })();
 </script>
 
@@ -1769,7 +1830,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     if (!on && mode === 'baby') { mode = 'adult'; cat = ''; tagFilter = ''; try { localStorage.setItem('fed-up-mode', 'adult'); } catch (e) {} }
     if (!on && tab === 'tracker') show('profile');
     if (tab === 'profile') renderProfile();
-    $('welcome').hidden = !(ready && S.settings.baby === null && !hasBabyData());
+    $('welcome').hidden = guest || !(ready && S.settings.baby === null && !hasBabyData());
   }
   function setMode(m) {
     mode = m === 'baby' ? 'baby' : 'adult'; cat = ''; tagFilter = '';
@@ -2720,12 +2781,13 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     legalContact();
   }
   function show(t) {
+    if (guest && ['profile', 'meals', 'list', 'feed', 'mine', 'settings', 'editor', 'post'].indexOf(t) >= 0) t = t === 'profile' ? 'join' : 'explore';
     profMenu = false; closeAdd();
     if (t === 'terms') renderTerms();
     if (t === 'guide') legalContact();
     if (tab === 'cook' && t !== 'cook' && wake) { try { wake.release(); } catch (e) {} wake = null; }
     tab = t;
-    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'guide', 'terms', 'feedback', 'feedbacks', 'members'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
+    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'guide', 'terms', 'feedback', 'feedbacks', 'members', 'join'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
     var sec = secOf(t, 0);
     ['feed', 'explore', 'meals', 'list', 'profile'].forEach(function (v) { $('tab-' + v).setAttribute('aria-selected', v === sec ? 'true' : 'false'); });
     if (t === 'explore') renderExplore();
@@ -3140,10 +3202,11 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   }
   function initFeed(api) {
     feedApi = api;
-    if (ready) movePhotos(); else { var waitMove = setInterval(function () { if (ready) { clearInterval(waitMove); movePhotos(); } }, 500); setTimeout(function () { clearInterval(waitMove); }, 60000); }
+    if (guest) {} else if (ready) movePhotos(); else { var waitMove = setInterval(function () { if (ready) { clearInterval(waitMove); movePhotos(); } }, 500); setTimeout(function () { clearInterval(waitMove); }, 60000); }
     $('tab-feed').hidden = false; $('tab-explore').hidden = false; $('new-post').hidden = false; $('tab-meals').hidden = true; syncNav();
     document.body.classList.add('has-feed');
     if (tab === 'meals') { show('feed'); window.scrollTo(0, 0); }
+    if (guest) { show('explore'); loadFeed(); return; }
     restoreView();
     loadFollows(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
     api.isAdmin().then(function (a) { if (a) { loadReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
@@ -4470,8 +4533,50 @@ var babyEd = $('ed-kind').value === 'baby';
     pdoc('freezer').onSnapshot(function (d) { if (!busy('freezer')) S.freezer = cleanFreezer(d.exists ? d.data() : null); if (ready) render(); }, function () {});
     pdoc('tracker').onSnapshot(function (d) { if (!busy('tracker')) S.tracker = cleanTracker(d.exists ? d.data() : null); if (ready) render(); }, function () {});
   }
+  /* ---------- visitors without an account: look around Community, sign up to do anything else ---------- */
+  var guest = false;
+  var JOIN_WHY = {
+    'tab-feed': 'get a home feed of the people you follow', 'tab-list': 'build your shopping list', 'new-post': 'share your recipes and meals',
+    'open-settings': 'set your prices, store and settings', 'cook-edit': 'save this recipe to your recipes', 'save-post': 'steal this recipe and save it to your recipes',
+    like: 'like posts', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
+    'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals'
+  };
+  var GUEST_OK = { 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
+  var GUEST_OK_IDS = { 'tab-explore': 1, 'cook-back': 1, 'fr-back': 1, 'user-back': 1, 'join-dlg-close': 1, 'zoom-close': 1, 'feed-search': 1 };
+  function askJoin(key) {
+    $('join-dlg-why').textContent = 'Make a free account to ' + (JOIN_WHY[key] || 'use this') + '. It only takes a minute.';
+    try { if (!$('join-dlg').open) $('join-dlg').showModal(); } catch (e) {}
+  }
+  function openAuth(m) {
+    try { $('join-dlg').close(); } catch (e) {}
+    if (window.fedupAuth) window.fedupAuth(m === 'in' ? 'in' : 'up');
+  }
+  document.addEventListener('click', function (ev) {
+    if (!guest) return;
+    var j = ev.target.closest && ev.target.closest('[data-join]');
+    if (j) { ev.preventDefault(); openAuth(j.dataset.join); return; }
+    var el = ev.target.closest && ev.target.closest('button, a, input[type=checkbox], input[type=file], label');
+    if (!el || el.closest('#auth, #view-join, #view-terms, #view-guide, #join-dlg, #step-tip, #zoom')) return;
+    if (el.tagName === 'A' && !el.dataset.act) return;
+    var id = el.id, act = el.dataset.act;
+    if (id === 'tab-profile') { ev.preventDefault(); ev.stopPropagation(); show('join'); window.scrollTo(0, 0); return; }
+    if (GUEST_OK_IDS[id] || GUEST_OK[act] || el.dataset.cmode || el.closest('#feed-kinds, #comm-seg') || (act === 'go' && el.dataset.view === 'explore')) return;
+    ev.preventDefault(); ev.stopPropagation();
+    askJoin(JOIN_WHY[id] ? id : act === 'new-post' ? 'new-post-act' : act);
+  }, true);
+  $('join-dlg-close').addEventListener('click', function () { $('join-dlg').close(); });
+  $('join-dlg').addEventListener('click', function (ev) { if (ev.target === this) this.close(); });
+
   function boot(d, u) {
     db = d; user = u;
+    if (window.fedupGuest) {
+      guest = true; priv = false; canShare = false; uid = null; ready = true;
+      document.body.classList.add('guest');
+      if (db) watchShared();
+      render(); show('explore');
+      window.claude.use('feed').then(function (f) { if (f) initFeed(f); }, function () {});
+      return;
+    }
     Promise.all([u ? u.id() : null, u ? u.can('data.write') : null]).then(function (a) {
       uid = a[0];
       var localFlag = false;
