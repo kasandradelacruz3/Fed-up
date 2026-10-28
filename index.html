@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261028114904">
+<meta name="fedup-version" content="20261028120431">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -207,7 +207,15 @@ dialog.zoom::backdrop { background: rgba(0, 0, 0, 0.55); }
 .kit-add .f { min-width: 0; }
 .kit-add input[type=date] { min-width: 0; width: 100%; }
 .kit-add .kit-name { grid-column: 1 / -1; }
-.kit-list .item { align-items: center; }
+.kit-list .item { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 4px; }
+.kit-top { display: flex; align-items: flex-start; gap: 8px; }
+.kit-top .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.kit-ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+.lvl { display: inline-flex; background: var(--soft); border-radius: 999px; padding: 3px; gap: 2px; }
+.lvl button { border: 0; background: transparent; border-radius: 999px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.lvl button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.lvl button[data-v="low"][aria-pressed="true"] { background: #B42318; }
+.kit-low { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .kit-date input { width: 132px; height: 36px; padding: 4px 8px; font-size: 0.82rem; border-radius: 10px; }
 .tag.warn { background: #FDE2E2; color: #B42318; }
 .have-pill { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 6px 12px; font-size: 0.88rem; font-weight: 600; margin: 0; align-self: flex-start; }
@@ -2379,8 +2387,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         it.amount = 'Buy ' + it.buy;
       }
       it.isStaple = !!S.settings.staples[k];
-      var home = !it.isStaple && kitOn() ? haveWhere(it.name) : '';
-      it.atHome = home === 'pantry' || home === 'fridge' ? home : '';
+      var home = !it.isStaple && kitOn() ? haveWhere(it.name) : '', kit = home === 'pantry' || home === 'fridge' ? kitItemFor(it.name) : null;
+      it.atHome = kit && kit.level !== 'low' ? home : '';
+      it.lowHome = kit && kit.level === 'low' ? home : '';
       it.skipped = (it.isStaple || !!it.atHome) && !S.list.out[k];
       it.done = !it.skipped && !!S.list.checked[k];
       return it;
@@ -2606,7 +2615,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }
     return '<li class="item' + (r.done ? ' done' : '') + '">' + pic + '<button class="pick" type="button" ' + attrs + ' aria-pressed="' + (r.done ? 'true' : 'false') + '">' +
       '<span class="box" aria-hidden="true">' + (r.done ? '✓' : '') + '</span>' +
-      '<span class="txt"><span class="name">' + esc(r.name) + (r.isStaple ? '<span class="tag">Staple</span>' : '') + '</span>' + (r.atHome ? '<span class="have-at">You have some in your ' + r.atHome + '</span>' : '') + sub + '</span>' + right + '</button>' + tail + '</li>';
+      '<span class="txt"><span class="name">' + esc(r.name) + (r.isStaple ? '<span class="tag">Staple</span>' : '') + '</span>' + (r.atHome ? '<span class="have-at">You have some in your ' + r.atHome + '</span>' : r.lowHome ? '<span class="have-at">Almost gone in your ' + r.lowHome + '</span>' : '') + sub + '</span>' + right + '</button>' + tail + '</li>';
   }
   function renderSummary(rows) {
     var c = counts(rows), total = c.active.length, left = c.left.length, done = total - left;
@@ -2663,7 +2672,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (atHome.length) html += '<div class="aisle"><h3>Already in your kitchen (left off the list)</h3><ul class="plain">' + atHome.map(function (r) {
       var k = single(r.name), it = S.kitchen.items.filter(function (x) { return usable(x) && sameFood(k, single(x.name)); })[0];
       var when = it && it.exp ? ' · ' + expText(it).charAt(0).toLowerCase() + expText(it).slice(1) : '';
-      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(r.name) + '</span><span class="from">' + esc('In your ' + r.atHome + when + (r.amount ? ' · recipes need ' + (r.buy ? (r.note || r.buy) : r.amount) : '')) + '</span></span></span>' +
+      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(r.name) + '</span><span class="from">' + esc('In your ' + r.atHome + (it && it.level === 'half' ? ' (about half left)' : '') + when + (r.amount ? ' · recipes need ' + (r.buy ? (r.note || r.buy) : r.amount) : '')) + '</span></span></span>' +
         '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">Need more</button></li>';
     }).join('') + '</ul></div>';
     if (skipped.length) html += '<div class="aisle"><h3>Pantry staples (left off the list)</h3><ul class="plain">' + skipped.map(function (r) {
@@ -2999,7 +3008,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function cleanKitchen(d) {
     var ok = function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x || '') ? x : ''; };
     return { items: (d && Array.isArray(d.items) ? d.items : []).filter(function (x) { return x && typeof x.name === 'string' && x.name.trim(); }).slice(0, 400).map(function (x) {
-      return { id: String(x.id || newId()), name: String(x.name).trim().slice(0, 60), place: x.place === 'fridge' ? 'fridge' : 'pantry', exp: ok(x.exp), added: ok(x.added) };
+      return { id: String(x.id || newId()), name: String(x.name).trim().slice(0, 60), place: x.place === 'fridge' ? 'fridge' : 'pantry', exp: ok(x.exp), added: ok(x.added), level: x.level === 'half' || x.level === 'low' ? x.level : 'full' };
     }) };
   }
   function expDays(it) { var d = toDate(it.exp), t = toDate(today()); return d ? Math.round((d - t) / 86400000) : null; }
@@ -3011,6 +3020,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     Object.keys(S.settings.staples).forEach(function (k) { keys.push(single(k)); });
     return keys.filter(Boolean);
   }
+  var LEVELS = { full: 'Full', half: 'Half', low: 'Almost gone' };
+  function kitItemFor(name) { var k = single(name); return k ? S.kitchen.items.filter(function (x) { return usable(x) && sameFood(k, single(x.name)); })[0] || null : null; }
   /* where a food is at home: 'fridge', 'pantry', 'staple' or '' */
   function haveWhere(name) {
     var k = single(name); if (!k) return '';
@@ -3039,7 +3050,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function haveMark(name) {
     if (!kitOn()) return '';
     var w = haveWhere(name);
-    return w ? '<span class="have-at">✓ ' + (w === 'staple' ? 'You keep this stocked' : 'In your ' + w) + '</span>' : '';
+    var it = w && w !== 'staple' ? kitItemFor(name) : null, lv = it && it.level === 'low' ? ' · almost gone' : it && it.level === 'half' ? ' · about half left' : '';
+    return w ? '<span class="have-at">✓ ' + (w === 'staple' ? 'You keep this stocked' : 'In your ' + w + lv) + '</span>' : '';
   }
   function knownFoods() {
     var seen = {}, out = [], idx = libIndex();
@@ -3054,7 +3066,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var have = inKitchen(name, place);
     if (have) { if (exp) have.exp = exp; return; }
     if (S.kitchen.items.length >= 400) return;
-    S.kitchen.items.push({ id: newId(), name: name, place: place, exp: exp || '', added: today() });
+    S.kitchen.items.push({ id: newId(), name: name, place: place, exp: exp || '', added: today(), level: 'full' });
   }
   function expText(it) {
     var d = expDays(it);
@@ -3078,7 +3090,12 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('pantry-input').placeholder = kitPlace === 'fridge' ? 'Milk, eggs, chicken, spinach…' : 'Rice, black beans, tortillas…';
     /* things to use up first, from both places */
     var soon = S.kitchen.items.filter(function (it) { return isSoon(it) || (expDays(it) !== null && expDays(it) < 0); }).sort(function (a, b) { return expDays(a) - expDays(b); });
-    $('kit-alert').innerHTML = soon.length ? '<div class="kit-alert small"><strong>Use these first:</strong> ' + soon.slice(0, 6).map(function (it) { var d = expDays(it); return esc(it.name) + ' <span class="muted">(' + (d < 0 ? 'expired' : d === 0 ? 'today' : d === 1 ? 'tomorrow' : d + ' days') + ')</span>'; }).join(', ') + (soon.length > 6 ? ' and ' + (soon.length - 6) + ' more' : '') + '</div>' : '';
+    var onList = {}; S.list.extras.forEach(function (e) { onList[single(e.text)] = true; });
+    if (ready) allRows().forEach(function (r) { if (!r.skipped && !r.extra) onList[single(r.name)] = true; });
+    var low = S.kitchen.items.filter(function (it) { return it.level === 'low' && usable(it); });
+    var lowHtml = low.length ? '<div class="kit-alert small" style="margin-top:8px"><strong>Running low:</strong> ' + low.map(function (it) { return esc(it.name); }).join(', ') +
+      '<div class="kit-low">' + low.map(function (it) { return onList[single(it.name)] ? '<span class="chip" aria-disabled="true">✓ ' + esc(it.name) + ' is on your list</span>' : '<button class="chip" type="button" data-klist="' + esc(it.id) + '">+ Add ' + esc(it.name) + ' to my list</button>'; }).join('') + '</div></div>' : '';
+    $('kit-alert').innerHTML = (soon.length ? '<div class="kit-alert small"><strong>Use these first:</strong> ' + soon.slice(0, 6).map(function (it) { var d = expDays(it); return esc(it.name) + ' <span class="muted">(' + (d < 0 ? 'expired' : d === 0 ? 'today' : d === 1 ? 'tomorrow' : d + ' days') + ')</span>'; }).join(', ') + (soon.length > 6 ? ' and ' + (soon.length - 6) + ' more' : '') + '</div>' : '') + lowHtml;
     /* quick add from foods in your recipes */
     var q = single(pantryQ), foods = knownFoods().filter(function (n) { return !inKitchen(n, kitPlace) && (!q || single(n).indexOf(q) >= 0); }).slice(0, q ? 30 : 10);
     $('pantry-chips').innerHTML = foods.length ? '<span class="small muted" style="width:100%">Tap to add from your recipes:</span>' + foods.map(function (n) { return '<button class="chip" type="button" data-hand="' + esc(n) + '">+ ' + esc(n) + '</button>'; }).join('') : '';
@@ -3090,9 +3107,12 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('pantry-clear').hidden = !n;
     $('kit-list').innerHTML = items.map(function (it) {
       var d = expDays(it), tag = d !== null && d < 0 ? '<span class="tag warn">Expired</span>' : isSoon(it) ? '<span class="tag">Use soon</span>' : '';
-      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(it.name) + tag + '</span><span class="from">' + esc(expText(it)) + '</span></span></span>' +
-        '<label class="kit-date"><span class="vh">Expiration date for ' + esc(it.name) + '</span><input type="date" data-kexp="' + esc(it.id) + '" value="' + esc(it.exp) + '"></label>' +
-        '<button class="x" type="button" data-kdel="' + esc(it.id) + '" aria-label="Used up or remove ' + esc(it.name) + '">×</button></li>';
+      return '<li class="item"><div class="kit-top"><span class="txt"><span class="name">' + esc(it.name) + tag + '</span><span class="from">' + esc(expText(it)) + '</span></span>' +
+        '<button class="x" type="button" data-kdel="' + esc(it.id) + '" aria-label="Used up or remove ' + esc(it.name) + '">×</button></div>' +
+        '<div class="kit-ctrl"><span class="lvl" role="group" aria-label="How much ' + esc(it.name) + ' is left">' + ['full', 'half', 'low'].map(function (v) {
+          return '<button type="button" data-klvl="' + esc(it.id) + '" data-v="' + v + '" aria-pressed="' + (it.level === v) + '">' + LEVELS[v] + '</button>';
+        }).join('') + '</span>' +
+        '<label class="kit-date"><span class="vh">Expiration date for ' + esc(it.name) + '</span><input type="date" data-kexp="' + esc(it.id) + '" value="' + esc(it.exp) + '"></label></div></li>';
     }).join('');
     /* what can I make */
     var baby = babyOn();
@@ -4217,6 +4237,18 @@ var babyEd = $('ed-kind').value === 'baby';
   $('view-pantry').addEventListener('click', function (ev) {
     var pl = ev.target.closest('[data-kplace]');
     if (pl) { kitPlace = pl.dataset.kplace; resetConfirm(); renderPantry(); return; }
+    var lv = ev.target.closest('[data-klvl]');
+    if (lv) {
+      var li = S.kitchen.items.filter(function (x) { return x.id === lv.dataset.klvl; })[0];
+      if (li) { li.level = lv.dataset.v; save('kitchen'); render(); if (li.level === 'low') toast(li.name + ' is almost gone. It goes back on your list when a recipe needs it.'); }
+      return;
+    }
+    var al = ev.target.closest('[data-klist]');
+    if (al) {
+      var lo = S.kitchen.items.filter(function (x) { return x.id === al.dataset.klist; })[0];
+      if (lo && !S.list.extras.some(function (e) { return single(e.text) === single(lo.name); })) { S.list.extras.push({ id: newId(), text: lo.name, done: false }); save('list'); render(); toast(lo.name + ' added to your shopping list.'); }
+      return;
+    }
     var del = ev.target.closest('[data-kdel]');
     if (del) {
       var it = S.kitchen.items.filter(function (x) { return x.id === del.dataset.kdel; })[0];
