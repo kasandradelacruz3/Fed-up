@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261028120431">
+<meta name="fedup-version" content="20261028134052">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -232,6 +232,8 @@ dialog.zoom::backdrop { background: rgba(0, 0, 0, 0.55); }
 .join-btns { display: grid; gap: 8px; }
 dialog.join-dlg { border: 2px solid var(--accent); background: var(--accent-tint); text-align: center; }
 dialog.join-dlg h2 { font-size: 1.2rem; margin: 0; color: var(--accent); }
+dialog.split-dlg .split-opt { justify-content: space-between; display: flex; width: 100%; }
+dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
 dialog.tip { border: 2px solid var(--accent); background: var(--accent-tint); }
 dialog.tip .tip-badge { align-self: flex-start; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; }
 dialog.tip h2 { font-size: 1.15rem; margin: 0; color: var(--accent); }
@@ -1223,6 +1225,15 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   <button class="btn quiet small" type="button" data-join="in">I already have an account. Sign in</button>
   <button class="btn quiet small" type="button" id="join-dlg-close">Not now, keep looking</button>
 </div></dialog>
+<dialog class="zoom split-dlg" id="split-dlg" aria-labelledby="split-h"><form class="stack" id="split-form" method="dialog">
+  <h2 id="split-h" style="font-size:1.15rem;margin:0">How much goes in this step?</h2>
+  <p class="small muted" id="split-sub" style="margin:0"></p>
+  <div class="stack" id="split-opts" style="gap:8px"></div>
+  <label class="f" for="split-amt">Or type an amount
+    <span class="row" style="gap:8px"><input type="text" id="split-amt" name="search_split" autocomplete="off" placeholder="1/4 cup" style="flex:1"><button class="btn primary" type="submit" id="split-go">Add</button></span>
+  </label>
+  <button class="btn quiet small" type="button" id="split-cancel">Cancel</button>
+</form></dialog>
 <dialog class="zoom tip" id="step-tip" aria-labelledby="step-tip-h"><div class="stack">
   <span class="tip-badge">📌 IMPORTANT</span>
   <h2 id="step-tip-h">How to write your steps</h2>
@@ -2697,6 +2708,20 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function joinSteps(arr) { return arr.map(function (x) { return String(x || '').replace(/\r/g, '').replace(/\n\s*\n+/g, '\n').trim(); }).filter(Boolean).join('\n\n'); }
   /* {Ingredient name} in a step shows that ingredient's amount for the servings being made */
   var STEP_TAG = /\{([^{}\n]{1,60})\}/g;
+  /* a step tag is {Sugar} for all of it, or {Sugar|1/2 cup} for just part of it */
+  function tagParts(raw) { var i = String(raw).indexOf('|'); return i < 0 ? { name: String(raw).trim(), part: '' } : { name: raw.slice(0, i).trim(), part: raw.slice(i + 1).trim() }; }
+  function splitAmt(txt, fallbackUnit) {
+    var m = String(txt || '').trim().match(/^((?:\d+\s+)?\d+\s*\/\s*\d+|\d*\.?\d+(?:\s*[½⅓⅔¼¾⅛⅜⅝⅞])?|[½⅓⅔¼¾⅛⅜⅝⅞])\s*(.*)$/);
+    if (!m) return { q: NaN, unit: '' };
+    return { q: parseQty(m[1].replace(/(\d)([½⅓⅔¼¾⅛⅜⅝⅞])/, '$1 $2')), unit: m[2].trim() || fallbackUnit || '' };
+  }
+  /* which ingredients are used in more than one step (shown as "divided") */
+  function dividedOf(r) {
+    var n = {}, out = {}, m; STEP_TAG.lastIndex = 0;
+    splitSteps(r.notes).forEach(function (st) { var seen = {}; STEP_TAG.lastIndex = 0; while ((m = STEP_TAG.exec(st))) { var k = skey(tagParts(m[1]).name); if (!seen[k]) { seen[k] = 1; n[k] = (n[k] || 0) + 1; } } });
+    Object.keys(n).forEach(function (k) { if (n[k] > 1) out[k] = true; });
+    return out;
+  }
   function stepIng(r, name) {
     var k = norm(name), c = skey(name);
     return (r.ingredients || []).filter(function (g) { return norm(g.name) === k || skey(g.name) === c; })[0] || null;
@@ -2707,8 +2732,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var part = function (t) { return factor && factor !== 1 ? scaleSteps(t, factor, r) : esc(t); };
     while ((m = STEP_TAG.exec(st))) {
       out += part(st.slice(last, m.index));
-      var g = stepIng(r, m[1]), label = m[1].trim();
-      if (g) { var q = parseQty(g.qty); var amt = !isNaN(q) ? amountText(q * (factor || 1), normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' '); label = (amt ? amt + ' ' : '') + g.name.toLowerCase(); }
+      var tg = tagParts(m[1]), g = stepIng(r, tg.name), label = tg.name;
+      if (g && tg.part) { var pp = splitAmt(tg.part, g.unit); label = (!isNaN(pp.q) ? amountText(pp.q * (factor || 1), normUnit(pp.unit)) : tg.part) + ' ' + g.name.toLowerCase(); }
+      else if (g) { var q = parseQty(g.qty); var amt = !isNaN(q) ? amountText(q * (factor || 1), normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' '); label = (amt ? amt + ' ' : '') + g.name.toLowerCase(); }
       out += '<b class="ing-tag">' + esc(label) + '</b>';
       last = m.index + m[0].length;
     }
@@ -2774,9 +2800,10 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('cook-edit').textContent = r.group ? 'Save a copy' : 'Edit';
     var n = portions(cookId), shown = n || cookServ || base(r), factor = shown / base(r);
     var line = n ? 'Making ' + servingsLabel(r, n) + ' this week' + (r.servings > 0 && n !== r.servings ? ' (recipe makes ' + r.servings + ')' : '') : (r.servings > 0 ? 'Makes ' + r.servings + (r.servings === 1 ? ' serving' : ' servings') : 'Not on this week\'s plan');
+    var dv = dividedOf(r);
     var ings = (r.ingredients || []).map(function (g) {
       var q = parseQty(g.qty), amt = !isNaN(q) ? amountText(q * factor, normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' ');
-      return '<li class="cook-ing"><button class="pick" type="button" data-act="cook-tick" aria-pressed="false"><span class="box" aria-hidden="true"></span><span class="txt">' + esc(g.name) + haveMark(g.name) + '</span><span class="q">' + esc(amt) + '</span></button></li>';
+      return '<li class="cook-ing"><button class="pick" type="button" data-act="cook-tick" aria-pressed="false"><span class="box" aria-hidden="true"></span><span class="txt">' + esc(g.name) + (dv[skey(g.name)] ? ' <span class="muted small">(divided)</span>' : '') + haveMark(g.name) + '</span><span class="q">' + esc(amt) + '</span></button></li>';
     }).join('');
     $('cook-body').innerHTML = (photoOf(cookId) ? '<img class="fr-img" src="' + esc(photoOf(cookId)) + '" alt="Photo of ' + esc(r.name) + '">' : '') + '<div class="stack full" style="gap:4px"><h2>' + esc(r.name) + '</h2><p class="muted">' + esc([r.group ? 'Shared by ' + who(r.owner) : '', isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), line].filter(Boolean).join(' · ')) + '</p>' + (showTags(r).length ? '<p class="hash">' + esc(showTags(r).map(function (t) { return '#' + t; }).join('  ')) + '</p>' : '') + '</div>' +
       ([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).length ? '<p class="small muted full">' + esc([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).join(' · ')) + '</p>' : '') +
@@ -3764,8 +3791,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     else if (fview.state === 'error') html += '<p class="note">The recipe could not load. Go back and try again.</p>';
     else if (fview.state === 'locked') html += '<p class="note">This recipe is not available right now.</p>';
     else {
+      var dv = dividedOf(r);
       var ings = (r.ingredients || []).map(function (g) {
-        return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + haveMark(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
+        return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + (dv[skey(g.name)] ? ' <span class="muted small">(divided)</span>' : '') + haveMark(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
       }).join('');
       html += havePill(r) + safetyBlock(r, fview.post.owner !== uid) + '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
@@ -4379,14 +4407,68 @@ var babyEd = $('ed-kind').value === 'baby';
   $('ed-tag-add').addEventListener('click', addOwnTag);
   $('ed-steps').addEventListener('focusin', function (ev) { if (ev.target.dataset.step != null) { lastStepBox = ev.target; renderStepIngs(); } });
   $('ed-step-ings').addEventListener('mousedown', function (ev) { if (ev.target.closest('[data-steping]')) ev.preventDefault(); });
-  $('ed-step-ings').addEventListener('click', function (ev) {
-    var c = ev.target.closest('[data-steping]'); if (!c || !lastStepBox || !lastStepBox.isConnected) return;
-    var t = lastStepBox, tag = '{' + c.dataset.steping + '}', a = t.selectionStart != null ? t.selectionStart : t.value.length, z = t.selectionEnd != null ? t.selectionEnd : a;
+  function putStepTag(t, a, z, tag) {
+    /* never drop a tag inside another tag: move to just after it */
+    var open = t.value.lastIndexOf('{', a - 1), close = t.value.lastIndexOf('}', a - 1);
+    if (open > close) { var end = t.value.indexOf('}', a); if (end >= 0) { a = end + 1; z = Math.max(z, a); } }
     var pre = t.value.slice(0, a), post = t.value.slice(z);
     var ins = (pre && !/\s$/.test(pre) ? ' ' : '') + tag + (/^[\s,.;!)]/.test(post) ? '' : ' ');
     t.value = pre + ins + post; var pos = (pre + ins).length;
     t.focus(); try { t.setSelectionRange(pos, pos); } catch (e) {}
     growArea(t); syncSteps(true);
+  }
+  var splitFor = null;
+  function tagsIn(text, name) { var out = [], m, k = skey(name); STEP_TAG.lastIndex = 0; while ((m = STEP_TAG.exec(text))) { var tp = tagParts(m[1]); if (skey(tp.name) === k) out.push({ raw: m[0], part: tp.part }); } return out; }
+  function openSplit(t, a, z, name) {
+    readIngs();
+    var g = draft.ingredients.filter(function (x) { return skey(x.name) === skey(name); })[0] || { qty: '', unit: '' };
+    var total = parseQty(g.qty), unit = normUnit(g.unit), others = [];
+    Array.prototype.forEach.call($('ed-steps').querySelectorAll('textarea'), function (box) { if (box !== t) tagsIn(box.value, name).forEach(function (x) { x.box = box; others.push(x); }); });
+    var plain = others.filter(function (x) { return !x.part; }), used = 0, known = true;
+    others.forEach(function (x) { if (!x.part) return; var pp = splitAmt(x.part, g.unit); if (isNaN(pp.q) || normUnit(pp.unit) !== unit) known = false; else used += pp.q; });
+    splitFor = { t: t, a: a, z: z, name: name, total: total, unit: unit, g: g, plain: plain };
+    var tot = !isNaN(total) ? amountText(total, unit) : [g.qty, g.unit].filter(Boolean).join(' ');
+    $('split-h').textContent = 'How much ' + name.toLowerCase() + ' goes in this step?';
+    $('split-sub').textContent = (tot ? 'The recipe uses ' + tot + ' in all. ' : '') + 'It\'s already in another step, so pick how much is used here. Your shopping list still counts it once.';
+    var opts = [];
+    if (!isNaN(total) && total > 0) {
+      opts.push(['half', 'Half', amountText(total / 2, unit)]);
+      if (!plain.length && known && used > 0 && total - used > 0.001) opts.push(['rest', 'The rest', amountText(total - used, unit)]);
+    }
+    opts.push(['all', 'All of it', tot]);
+    $('split-opts').innerHTML = opts.map(function (o) { return '<button class="btn split-opt" type="button" data-split="' + o[0] + '"><b>' + esc(o[1]) + '</b><span>' + esc(o[2] || '') + '</span></button>'; }).join('');
+    $('split-amt').value = ''; $('split-amt').placeholder = unit ? '1/4 ' + unit : '1/4';
+    try { $('split-dlg').showModal(); } catch (e) {}
+  }
+  function finishSplit(amt) {
+    var f = splitFor; splitFor = null; try { $('split-dlg').close(); } catch (e) {}
+    if (!f || !f.t.isConnected) return;
+    if (amt === null) { putStepTag(f.t, f.a, f.z, '{' + f.name + '}'); return; }
+    var pp = splitAmt(amt, f.unit);
+    var text = !isNaN(pp.q) ? fmtQty(pp.q) + (normUnit(pp.unit) ? ' ' + normUnit(pp.unit) : '') : String(amt).trim().slice(0, 30);
+    putStepTag(f.t, f.a, f.z, '{' + f.name + '|' + text + '}');
+    /* the earlier step that said "all of it" now gets what's left */
+    if (f.plain.length === 1 && !isNaN(f.total) && !isNaN(pp.q) && normUnit(pp.unit) === f.unit && f.total - pp.q > 0.001) {
+      var box = f.plain[0].box, rest = fmtQty(f.total - pp.q) + (f.unit ? ' ' + f.unit : '');
+      box.value = box.value.replace(f.plain[0].raw, '{' + f.name + '|' + rest + '}'); growArea(box); syncSteps(true);
+      toast('The other step now uses ' + amountText(f.total - pp.q, f.unit) + ' and this one ' + amountText(pp.q, f.unit) + '.');
+    }
+  }
+  $('split-opts').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-split]'); if (!b || !splitFor) return;
+    var f = splitFor, k = b.dataset.split;
+    if (k === 'all') return finishSplit(null);
+    if (k === 'half') return finishSplit(fmtQty(f.total / 2) + ' ' + f.unit);
+    if (k === 'rest') { var used = 0; Array.prototype.forEach.call($('ed-steps').querySelectorAll('textarea'), function (box) { if (box !== f.t) tagsIn(box.value, f.name).forEach(function (x) { var pp = splitAmt(x.part, f.g.unit); if (!isNaN(pp.q)) used += pp.q; }); }); return finishSplit(fmtQty(f.total - used) + ' ' + f.unit); }
+  });
+  $('split-form').addEventListener('submit', function (ev) { ev.preventDefault(); var v = $('split-amt').value.trim(); if (!v) { $('split-amt').focus(); return; } finishSplit(v); });
+  $('split-cancel').addEventListener('click', function () { splitFor = null; $('split-dlg').close(); });
+  $('ed-step-ings').addEventListener('click', function (ev) {
+    var c = ev.target.closest('[data-steping]'); if (!c || !lastStepBox || !lastStepBox.isConnected) return;
+    var t = lastStepBox, a = t.selectionStart != null ? t.selectionStart : t.value.length, z = t.selectionEnd != null ? t.selectionEnd : a, name = c.dataset.steping;
+    var elsewhere = Array.prototype.some.call($('ed-steps').querySelectorAll('textarea'), function (box) { return box !== t && tagsIn(box.value, name).length; });
+    if (elsewhere) { openSplit(t, a, z, name); return; }
+    putStepTag(t, a, z, '{' + name + '}');
   });
   $('ed-steps').addEventListener('input', function (ev) { if (ev.target.dataset.step != null) { growArea(ev.target); syncSteps(true); } });
   $('ed-steps').addEventListener('click', function (ev) {
