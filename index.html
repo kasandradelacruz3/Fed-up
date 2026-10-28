@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261028113009">
+<meta name="fedup-version" content="20261028113500">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2379,7 +2379,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         it.amount = 'Buy ' + it.buy;
       }
       it.isStaple = !!S.settings.staples[k];
-      it.skipped = it.isStaple && !S.list.out[k];
+      var home = !it.isStaple && kitOn() ? haveWhere(it.name) : '';
+      it.atHome = home === 'pantry' || home === 'fridge' ? home : '';
+      it.skipped = (it.isStaple || !!it.atHome) && !S.list.out[k];
       it.done = !it.skipped && !!S.list.checked[k];
       return it;
     });
@@ -2604,7 +2606,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }
     return '<li class="item' + (r.done ? ' done' : '') + '">' + pic + '<button class="pick" type="button" ' + attrs + ' aria-pressed="' + (r.done ? 'true' : 'false') + '">' +
       '<span class="box" aria-hidden="true">' + (r.done ? '✓' : '') + '</span>' +
-      '<span class="txt"><span class="name">' + esc(r.name) + (r.isStaple ? '<span class="tag">Staple</span>' : '') + '</span>' + sub + '</span>' + right + '</button>' + tail + '</li>';
+      '<span class="txt"><span class="name">' + esc(r.name) + (r.isStaple ? '<span class="tag">Staple</span>' : '') + '</span>' + (r.atHome ? '<span class="have-at">You have some in your ' + r.atHome + '</span>' : '') + sub + '</span>' + right + '</button>' + tail + '</li>';
   }
   function renderSummary(rows) {
     var c = counts(rows), total = c.active.length, left = c.left.length, done = total - left;
@@ -2656,6 +2658,14 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }).join('') + '</ul></div>';
     var d = c.active.filter(function (r) { return r.done; });
     if (d.length) html += '<div class="aisle"><h3>Crossed off (tap to put back)</h3><ul class="plain">' + d.map(function (r) { return itemHtml(r, i++); }).join('') + '</ul></div>';
+    var atHome = skipped.filter(function (r) { return r.atHome; });
+    skipped = skipped.filter(function (r) { return !r.atHome; });
+    if (atHome.length) html += '<div class="aisle"><h3>Already in your kitchen (left off the list)</h3><ul class="plain">' + atHome.map(function (r) {
+      var k = single(r.name), it = S.kitchen.items.filter(function (x) { return usable(x) && sameFood(k, single(x.name)); })[0];
+      var when = it && it.exp ? ' · ' + expText(it).charAt(0).toLowerCase() + expText(it).slice(1) : '';
+      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(r.name) + '</span><span class="from">' + esc('In your ' + r.atHome + when + (r.amount ? ' · recipes need ' + (r.buy ? (r.note || r.buy) : r.amount) : '')) + '</span></span></span>' +
+        '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">Need more</button></li>';
+    }).join('') + '</ul></div>';
     if (skipped.length) html += '<div class="aisle"><h3>Pantry staples (left off the list)</h3><ul class="plain">' + skipped.map(function (r) {
       return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(r.name) + '</span>' + (r.amount ? '<span class="from">' + esc(r.buy ? 'This week ' + (r.note || 'uses ' + r.buy) : 'Need ' + r.amount) + '</span>' : '') + '</span></span>' +
         '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">I\'m out</button>' +
@@ -3101,7 +3111,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         '<button class="btn quiet small push" type="button" data-act="cook" data-id="' + esc(x.id) + '">Cook</button></div></li>';
     }).join('') + '</ul>';
   }
-  function toggleHand(name) { addToKitchen(name, kitPlace, ''); save('kitchen'); renderPantry(); }
+  function toggleHand(name) { addToKitchen(name, kitPlace, ''); save('kitchen'); render(); }
   /* the old "what I have" list (names only) moves into the pantry once */
   function moveOnHand() {
     if (!S.settings.onHand || !S.settings.onHand.length) return;
@@ -4197,12 +4207,12 @@ var babyEd = $('ed-kind').value === 'baby';
       var k = single(name), match = known.filter(function (n) { return single(n) === k; })[0] || canonName(name) || name;
       addToKitchen(match.charAt(0).toUpperCase() + match.slice(1), kitPlace, exp);
     });
-    $('pantry-input').value = ''; $('kit-exp').value = ''; pantryQ = ''; save('kitchen'); renderPantry();
+    $('pantry-input').value = ''; $('kit-exp').value = ''; pantryQ = ''; save('kitchen'); render();
     toast('Added to your ' + kitPlace + '.');
   });
   $('pantry-clear').addEventListener('click', function () {
     if (!confirmTap('pantry-clear')) return;
-    S.kitchen.items = S.kitchen.items.filter(function (x) { return x.place !== kitPlace; }); save('kitchen'); renderPantry();
+    S.kitchen.items = S.kitchen.items.filter(function (x) { return x.place !== kitPlace; }); save('kitchen'); render();
   });
   $('view-pantry').addEventListener('click', function (ev) {
     var pl = ev.target.closest('[data-kplace]');
@@ -4210,14 +4220,14 @@ var babyEd = $('ed-kind').value === 'baby';
     var del = ev.target.closest('[data-kdel]');
     if (del) {
       var it = S.kitchen.items.filter(function (x) { return x.id === del.dataset.kdel; })[0];
-      S.kitchen.items = S.kitchen.items.filter(function (x) { return x.id !== del.dataset.kdel; }); save('kitchen'); renderPantry();
+      S.kitchen.items = S.kitchen.items.filter(function (x) { return x.id !== del.dataset.kdel; }); save('kitchen'); render();
       if (it) toast(it.name + ' removed.');
     }
   });
   $('view-pantry').addEventListener('change', function (ev) {
     var id = ev.target.dataset && ev.target.dataset.kexp; if (!id) return;
     var it = S.kitchen.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
-    it.exp = /^\d{4}-\d{2}-\d{2}$/.test(ev.target.value) ? ev.target.value : ''; save('kitchen'); renderPantry();
+    it.exp = /^\d{4}-\d{2}-\d{2}$/.test(ev.target.value) ? ev.target.value : ''; save('kitchen'); render();
   });
   $('mine-search').addEventListener('input', function () { mineSearch = this.value; if (ready) renderMine(); });
   $('scan-file').addEventListener('change', function () { var fl = this.files; if (fl && fl.length && sampleApi) runScan(fl); this.value = ''; });
