@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261028113500">
+<meta name="fedup-version" content="20261028114904">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3361,10 +3361,10 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var before = myFollows.slice();
     if (on) myFollows.push(o); else myFollows = myFollows.filter(function (x) { return x !== o; });
     bump(o, 'followers', on ? 1 : -1); bump(uid, 'following', on ? 1 : -1);
-    renderFeed(); renderExplore(); if (tab === 'user') renderUser(); if (tab === 'profile') renderProfile();
+    renderFeed(); renderExplore(); if (tab === 'user') renderUser(); if (tab === 'profile') renderProfile(); if (tab === 'frecipe' && fview) renderFRecipe();
     (on ? feedApi.follow(o) : feedApi.unfollow(o)).then(function () {}, function () {
       myFollows = before; bump(o, 'followers', on ? -1 : 1); bump(uid, 'following', on ? -1 : 1);
-      renderFeed(); if (tab === 'user') renderUser(); toast("That didn't save. Try again.");
+      renderFeed(); if (tab === 'user') renderUser(); if (tab === 'frecipe' && fview) renderFRecipe(); toast("That didn't save. Try again.");
     });
   }
 
