@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261028134052">
+<meta name="fedup-version" content="20261029093951">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -589,6 +589,42 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 </style>
 </head>
 <body>
+<div id="splash" role="status" aria-label="Fed Up is loading">
+<style>
+#splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background-color: #FFFFFF;
+  background-image: conic-gradient(#FBCFE2 25%, transparent 0 50%, #FBCFE2 0 75%, transparent 0); background-size: 72px 72px;
+  transition: opacity .35s ease, visibility .35s; }
+#splash.done { opacity: 0; visibility: hidden; }
+#splash .sp-in { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+#splash .sp-plate { width: 208px; height: 208px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center;
+  box-shadow: 6px 12px 0 rgba(217, 138, 174, .35); animation: sp-pop .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+#splash .sp-rim { width: 172px; height: 172px; border-radius: 50%; background: #FBFAF8; border: 2px solid #EFE7EA; display: grid; place-items: center; }
+#splash .sp-name { font-family: Caprasimo, Georgia, serif; color: #E0247A; font-size: 2.1rem; letter-spacing: .04em; line-height: 1; text-align: center; }
+#splash .sp-tag { background: #FFFFFF; color: #111113; font: 600 .95rem/1.2 "Instrument Sans", system-ui, sans-serif; padding: 8px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+#splash .sp-dots { display: flex; gap: 8px; }
+#splash .sp-dots i { width: 10px; height: 10px; border-radius: 50%; background: #E0247A; animation: sp-bounce 1s infinite ease-in-out; }
+#splash .sp-dots i:nth-child(2) { animation-delay: .15s; } #splash .sp-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes sp-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes sp-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-8px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #splash .sp-plate, #splash .sp-dots i { animation: none; } }
+</style>
+<div class="sp-in">
+  <div class="sp-plate"><div class="sp-rim"><div class="sp-name">FED<br>UP</div></div></div>
+  <div class="sp-tag">Plan it. Price it. Shop it.</div>
+  <div class="sp-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+</div>
+<script>
+(function () {
+  var start = Date.now(), gone = false;
+  window.fedupSplashDone = function () {
+    if (gone) return; gone = true;
+    var wait = Math.max(0, 700 - (Date.now() - start));
+    setTimeout(function () { var el = document.getElementById('splash'); if (!el) return; el.classList.add('done'); setTimeout(function () { el.remove(); }, 400); }, wait);
+  };
+  setTimeout(window.fedupSplashDone, 8000);
+})();
+</script>
+</div>
 <div class="wrap">
   <header class="top">
     <button class="gear" id="open-settings" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -1381,7 +1417,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   }
   var profileReady = Promise.resolve();
   function msg(text) { var m = $('auth-msg'); m.textContent = text || ''; m.hidden = !text; }
-  function showAuth() { $('auth').hidden = false; }
+  function showAuth() { $('auth').hidden = false; try { if (window.fedupSplashDone) window.fedupSplashDone(); } catch (e) {} }
   var resendFor = null, resendTimer = null, resendAt = 0;
   function showResend(kind, email) { resendFor = { kind: kind, email: email }; resendAt = Date.now(); tickResend(); }
   function tickResend() {
@@ -3373,12 +3409,14 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     api.isAdmin().then(function (a) { feedAdmin = !!a; renderFeed(); }, function () {});
     loadFeed();
   }
+  /* the loading screen goes away once the page has something to show */
+  function splashDone() { (function wait() { if (!ready) return setTimeout(wait, 100); try { if (window.fedupSplashDone) window.fedupSplashDone(); } catch (e) {} })(); }
   function loadFeed() {
     feedApi.list().then(function (posts) {
-      feedPosts = posts || []; feedState = 'ok'; loadLikes(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
+      feedPosts = posts || []; feedState = 'ok'; splashDone(); loadLikes(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
       var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); if (p.credit && ids.indexOf(p.credit) < 0) ids.push(p.credit); }); myFollows.forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); });
       if (user && ids.length) user.profiles(ids).then(function (ps) { ids.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (typeof ps[o].bio === 'string') bios[o] = ps[o].bio; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); renderFeed(); if (tab === 'profile') renderProfile(); renderExplore(); if (tab === 'user') renderUser(); if (fview) renderFRecipe(); });
-    }, function () { feedState = 'error'; renderFeed(); });
+    }, function () { feedState = 'error'; renderFeed(); splashDone(); });
   }
   function priceTag(p) { return ''; }
   function byLine(p) { return (p.owner === uid ? 'by you' : 'by ' + who(p.owner)) + (p.kind === 'baby' ? ' · Baby food' : ''); }
@@ -4703,6 +4741,7 @@ var babyEd = $('ed-kind').value === 'baby';
     try { var raw = JSON.parse(localStorage.getItem('cart-kitchen') || 'null'); if (raw) { S.recipes = raw.recipes || {}; S.week = cleanWeek(raw.week); S.list = cleanList(raw.list); S.settings = cleanSettings(raw.settings); S.ings = raw.ings || {}; S.photos = raw.photos || {}; S.rphotos = raw.rphotos || {}; S.freezer = cleanFreezer(raw.freezer); S.tracker = cleanTracker(raw.tracker); S.kitchen = cleanKitchen(raw.kitchen); } } catch (e) {}
     if (!guest) moveOnHand();
     showNote(kind || 'off'); ready = true; tidyNames(); render();
+    if (!guest) setTimeout(splashDone, 1500);
   }
   function watchShared() {
     db.collection('shared').onSnapshot(function (snap) {
