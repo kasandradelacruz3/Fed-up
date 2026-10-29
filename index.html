@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261029102639">
+<meta name="fedup-version" content="20261029102940">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -602,7 +602,8 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 #splash .sp-spin { position: absolute; inset: 0; animation: sp-turn 2.4s linear infinite; }
 #splash .sp-spin svg { width: 100%; height: 100%; display: block; }
 #splash .sp-name { position: absolute; inset: 0; display: grid; place-items: center; font-family: Caprasimo, "Cooper Black", Georgia, serif; color: #E0247A;
-  font-size: 2.15rem; letter-spacing: .04em; text-transform: uppercase; line-height: 1; }
+  font-size: 2.15rem; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; line-height: 1; opacity: 0; transition: opacity .25s; }
+#splash.font .sp-name { opacity: 1; }
 #splash .sp-tag { background: #FFFFFF; color: #111113; font: 600 .95rem/1.2 "Instrument Sans", system-ui, sans-serif; padding: 8px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgba(0,0,0,.06); animation: sp-fade .5s .35s both; }
 #splash .sp-dots { display: flex; gap: 8px; }
 #splash .sp-dots i { width: 10px; height: 10px; border-radius: 50%; background: #E0247A; animation: sp-bounce 1s infinite ease-in-out; }
@@ -631,6 +632,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 <script>
 (function () {
   var el = document.getElementById('splash'), start = Date.now(), gone = false;
+  /* show FED UP only once the app's own title font is ready, so it matches the app */
+  function font() { el.classList.add('font'); }
+  try { document.fonts.load('400 34px Caprasimo', 'FED UP').then(font, font); } catch (e) { font(); }
+  setTimeout(font, 1500);
   window.fedupSplashDone = function () {
     if (gone) return; gone = true;
     /* stay at least a moment so it never just flashes */
