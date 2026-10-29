@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261029100246">
+<meta name="fedup-version" content="20261029100805">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -600,44 +600,97 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 #splash .sp-plate { width: 236px; height: 236px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center; box-shadow: 6px 12px 0 rgba(217, 138, 174, .35); }
 #splash .sp-rim { width: 198px; height: 198px; border-radius: 50%; background: #FBFAF8; border: 2px solid #EFE7EA; }
 #splash .sp-rim svg { width: 100%; height: 100%; overflow: visible; }
-#splash .sp-w { fill: #E0247A; clip-path: inset(-40% 100% -40% -10%); font-family: "Dancing Script", cursive; font-weight: 700; }
+#splash .sp-w { fill: #E0247A; font-family: "Dancing Script", cursive; font-weight: 700; }
+#splash:not(.go) .sp-w { opacity: 0; }
 #splash .sp-tag { background: #FFFFFF; color: #111113; font: 600 .95rem/1.2 "Instrument Sans", system-ui, sans-serif; padding: 8px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgba(0,0,0,.06); opacity: 0; }
 #splash .sp-dots { display: flex; gap: 8px; }
 #splash .sp-dots i { width: 10px; height: 10px; border-radius: 50%; background: #E0247A; animation: sp-bounce 1s infinite ease-in-out; }
 #splash .sp-dots i:nth-child(2) { animation-delay: .15s; } #splash .sp-dots i:nth-child(3) { animation-delay: .3s; }
 #splash.go .sp-plate { animation: sp-pop .5s cubic-bezier(.2, 1.4, .4, 1) both; }
-#splash.go .sp-w { animation: sp-write 1.1s cubic-bezier(.45, .05, .55, .95) forwards; }
-#splash.go .sp-w1 { animation-delay: .3s; }
-#splash.go .sp-w2 { animation-delay: 1.35s; animation-duration: .9s; }
-#splash.go .sp-tag { animation: sp-fade .5s 2.2s forwards; }
-@keyframes sp-write { to { clip-path: inset(-40% -10% -40% -10%); } }
+#splash.written .sp-tag { animation: sp-fade .5s forwards; }
 @keyframes sp-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes sp-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes sp-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-8px); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { #splash .sp-w { clip-path: none; } #splash .sp-tag { opacity: 1; } #splash.go .sp-plate, #splash.go .sp-w, #splash.go .sp-tag, #splash .sp-dots i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #splash .sp-tag { opacity: 1; } #splash .sp-tag { opacity: 1; } #splash.go .sp-plate, #splash.written .sp-tag, #splash .sp-dots i { animation: none; } }
 </style>
 <div class="sp-in">
   <div class="sp-plate"><div class="sp-rim"><svg viewBox="0 0 200 200" aria-hidden="true">
-    <text class="sp-w sp-w1" x="100" y="96" text-anchor="middle" font-size="50">Fed Up</text>
-    <text class="sp-w sp-w2" x="100" y="146" text-anchor="middle" font-size="40">Meals</text>
+    <text class="sp-w sp-w1 word" x="100" y="96" text-anchor="middle" font-size="50">Fed Up</text>
+    <text class="sp-w sp-w2 word" x="100" y="146" text-anchor="middle" font-size="40">Meals</text>
   </svg></div></div>
   <div class="sp-tag">Plan it. Price it. Shop it.</div>
   <div class="sp-dots" aria-hidden="true"><i></i><i></i><i></i></div>
 </div>
 <script>
 (function () {
-  var el = document.getElementById('splash'), start = Date.now(), began = 0, gone = false;
+  var el = document.getElementById('splash'), began = 0, written = false, gone = false;
+/* Pen writing: a round pen moves through each letter, up and down, left to right,
+   and the cursive ink shows wherever it has passed. Works with any font. */
+function penWrite(svg, opts) {
+  opts = opts || {};
+  var ns = 'http://www.w3.org/2000/svg', color = opts.color || '#E0247A';
+  var texts = Array.prototype.slice.call(svg.querySelectorAll('text.word'));
+  if (svg._penRaf) cancelAnimationFrame(svg._penRaf);
+  Array.prototype.forEach.call(svg.querySelectorAll('.pen-mask, .pen-tip'), function (n) { n.parentNode.removeChild(n); });
+  var defs = svg.querySelector('defs') || svg.insertBefore(document.createElementNS(ns, 'defs'), svg.firstChild);
+  var jobs = [];
+  texts.forEach(function (t) {
+    t.removeAttribute('mask');
+    var id = 'pm' + Math.random().toString(36).slice(2, 9), d = '', n = t.getNumberOfChars(), sw = 0, cnt = 0, on = false;
+    for (var i = 0; i < n; i++) {
+      if (!t.textContent.charAt(i).trim()) { on = false; continue; }
+      var b = t.getExtentOfChar(i), x = b.x, y = b.y, w = b.width, h = b.height;
+      [[.1, .8], [.28, .06], [.5, .96], [.72, .06], [.9, .8]].forEach(function (q, k) {
+        d += (d ? 'L' : 'M') + (x + q[0] * w).toFixed(1) + ' ' + (y + q[1] * h).toFixed(1) + ' ';
+      });
+      on = true; sw += w; cnt++;
+    }
+    if (!cnt) return;
+    var m = document.createElementNS(ns, 'mask');
+    m.setAttribute('id', id); m.setAttribute('class', 'pen-mask'); m.setAttribute('maskUnits', 'userSpaceOnUse');
+    m.setAttribute('x', '-200'); m.setAttribute('y', '-200'); m.setAttribute('width', '600'); m.setAttribute('height', '600');
+    var p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', d); p.setAttribute('fill', 'none'); p.setAttribute('stroke', '#fff');
+    p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+    p.setAttribute('stroke-width', (sw / cnt * 0.62).toFixed(1));
+    m.appendChild(p); defs.appendChild(m); t.setAttribute('mask', 'url(#' + id + ')');
+    var L = p.getTotalLength(); p.style.strokeDasharray = L + ' ' + (L + 400); p.style.strokeDashoffset = L;
+    jobs.push({ t: t, p: p, L: L, ms: Math.max(600, Math.min(1700, cnt * 200)) });
+  });
+  var tip = document.createElementNS(ns, 'circle');
+  tip.setAttribute('class', 'pen-tip'); tip.setAttribute('r', '2.6'); tip.setAttribute('fill', color); tip.setAttribute('opacity', '0');
+  svg.appendChild(tip);
+  var j = 0, t0 = null, delay = opts.delay || 0, gap = 180;
+  function ease(x) { return x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
+  function frame(now) {
+    if (t0 === null) t0 = now + delay;
+    var job = jobs[j];
+    if (!job) { tip.setAttribute('opacity', '0'); jobs.forEach(function (x) { x.t.removeAttribute('mask'); }); if (opts.done) opts.done(); return; }
+    var k = Math.max(0, Math.min(1, (now - t0) / job.ms)), len = job.L * (k < 1 ? (k * 0.25 + ease(k) * 0.75) : 1);
+    job.p.style.strokeDashoffset = job.L - len;
+    if (now >= t0) { var pt = job.p.getPointAtLength(Math.min(len, job.L)); tip.setAttribute('cx', pt.x); tip.setAttribute('cy', pt.y); tip.setAttribute('opacity', '1'); }
+    if (k >= 1) { j++; t0 = now + gap; tip.setAttribute('opacity', '0'); }
+    svg._penRaf = requestAnimationFrame(frame);
+  }
+  svg._penRaf = requestAnimationFrame(frame);
+}
+
   /* start writing once the handwriting font is ready (never in a plain font), or after 1.2s at most */
-  function go() { if (began) return; began = Date.now(); el.classList.add('go'); }
+  function go() {
+    if (began) return; began = Date.now(); el.classList.add('go');
+    var fin = function () { written = true; el.classList.add('written'); };
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return fin();
+    try { penWrite(el.querySelector('svg'), { delay: 250, done: fin }); } catch (e) { fin(); }
+  }
   try { document.fonts.load('700 50px "Dancing Script"', 'FedUpMals').then(go, go); } catch (e) { go(); }
   setTimeout(go, 1200);
   window.fedupSplashDone = function () {
     if (gone) return; gone = true;
     (function wait() {
       /* let the writing finish (about 2.4s), unless loading took long anyway */
-      if (!began) return setTimeout(wait, 100);
-      var left = Math.max(0, 2600 - (Date.now() - began));
-      setTimeout(function () { el.classList.add('done'); setTimeout(function () { el.remove(); }, 400); }, left);
+      /* let the pen finish writing, then show the tagline for a moment */
+      if (!written) return setTimeout(wait, 100);
+      setTimeout(function () { el.classList.add('done'); setTimeout(function () { el.remove(); }, 400); }, 450);
     })();
   };
   setTimeout(window.fedupSplashDone, 8000);
