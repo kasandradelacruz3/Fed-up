@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030110313">
+<meta name="fedup-version" content="20261030110525">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -234,6 +234,7 @@ dialog.join-dlg { border: 2px solid var(--accent); background: var(--accent-tint
 dialog.join-dlg h2 { font-size: 1.2rem; margin: 0; color: var(--accent); }
 dialog.split-dlg .split-opt { justify-content: space-between; display: flex; width: 100%; }
 dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
+.skip-sec h3 { color: #E5322D; font-size: 0.86rem; }
 .skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
 .item.skip .pick { display: flex; align-items: center; }
 dialog.tip { border: 2px solid var(--accent); background: var(--accent-tint); }
@@ -339,8 +340,9 @@ ul.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template
 .rc-txt { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 2px; min-width: 0; }
 .rc .mname { font-size: 0.92rem; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .rc-sub { font-size: 0.74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rc-foot { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; padding: 0 4px 6px 8px; margin-top: auto; min-height: 40px; }
+.rc-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; padding: 0 4px 6px 8px; margin-top: auto; min-height: 40px; }
 .rc-foot .push { flex: 1; }
+.rc-foot .ibtn { width: 30px; }
 .cost-break { margin-top: 8px; }
 .cost-break summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.9rem; padding: 6px 0; list-style: none; }
 .cost-break summary::-webkit-details-marker { display: none; }
@@ -381,9 +383,9 @@ dialog.side-pick { max-height: min(640px, calc(100vh - 48px)); overflow-y: auto;
 .rc.theirs .rc-week { color: var(--ink); }
 .ibtn { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: none; color: var(--ink); display: grid; place-items: center; padding: 0; }
 .ibtn svg, .recipe-link svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.rc .stepper { gap: 0; font-size: 0.74rem; }
-.rc .stepper button { width: 26px; height: 26px; border: 0; background: var(--soft); font-size: 0.9rem; }
-.rc .stepper span { min-width: 22px; padding-inline: 4px; font-size: 0.85rem; }
+.rc .stepper { gap: 2px; font-size: 0.85rem; }
+.rc .stepper button { width: 34px; height: 34px; border: 0; background: var(--accent-soft); color: var(--accent); font-size: 1.2rem; line-height: 1; }
+.rc .stepper span { min-width: 24px; padding-inline: 4px; font-size: 1rem; font-weight: 700; }
 
 /* feed posts */
 .posts { gap: 18px; }
@@ -2738,13 +2740,13 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (d.length) html += '<div class="aisle"><h3>Crossed off (tap to put back)</h3><ul class="plain">' + d.map(function (r) { return itemHtml(r, i++); }).join('') + '</ul></div>';
     var atHome = skipped.filter(function (r) { return r.atHome; });
     skipped = skipped.filter(function (r) { return !r.atHome; });
-    if (atHome.length) html += '<div class="aisle"><h3>Already in your kitchen (left off the list)</h3><ul class="plain">' + atHome.map(function (r) {
+    if (atHome.length) html += '<div class="aisle skip-sec"><h3>Already in your kitchen (left off the list)</h3><ul class="plain">' + atHome.map(function (r) {
       var k = single(r.name), it = S.kitchen.items.filter(function (x) { return usable(x) && sameFood(k, single(x.name)); })[0];
       var when = it && it.exp ? ' · ' + expText(it).charAt(0).toLowerCase() + expText(it).slice(1) : '';
       return '<li class="item skip"><span class="pick"><span class="skip-dot" aria-hidden="true"></span><span class="txt"><span class="name">' + esc(r.name) + '<span class="vh"> (you don\'t need to buy this)</span></span><span class="from">' + esc('In your ' + r.atHome + (it && it.level === 'half' ? ' (about half left)' : '') + when + (r.amount ? ' · recipes need ' + (r.buy ? (r.note || r.buy) : r.amount) : '')) + '</span></span></span>' +
         '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">Need more</button></li>';
     }).join('') + '</ul></div>';
-    if (skipped.length) html += '<div class="aisle"><h3>Pantry staples (left off the list)</h3><ul class="plain">' + skipped.map(function (r) {
+    if (skipped.length) html += '<div class="aisle skip-sec"><h3>Pantry staples (left off the list)</h3><ul class="plain">' + skipped.map(function (r) {
       return '<li class="item skip"><span class="pick"><span class="skip-dot" aria-hidden="true"></span><span class="txt"><span class="name">' + esc(r.name) + '<span class="vh"> (you don\'t need to buy this)</span></span>' + (r.amount ? '<span class="from">' + esc(r.buy ? 'This week ' + (r.note || 'uses ' + r.buy) : 'Need ' + r.amount) + '</span>' : '') + '</span></span>' +
         '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">I\'m out</button>' +
         '<button class="x" type="button" data-act="unstaple" data-key="' + esc(r.key) + '" aria-label="Stop treating ' + esc(r.name) + ' as a staple">×</button></li>';
