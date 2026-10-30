@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261029103138">
+<meta name="fedup-version" content="20261030110313">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -234,6 +234,8 @@ dialog.join-dlg { border: 2px solid var(--accent); background: var(--accent-tint
 dialog.join-dlg h2 { font-size: 1.2rem; margin: 0; color: var(--accent); }
 dialog.split-dlg .split-opt { justify-content: space-between; display: flex; width: 100%; }
 dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
+.skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
+.item.skip .pick { display: flex; align-items: center; }
 dialog.tip { border: 2px solid var(--accent); background: var(--accent-tint); }
 dialog.tip .tip-badge { align-self: flex-start; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; }
 dialog.tip h2 { font-size: 1.15rem; margin: 0; color: var(--accent); }
@@ -2739,11 +2741,11 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (atHome.length) html += '<div class="aisle"><h3>Already in your kitchen (left off the list)</h3><ul class="plain">' + atHome.map(function (r) {
       var k = single(r.name), it = S.kitchen.items.filter(function (x) { return usable(x) && sameFood(k, single(x.name)); })[0];
       var when = it && it.exp ? ' · ' + expText(it).charAt(0).toLowerCase() + expText(it).slice(1) : '';
-      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(r.name) + '</span><span class="from">' + esc('In your ' + r.atHome + (it && it.level === 'half' ? ' (about half left)' : '') + when + (r.amount ? ' · recipes need ' + (r.buy ? (r.note || r.buy) : r.amount) : '')) + '</span></span></span>' +
+      return '<li class="item skip"><span class="pick"><span class="skip-dot" aria-hidden="true"></span><span class="txt"><span class="name">' + esc(r.name) + '<span class="vh"> (you don\'t need to buy this)</span></span><span class="from">' + esc('In your ' + r.atHome + (it && it.level === 'half' ? ' (about half left)' : '') + when + (r.amount ? ' · recipes need ' + (r.buy ? (r.note || r.buy) : r.amount) : '')) + '</span></span></span>' +
         '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">Need more</button></li>';
     }).join('') + '</ul></div>';
     if (skipped.length) html += '<div class="aisle"><h3>Pantry staples (left off the list)</h3><ul class="plain">' + skipped.map(function (r) {
-      return '<li class="item"><span class="pick"><span class="txt"><span class="name">' + esc(r.name) + '</span>' + (r.amount ? '<span class="from">' + esc(r.buy ? 'This week ' + (r.note || 'uses ' + r.buy) : 'Need ' + r.amount) + '</span>' : '') + '</span></span>' +
+      return '<li class="item skip"><span class="pick"><span class="skip-dot" aria-hidden="true"></span><span class="txt"><span class="name">' + esc(r.name) + '<span class="vh"> (you don\'t need to buy this)</span></span>' + (r.amount ? '<span class="from">' + esc(r.buy ? 'This week ' + (r.note || 'uses ' + r.buy) : 'Need ' + r.amount) + '</span>' : '') + '</span></span>' +
         '<button class="btn mini" type="button" data-act="out" data-key="' + esc(r.key) + '">I\'m out</button>' +
         '<button class="x" type="button" data-act="unstaple" data-key="' + esc(r.key) + '" aria-label="Stop treating ' + esc(r.name) + ' as a staple">×</button></li>';
     }).join('') + '</ul></div>';
