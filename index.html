@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030183414">
+<meta name="fedup-version" content="20261030183733">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2768,7 +2768,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     /* a friendly reminder to check home before shopping, until it's closed for this week */
     var tipKey = 'fedup-peek-' + pickedIds().slice().sort().join(','), tipHidden = false;
     try { tipHidden = localStorage.getItem('fedup-peek') === tipKey; } catch (e) {}
-    if (c.left.length && !priceMode && !tipHidden) html += '<div class="peek-tip" role="note"><span class="peek-emoji" aria-hidden="true">👀</span><span class="peek-txt"><strong>Peek before you shop!</strong><span>Check your fridge and pantry first so you don\'t buy doubles. Tap anything you already have to cross it off.</span>' +
+    if (c.left.length && !priceMode && !tipHidden) html += '<div class="peek-tip" role="note"><span class="peek-emoji" aria-hidden="true">✨</span><span class="peek-txt"><strong>Shop your kitchen first!</strong><span>Look around your kitchen before you go. Tap anything you already have so you don\'t buy doubles!</span>' +
       (feedApi && !guest ? '<button class="btn mini" type="button" data-act="go" data-view="pantry">Open My kitchen</button>' : '') + '</span>' +
       '<button class="x" type="button" data-peek-close="' + esc(tipKey) + '" aria-label="Hide this tip">×</button></div>';
     AISLES.concat([EXTRA_AISLE]).forEach(function (a) {
