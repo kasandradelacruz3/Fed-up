@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030182008">
+<meta name="fedup-version" content="20261030182243">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -370,6 +370,24 @@ ul.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template
 .cb-form { display: flex; flex-direction: column; gap: 8px; padding: 0 0 12px; }
 .cb-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cb-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; font-weight: 600; }
+/* My recipes: long cards, small photo on the left, details on the right */
+#mine-body .cards { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+#mine-body .rc { display: block; min-height: 112px; }
+#mine-body .rc-main { flex-direction: row; align-items: stretch; }
+#mine-body .rc-img { width: 112px; aspect-ratio: auto; min-height: 112px; flex: none; }
+#mine-body .rc-ph { font-size: 1.8rem; }
+#mine-body .rc-txt { padding: 12px 48px 44px 14px; gap: 3px; flex: 1; }
+#mine-body .rc .mname { font-size: 1rem; }
+#mine-body .rc-sub { font-size: 0.8rem; white-space: normal; }
+#mine-body .rc-facts { color: var(--ink); font-weight: 600; }
+#mine-body .rc-tagline { margin-top: 2px; }
+#mine-body .rc-tagline .rc-origin { position: static; display: inline-block; max-width: 100%; }
+#mine-body .rc-badge { top: 10px; right: 10px; width: 32px; height: 32px; background: var(--accent-soft); color: var(--accent); }
+#mine-body .rc-badge[aria-pressed="true"] { background: var(--accent); color: #fff; }
+#mine-body .rc-foot { position: absolute; left: 112px; right: 0; bottom: 0; padding: 0 6px 4px 14px; min-height: 40px; }
+#mine-body .rc.on::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 16px; pointer-events: none; z-index: 2; }
+#mine-body .rc.theirs.on::after { border-color: var(--ink); }
+@media (min-width: 640px) { #mine-body .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rc-sides { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 10px; }
 .side-line { font-size: 0.74rem; color: var(--ink); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .side-line.muted { color: var(--muted); }
@@ -3292,8 +3310,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       var hv = kitOn() ? haveOf(r) : null;
       var sub = [isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), hv && hv.total ? 'You have ' + hv.have.length + '/' + hv.total : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
       return '<li class="rc' + (n ? ' on' : '') + (r.savedFrom ? ' theirs' : '') + '">' +
-        '<button class="rc-main" type="button" data-act="cook" data-id="' + esc(id) + '">' + rcImg(id, r, origin) +
-        '<span class="rc-txt"><span class="mname">' + esc(r.name) + '</span><span class="rc-sub">' + esc(sub || ' ') + '</span></span></button>' +
+        '<button class="rc-main" type="button" data-act="cook" data-id="' + esc(id) + '">' + rcImg(id, r, '') +
+        '<span class="rc-txt"><span class="mname">' + esc(r.name) + '</span><span class="rc-sub">' + esc(sub || ' ') + '</span>' +
+        (facts(r).length ? '<span class="rc-sub rc-facts">' + esc(facts(r).join(' · ')) + '</span>' : '') + (origin ? '<span class="rc-tagline">' + origin + '</span>' : '') + '</span></button>' +
         '<button class="rc-badge" type="button" data-act="toggle" data-id="' + esc(id) + '" aria-pressed="' + (n ? 'true' : 'false') + '" aria-label="' + esc((n ? 'Remove ' : 'Add ') + r.name + (n ? ' from' : ' to') + ' this week') + '">' + (n ? '✓' : '+') + '</button>' +
         '<div class="rc-foot"><span class="rc-week">' + (n ? 'On this week' : '') + '</span><span class="push"></span><button class="ibtn" type="button" data-act="edit" data-id="' + esc(id) + '" aria-label="Edit ' + esc(r.name) + '">' + ICON.edit + '</button></div></li>';
     }).join('') + '</ul>';
