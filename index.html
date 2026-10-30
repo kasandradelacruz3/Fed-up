@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030182243">
+<meta name="fedup-version" content="20261030183414">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -240,6 +240,11 @@ dialog.join-dlg { border: 2px solid var(--accent); background: var(--accent-tint
 dialog.join-dlg h2 { font-size: 1.2rem; margin: 0; color: var(--accent); }
 dialog.split-dlg .split-opt { justify-content: space-between; display: flex; width: 100%; }
 dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
+.peek-tip { display: flex; align-items: flex-start; gap: 12px; background: var(--accent-tint); border: 1.5px dashed var(--accent); border-radius: 16px; padding: 14px 10px 14px 14px; margin-bottom: 14px; }
+.peek-emoji { font-size: 1.7rem; line-height: 1; flex: none; }
+.peek-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.peek-txt strong { color: var(--accent); font-size: 1rem; }
+.peek-txt .btn { align-self: flex-start; margin-top: 4px; }
 .skip-sec h3 { color: #E5322D; font-size: 0.86rem; }
 .skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
 .item.skip .pick { display: flex; align-items: center; }
@@ -2760,6 +2765,12 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       return;
     }
     var html = '', i = 0;
+    /* a friendly reminder to check home before shopping, until it's closed for this week */
+    var tipKey = 'fedup-peek-' + pickedIds().slice().sort().join(','), tipHidden = false;
+    try { tipHidden = localStorage.getItem('fedup-peek') === tipKey; } catch (e) {}
+    if (c.left.length && !priceMode && !tipHidden) html += '<div class="peek-tip" role="note"><span class="peek-emoji" aria-hidden="true">👀</span><span class="peek-txt"><strong>Peek before you shop!</strong><span>Check your fridge and pantry first so you don\'t buy doubles. Tap anything you already have to cross it off.</span>' +
+      (feedApi && !guest ? '<button class="btn mini" type="button" data-act="go" data-view="pantry">Open My kitchen</button>' : '') + '</span>' +
+      '<button class="x" type="button" data-peek-close="' + esc(tipKey) + '" aria-label="Hide this tip">×</button></div>';
     AISLES.concat([EXTRA_AISLE]).forEach(function (a) {
       var g = c.left.filter(function (r) { return r.aisle === a; });
       if (g.length) html += '<div class="aisle"><h3>' + esc(a) + '</h3><ul class="plain">' + g.map(function (r) { return itemHtml(r, i++); }).join('') + '</ul></div>';
@@ -4399,6 +4410,11 @@ var babyEd = $('ed-kind').value === 'baby';
   $('pantry-clear').addEventListener('click', function () {
     if (!confirmTap('pantry-clear')) return;
     S.kitchen.items = S.kitchen.items.filter(function (x) { return x.place !== kitPlace; }); save('kitchen'); render();
+  });
+  $('list-body').addEventListener('click', function (ev) {
+    var pc = ev.target.closest('[data-peek-close]'); if (!pc) return;
+    try { localStorage.setItem('fedup-peek', pc.dataset.peekClose); } catch (e) {}
+    var tip = pc.closest('.peek-tip'); if (tip) tip.remove();
   });
   $('view-pantry').addEventListener('click', function (ev) {
     var pl = ev.target.closest('[data-kplace]');
