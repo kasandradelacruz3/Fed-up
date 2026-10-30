@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030110525">
+<meta name="fedup-version" content="20261030182008">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -202,7 +202,13 @@ label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; fon
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 dialog.zoom { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 14px; width: min(420px, calc(100% - 32px)); }
 dialog.zoom::backdrop { background: rgba(0, 0, 0, 0.55); }
-.kit-seg { display: grid; grid-template-columns: 1fr 1fr; }
+.kit-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kit-seg button { padding-inline: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.week-btn { width: 100%; justify-content: center; font-size: 1rem; padding-block: 12px; }
+.week-btn.on-week { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
+.kit-prices { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 14px 16px; color: var(--ink); }
+.kit-prices > span:first-child { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kit-prices > span:last-child { font-size: 1.6rem; color: var(--accent); line-height: 1; }
 .kit-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
 .kit-add .f { min-width: 0; }
 .kit-add input[type=date] { min-width: 0; width: 100%; }
@@ -695,16 +701,41 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     <div><button class="btn quiet" type="button" data-act="go" data-view="profile">← Profile</button></div>
     <h2>My kitchen</h2>
     <p class="small muted">Add what you have at home. Every recipe then shows how many of its ingredients you already have, and you'll see what to use before it expires.</p>
-    <div class="seg kit-seg" id="kit-seg" role="group" aria-label="Pantry or fridge">
+    <div class="seg kit-seg" id="kit-seg" role="group" aria-label="Where it is">
       <button type="button" data-kplace="pantry" aria-pressed="true">Pantry</button>
       <button type="button" data-kplace="fridge" aria-pressed="false">Fridge</button>
+      <button type="button" data-kplace="freezer" aria-pressed="false">Freezer</button>
+      <button type="button" data-kplace="staples" aria-pressed="false">Staples</button>
     </div>
+    <p class="small muted" id="kit-hint"></p>
     <div id="kit-alert"></div>
+    <div class="stack" id="kit-freezer" style="gap:12px" hidden>
+    <form id="fz-form" class="stack" autocomplete="off" style="gap:10px">
+      <label class="f" for="fz-name">What did you freeze?
+        <input type="text" id="fz-name" list="fz-names" placeholder="Chili, sweet potato purée…">
+      </label>
+      <datalist id="fz-names"></datalist>
+      <div class="three">
+        <label class="f" for="fz-portions">Portions
+          <input type="text" id="fz-portions" inputmode="numeric" value="1">
+        </label>
+        <label class="f" for="fz-date">Frozen on
+          <input type="date" id="fz-date">
+        </label>
+        <label class="f" for="fz-months">Keep for
+          <select id="fz-months"><option value="1">1 month</option><option value="2">2 months</option><option value="3" selected>3 months</option><option value="6">6 months</option></select>
+        </label>
+      </div>
+      <div><button class="btn primary" type="submit">Add to freezer</button></div>
+    </form>
+    <div id="fz-body" class="stack"></div>
+    </div>
+    <div class="stack" id="kit-main" style="gap:12px">
     <form class="kit-add" id="pantry-form" autocomplete="off">
       <label class="f kit-name" for="pantry-input"><span id="kit-add-label">Add to your pantry</span>
         <input type="text" id="pantry-input" name="search_kitchen" autocomplete="off" placeholder="Rice, black beans, tortillas…">
       </label>
-      <label class="f" for="kit-exp">Expires <span class="muted" style="font-weight:400">(optional)</span>
+      <label class="f" for="kit-exp" id="kit-exp-wrap">Expires <span class="muted" style="font-weight:400">(optional)</span>
         <input type="date" id="kit-exp">
       </label>
       <button class="btn primary" type="submit">Add</button>
@@ -715,8 +746,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <button class="btn quiet small" id="pantry-clear" type="button">Clear all</button>
     </div>
     <ul class="plain kit-list" id="kit-list"></ul>
-    <h3 class="sec-h" style="margin-top:8px">What can I make?</h3>
+    </div>
+    <h3 class="sec-h" style="margin-top:8px" id="kit-make-h">What can I make?</h3>
     <div id="pantry-body" class="stack"></div>
+    <button class="kit-prices" type="button" data-act="go" data-view="ings"><span><strong>Ingredients &amp; prices</strong><span class="small muted">The exact products you buy, with their size and price, so recipe costs and your list total match your store.</span></span><span aria-hidden="true">›</span></button>
   </section>
 
   <section class="view" id="view-settings" hidden>
@@ -881,9 +914,9 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   </section>
 
   <section class="view" id="view-ings" hidden>
-    <div class="pback"><button class="btn quiet" type="button" data-act="go" data-view="profile">← Profile</button></div>
+    <div class="pback"><button class="btn quiet" type="button" data-act="go" data-view="pantry">← My kitchen</button></div>
     <div class="row between">
-      <h2>My ingredients</h2>
+      <h2>Ingredients &amp; prices</h2>
       <button class="btn" id="new-ing" type="button">+ New ingredient</button>
     </div>
     <p class="small muted">The exact products you buy, with size and price. Recipes pick from here, and the shopping list shows these details.</p>
@@ -979,25 +1012,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   <section class="view" id="view-freezer" hidden>
     <div><button class="btn quiet" type="button" data-act="go" data-view="more">← More</button></div>
     <h2>Freezer</h2>
-    <form id="fz-form" class="stack" autocomplete="off" style="gap:10px">
-      <label class="f" for="fz-name">What did you freeze?
-        <input type="text" id="fz-name" list="fz-names" placeholder="Chili, sweet potato purée…">
-      </label>
-      <datalist id="fz-names"></datalist>
-      <div class="three">
-        <label class="f" for="fz-portions">Portions
-          <input type="text" id="fz-portions" inputmode="numeric" value="1">
-        </label>
-        <label class="f" for="fz-date">Frozen on
-          <input type="date" id="fz-date">
-        </label>
-        <label class="f" for="fz-months">Keep for
-          <select id="fz-months"><option value="1">1 month</option><option value="2">2 months</option><option value="3" selected>3 months</option><option value="6">6 months</option></select>
-        </label>
-      </div>
-      <div><button class="btn primary" type="submit">Add to freezer</button></div>
-    </form>
-    <div id="fz-body" class="stack"></div>
+    <p class="small muted">The freezer is now in My kitchen.</p>
   </section>
 
   <section class="view" id="view-tracker" hidden>
@@ -2567,6 +2582,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     renderMeals(); renderMine(); renderLibrary(); renderMore(); renderFreezer(); renderTracker();
     if (tab === 'profile') renderProfile();
     if (tab === 'explore' && typeof renderExplore === 'function') renderExplore();
+    if (tab === 'feed' && feedApi && typeof renderFeed === 'function') renderFeed();
     if (tab === 'prep') renderPrep();
     if (tab === 'pantry') renderPantry();
     var a = document.activeElement;
@@ -2868,6 +2884,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('cook-body').innerHTML = (photoOf(cookId) ? '<img class="fr-img" src="' + esc(photoOf(cookId)) + '" alt="Photo of ' + esc(r.name) + '">' : '') + '<div class="stack full" style="gap:4px"><h2>' + esc(r.name) + '</h2><p class="muted">' + esc([r.group ? 'Shared by ' + who(r.owner) : '', isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), line].filter(Boolean).join(' · ')) + '</p>' + (showTags(r).length ? '<p class="hash">' + esc(showTags(r).map(function (t) { return '#' + t; }).join('  ')) + '</p>' : '') + '</div>' +
       ([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).length ? '<p class="small muted full">' + esc([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).join(' · ')) + '</p>' : '') +
       (goodOf(r).length ? '<div class="aisle"><h3>Good source of</h3><div class="chips" style="padding-top:6px">' + goodOf(r).map(function (n) { return '<span class="chip">' + esc(n) + '</span>'; }).join('') + '</div><p class="small muted">' + (Array.isArray(r.goodFor) ? 'Chosen by the recipe author.' : 'A general guide based on the ingredients.') + ' Not medical advice.</p></div>' : '') +
+      '<button class="btn ' + (n ? 'on-week' : 'primary') + ' week-btn" type="button" data-act="toggle" data-id="' + esc(cookId) + '" aria-pressed="' + (n ? 'true' : 'false') + '">' + (n ? '✓ On this week\'s plan' : '+ Add to this week') + '</button>' +
       '<div class="serv-row"><span><strong>Servings</strong><span class="small muted">' + (n ? 'On this week\'s plan' : r.servings > 0 ? 'Recipe makes ' + r.servings : '') + '</span></span><span class="stepper"><button type="button" data-act="cserv-less" aria-label="Fewer servings">−</button><span>' + shown + '</span><button type="button" data-act="cserv-more" aria-label="More servings">+</button></span></div>' +
       havePill(r) +
       safetyBlock(r, !!r.group) +
@@ -3163,18 +3180,26 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (d === 1) return 'Expires tomorrow';
     return 'Expires ' + niceDate(it.exp).replace(/, \d{4}$/, '') + ' · ' + d + ' days left';
   }
+  function stapleKeys() { return Object.keys(S.settings.staples).filter(function (k) { return S.settings.staples[k]; }).sort(function (a, b) { return stapleName(a).localeCompare(stapleName(b)); }); }
+  function stapleName(k) { var m = masterOf(k); if (m) return m.name; var lid = Object.keys(S.ings).filter(function (i) { return skey(S.ings[i].name) === k; })[0]; return lid ? S.ings[lid].name : k.charAt(0).toUpperCase() + k.slice(1); }
   function kitSub() {
     var n = S.kitchen.items.length, soon = S.kitchen.items.filter(function (it) { return isSoon(it) || (expDays(it) !== null && expDays(it) < 0); }).length;
-    return !n ? 'Pantry & fridge' : soon ? soon + ' to use soon' : n + (n === 1 ? ' thing' : ' things');
+    return !n && !S.freezer.items.length ? 'Pantry, fridge, freezer & prices' : soon ? soon + ' to use soon' : (n + S.freezer.items.length) + ((n + S.freezer.items.length) === 1 ? ' thing' : ' things');
   }
   function renderPantry() {
+    var PL = { pantry: 'Pantry', fridge: 'Fridge', freezer: 'Freezer', staples: 'Staples' };
     Array.prototype.forEach.call($('kit-seg').children, function (b) {
-      var pl = b.dataset.kplace, n = S.kitchen.items.filter(function (x) { return x.place === pl; }).length;
+      var pl = b.dataset.kplace, n = pl === 'freezer' ? S.freezer.items.length : pl === 'staples' ? stapleKeys().length : S.kitchen.items.filter(function (x) { return x.place === pl; }).length;
       b.setAttribute('aria-pressed', pl === kitPlace ? 'true' : 'false');
-      b.textContent = (pl === 'fridge' ? 'Fridge' : 'Pantry') + (n ? ' (' + n + ')' : '');
+      b.textContent = PL[pl]; b.setAttribute('aria-label', PL[pl] + (n ? ', ' + n + (n === 1 ? ' item' : ' items') : ''));
     });
-    $('kit-add-label').textContent = 'Add to your ' + kitPlace;
-    $('pantry-input').placeholder = kitPlace === 'fridge' ? 'Milk, eggs, chicken, spinach…' : 'Rice, black beans, tortillas…';
+    var isFz = kitPlace === 'freezer', isSt = kitPlace === 'staples';
+    $('kit-freezer').hidden = !isFz; $('kit-main').hidden = isFz;
+    $('kit-hint').textContent = isFz ? 'Meals and food you froze, and when to use them by.' : isSt ? 'Things you always keep stocked, like salt, oil and spices. They stay off your shopping list unless you tap "I\'m out".' : kitPlace === 'fridge' ? 'What\'s in your fridge right now. Add a date so you know what to use first.' : 'What\'s in your pantry and cupboards right now.';
+    if (isFz) { renderFreezer(); if (!$('fz-date').value) $('fz-date').value = today(); }
+    $('kit-exp-wrap').hidden = isSt;
+    $('kit-add-label').textContent = isSt ? 'Add something you always have' : 'Add to your ' + kitPlace;
+    $('pantry-input').placeholder = isSt ? 'Salt, olive oil, garlic powder…' : kitPlace === 'fridge' ? 'Milk, eggs, chicken, spinach…' : 'Rice, black beans, tortillas…';
     /* things to use up first, from both places */
     var soon = S.kitchen.items.filter(function (it) { return isSoon(it) || (expDays(it) !== null && expDays(it) < 0); }).sort(function (a, b) { return expDays(a) - expDays(b); });
     var onList = {}; S.list.extras.forEach(function (e) { onList[single(e.text)] = true; });
@@ -3184,12 +3209,22 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       '<div class="kit-low">' + low.map(function (it) { return onList[single(it.name)] ? '<span class="chip" aria-disabled="true">✓ ' + esc(it.name) + ' is on your list</span>' : '<button class="chip" type="button" data-klist="' + esc(it.id) + '">+ Add ' + esc(it.name) + ' to my list</button>'; }).join('') + '</div></div>' : '';
     $('kit-alert').innerHTML = (soon.length ? '<div class="kit-alert small"><strong>Use these first:</strong> ' + soon.slice(0, 6).map(function (it) { var d = expDays(it); return esc(it.name) + ' <span class="muted">(' + (d < 0 ? 'expired' : d === 0 ? 'today' : d === 1 ? 'tomorrow' : d + ' days') + ')</span>'; }).join(', ') + (soon.length > 6 ? ' and ' + (soon.length - 6) + ' more' : '') + '</div>' : '') + lowHtml;
     /* quick add from foods in your recipes */
-    var q = single(pantryQ), foods = knownFoods().filter(function (n) { return !inKitchen(n, kitPlace) && (!q || single(n).indexOf(q) >= 0); }).slice(0, q ? 30 : 10);
+    var q = single(pantryQ), foods = knownFoods().filter(function (n) { return (isSt ? !S.settings.staples[skey(n)] : !inKitchen(n, kitPlace)) && (!q || single(n).indexOf(q) >= 0); }).slice(0, q ? 30 : 10);
     $('pantry-chips').innerHTML = foods.length ? '<span class="small muted" style="width:100%">Tap to add from your recipes:</span>' + foods.map(function (n) { return '<button class="chip" type="button" data-hand="' + esc(n) + '">+ ' + esc(n) + '</button>'; }).join('') : '';
-    var items = S.kitchen.items.filter(function (x) { return x.place === kitPlace; }).sort(function (a, b) {
+    if (isSt) {
+      var sk = stapleKeys();
+      $('pantry-count').textContent = sk.length ? sk.length + (sk.length === 1 ? ' staple' : ' staples') : 'No staples yet';
+      $('pantry-clear').hidden = true;
+      $('kit-list').innerHTML = sk.map(function (k) {
+        return '<li class="item"><div class="kit-top"><span class="txt"><span class="name">' + esc(stapleName(k)) + '</span><span class="from">Always have it · stays off your list</span></span>' +
+          '<button class="x" type="button" data-kunstaple="' + esc(k) + '" aria-label="Stop treating ' + esc(stapleName(k)) + ' as a staple">×</button></div></li>';
+      }).join('');
+    }
+    var items = isSt ? [] : S.kitchen.items.filter(function (x) { return x.place === kitPlace; }).sort(function (a, b) {
       var da = expDays(a), dbb = expDays(b); return (da === null ? 99999 : da) - (dbb === null ? 99999 : dbb) || a.name.localeCompare(b.name);
     });
     var n = items.length;
+    if (!isSt) {
     $('pantry-count').textContent = n ? n + (n === 1 ? ' thing' : ' things') + ' in your ' + kitPlace : 'Nothing in your ' + kitPlace + ' yet';
     $('pantry-clear').hidden = !n;
     $('kit-list').innerHTML = items.map(function (it) {
@@ -3201,6 +3236,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         }).join('') + '</span>' +
         '<label class="kit-date"><span class="vh">Expiration date for ' + esc(it.name) + '</span><input type="date" data-kexp="' + esc(it.id) + '" value="' + esc(it.exp) + '"></label></div></li>';
     }).join('');
+    }
+    $('kit-make-h').hidden = isFz;
+    if (isFz) { $('pantry-body').innerHTML = ''; return; }
     /* what can I make */
     var baby = babyOn();
     if (!S.kitchen.items.length) { $('pantry-body').innerHTML = '<p class="small muted">Add a few things you have and your recipes show up here, best matches first.</p>'; return; }
@@ -3218,7 +3256,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         '<button class="btn quiet small push" type="button" data-act="cook" data-id="' + esc(x.id) + '">Cook</button></div></li>';
     }).join('') + '</ul>';
   }
-  function toggleHand(name) { addToKitchen(name, kitPlace, ''); save('kitchen'); render(); }
+  function toggleHand(name) { if (kitPlace === 'staples') { S.settings.staples[skey(name)] = true; save('settings'); render(); return; } addToKitchen(name, kitPlace, ''); save('kitchen'); render(); }
   /* the old "what I have" list (names only) moves into the pantry once */
   function moveOnHand() {
     if (!S.settings.onHand || !S.settings.onHand.length) return;
@@ -3325,10 +3363,10 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }).join('') + '</ul>';
   }
   function goView(v) {
+    if (v === 'freezer') { kitPlace = 'freezer'; v = 'pantry'; }
     show(v);
     if (v === 'prep') renderPrep();
     if (v === 'pantry') { pantryQ = ''; $('pantry-input').value = ''; renderPantry(); }
-    if (v === 'freezer' && !$('fz-date').value) $('fz-date').value = today();
     if (v === 'tracker' && !$('tk-date').value) $('tk-date').value = today();
     window.scrollTo(0, 0);
   }
@@ -3689,7 +3727,17 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var list = feedPosts.filter(function (p) { return p.owner === uid || iFollow(p.owner); });
     var none = !myFollows.length;
     var invite = '<div class="empty"><p><strong>' + (none ? 'Your feed is waiting for you' : "You're all caught up") + '</strong></p><p class="muted">' + (none ? 'Follow other people and their meals show up here. Find them in Community.' : 'Find more people to follow in Community.') + '</p><button class="btn primary" type="button" data-act="go" data-view="explore">Go to Community</button></div>';
-    var prepCard = ready && !pickedIds().length && prepToday() ? '<button class="week-card" type="button" data-act="go" data-view="meals"><span class="rl-txt"><strong>It\'s prep time!</strong><span class="small">' + esc(typeof S.settings.planDay === 'number' ? 'It\'s ' + DAY_NAMES[S.settings.planDay] + ', your planning day. Tap to pick this week\'s meals.' : 'Tap to pick this week\'s meals and your list builds itself.') + '</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' : '';
+    /* this week, always at the top of Home: the way into planning and the list */
+    var prepCard = '';
+    if (ready && !guest) {
+      var wk = pickedIds().filter(function (pid) { return ALL[pid] && !isExtra(ALL[pid]); }).length;
+      if (!wk) prepCard = '<button class="week-card" type="button" data-act="go" data-view="meals"><span class="rl-txt"><strong>' + (prepToday() ? 'It\'s prep time!' : 'Plan this week') + '</strong><span class="small">Pick your meals and your shopping list and price build themselves. Your recipes and community recipes are ready to pick.</span></span><span class="rl-go">' + ICON.arrow + '</span></button>';
+      else {
+        var wr = allRows(), wc = counts(wr), cost = 0, pr = 0; wc.left.forEach(function (r) { if (r.price != null) { cost += r.price; pr++; } });
+        prepCard = '<button class="week-card" type="button" data-act="go" data-view="list"><span class="rl-txt"><strong>This week: ' + wk + (wk === 1 ? ' meal' : ' meals') + '</strong><span class="small">' + wc.left.length + (wc.left.length === 1 ? ' thing' : ' things') + ' to buy' + (pr ? ' · about ' + money(cost) : '') + '. Tap to see your shopping list.</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' +
+          '<div style="margin-top:8px"><button class="btn quiet small" type="button" data-act="go" data-view="meals">Change this week\'s meals</button></div>';
+      }
+    }
     $('feed-body').innerHTML = prepCard + (list.length ? '<ul class="plain posts"' + (prepCard ? ' style="margin-top:16px"' : '') + '>' + list.map(postCard).join('') + '</ul>' : '') + (list.length < 3 ? '<div style="margin-top:16px">' + invite + '</div>' : '');
   }
   /* every recipe people have shared with the community, plus the recipes linked from posts */
@@ -3803,9 +3851,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     html = '<div class="prof-bar"><button class="ibtn menu-btn" type="button" data-act="prof-menu" aria-label="Menu" aria-expanded="' + profMenu + '" aria-controls="prof-drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' + (alerts ? '<span class="dot" aria-hidden="true"></span>' : '') + '</button>' + drop + '</div>' + html;
     html += '<div class="pink-btns">' +
       '<button class="pink-btn" type="button" data-act="go" data-view="mine">' + ICON.book + '<span><strong>My recipes</strong><span>' + nrec + (nrec === 1 ? ' recipe' : ' recipes') + '</span></span></button>' +
-      '<button class="pink-btn" type="button" data-act="go" data-view="ings"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="3" rx="1"/><path d="M8 6c-1.5 1-2 2.2-2 4v8a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-8c0-1.8-.5-3-2-4"/><path d="M6 12h12M6 16h12"/></svg><span><strong>Ingredients</strong><span>' + ning + ' saved</span></span></button>' +
-      '<button class="pink-btn" type="button" data-act="go" data-view="pantry"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg><span><strong>My kitchen</strong><span>' + kitSub() + '</span></span></button>' +
-      '<button class="pink-btn" type="button" data-act="go" data-view="freezer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4 7l16 10M20 7L4 17M9 3l3 2 3-2M9 21l3-2 3 2"/></svg><span><strong>Freezer</strong><span>' + (S.freezer.items.length ? S.freezer.items.length + (S.freezer.items.length === 1 ? ' meal' : ' meals') : 'Prepped meals') + '</span></span></button></div>';
+      '<button class="pink-btn" type="button" data-act="go" data-view="pantry"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg><span><strong>My kitchen</strong><span>' + kitSub() + '</span></span></button></div>';
     if (feedApi) {
       var savedPosts = saves.map(function (sid) { return feedPosts.filter(function (x) { return x.id === sid; })[0]; }).filter(Boolean);
       html += '<div class="stack" style="gap:12px"><div class="prof-tabs" role="tablist">' +
@@ -3857,7 +3903,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       var ings = (r.ingredients || []).map(function (g) {
         return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + (dv[skey(g.name)] ? ' <span class="muted small">(divided)</span>' : '') + haveMark(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
       }).join('');
-      html += havePill(r) + safetyBlock(r, fview.post.owner !== uid) + '<div class="row"><button class="btn primary" type="button" data-act="save-post">Steal this recipe</button></div>' +
+      html += havePill(r) + safetyBlock(r, fview.post.owner !== uid) + '<div class="row" style="gap:8px;flex-wrap:wrap">' + (fview.weekId && portions(fview.weekId) ? '<button class="btn on-week week-btn" type="button" data-act="post-week" aria-pressed="true" style="width:auto;flex:1">✓ On this week</button>' : '<button class="btn primary" type="button" data-act="post-week" style="flex:1">+ Add to my week</button>') + '<button class="btn" type="button" data-act="save-post" style="flex:1">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps</h3>' + (r.notes ? stepsHtml(r, 1) : '<p class="steps"><span class="muted">No steps written.</span></p>') + '</div>';
     }
@@ -4194,6 +4240,14 @@ var babyEd = $('ed-kind').value === 'baby';
     if (act === 'open-post') return openPostView(id);
     if (act === 'comm-open') { if (ALL[id]) openCook(id); return; }
     if (act === 'reload-feed') { feedState = 'loading'; renderFeed(); loadFeed(); return; }
+    if (act === 'post-week') {
+      if (!fview || !fview.recipe) return;
+      var wid = fview.weekId && S.recipes[fview.weekId] ? fview.weekId : null;
+      if (wid && portions(wid)) { setPortions(wid, 0); render(); renderFRecipe(); toast('Taken off this week.'); return; }
+      if (!wid) { wid = newId(); S.recipes[wid] = plain(fview.recipe); var o2 = fview.post.credit || fview.post.owner; if (o2 !== uid) S.recipes[wid].savedFrom = o2; save('recipe:' + wid); fview.weekId = wid; rebuildAll(); }
+      setPortions(wid, base(S.recipes[wid])); render(); renderFRecipe();
+      toast('Added to this week and saved to My recipes. Your shopping list is updated.'); return;
+    }
     if (act === 'save-post') {
       if (!fview || !fview.recipe) return;
       var sid = newId(); S.recipes[sid] = plain(fview.recipe); var orig = fview.post.credit || fview.post.owner; if (orig !== uid) S.recipes[sid].savedFrom = orig; save('recipe:' + sid);
@@ -4262,6 +4316,7 @@ var babyEd = $('ed-kind').value === 'baby';
       setPortions(id, portions(id) ? 0 : base(ALL[id]));
       if (portions(id)) pairSides(id);
       if (gone.length) { gone.forEach(function (sid) { setPortions(sid, 0); }); toast('Also took off ' + gone.map(function (sid) { return ALL[sid].name; }).join(', ') + '.'); }
+      else if (tab === 'cook') toast(portions(id) ? 'Added to this week. Your shopping list is updated.' : 'Taken off this week.');
     }
     else if (act === 'more') setPortions(id, portions(id) + 1);
     else if (act === 'less') setPortions(id, portions(id) - 1);
@@ -4315,8 +4370,10 @@ var babyEd = $('ed-kind').value === 'baby';
     var known = knownFoods(), exp = $('kit-exp').value;
     parts.forEach(function (name) {
       var k = single(name), match = known.filter(function (n) { return single(n) === k; })[0] || canonName(name) || name;
+      if (kitPlace === 'staples') { S.settings.staples[skey(match)] = true; return; }
       addToKitchen(match.charAt(0).toUpperCase() + match.slice(1), kitPlace, exp);
     });
+    if (kitPlace === 'staples') { $('pantry-input').value = ''; pantryQ = ''; save('settings'); render(); toast('Added to your staples. It stays off your shopping list.'); return; }
     $('pantry-input').value = ''; $('kit-exp').value = ''; pantryQ = ''; save('kitchen'); render();
     toast('Added to your ' + kitPlace + '.');
   });
@@ -4327,6 +4384,8 @@ var babyEd = $('ed-kind').value === 'baby';
   $('view-pantry').addEventListener('click', function (ev) {
     var pl = ev.target.closest('[data-kplace]');
     if (pl) { kitPlace = pl.dataset.kplace; resetConfirm(); renderPantry(); return; }
+    var us = ev.target.closest('[data-kunstaple]');
+    if (us) { var nm = stapleName(us.dataset.kunstaple); delete S.settings.staples[us.dataset.kunstaple]; delete S.list.out[us.dataset.kunstaple]; save('settings'); save('list'); render(); toast(nm + ' is no longer a staple.'); return; }
     var lv = ev.target.closest('[data-klvl]');
     if (lv) {
       var li = S.kitchen.items.filter(function (x) { return x.id === lv.dataset.klvl; })[0];
@@ -4857,7 +4916,7 @@ var babyEd = $('ed-kind').value === 'baby';
   var JOIN_WHY = {
     'tab-feed': 'get a home feed of the people you follow', 'tab-list': 'build your shopping list', 'new-post': 'share your recipes and meals',
     'open-settings': 'set your prices, store and settings', 'cook-edit': 'save this recipe to your recipes', 'save-post': 'steal this recipe and save it to your recipes',
-    like: 'like posts', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
+    like: 'like posts', toggle: 'plan your week and get a shopping list', 'post-week': 'plan your week and get a shopping list', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
     'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals'
   };
   var GUEST_OK = { 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
