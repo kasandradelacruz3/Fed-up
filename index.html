@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261031124646">
+<meta name="fedup-version" content="20261031125321">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -267,11 +267,17 @@ dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
 @keyframes tour-pop { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
 .tour-bub.pop { animation: tour-pop .3s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .tour-hole, .tour-bub, .tour-arrow { transition: none; } .tour-hole::after, .tour-bub.pop, .tour-arrow.go .ar-line { animation: none; } }
-.peek-tip { display: flex; align-items: flex-start; gap: 12px; background: var(--accent-tint); border: 1.5px dashed var(--accent); border-radius: 16px; padding: 14px 10px 14px 14px; margin-bottom: 14px; }
-.peek-emoji { font-size: 1.7rem; line-height: 1; flex: none; }
-.peek-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
-.peek-txt strong { color: var(--accent); font-size: 1rem; }
-.peek-txt .btn { align-self: flex-start; margin-top: 4px; }
+.peek-tip { display: flex; align-items: flex-start; gap: 10px; background: var(--accent-tint); border: 1.5px dashed var(--accent); border-radius: 14px; padding: 10px 6px 10px 12px; margin-bottom: 12px; }
+.peek-emoji { font-size: 1.3rem; line-height: 1; flex: none; }
+.peek-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.84rem; line-height: 1.35; }
+.peek-txt strong { color: var(--accent); font-size: 0.95rem; }
+.peek-txt .btn { align-self: flex-start; margin-top: 4px; padding-block: 4px; }
+.price-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 12px; margin-top: -4px; }
+.price-row #price-src { margin: 0; flex: 0 1 auto; min-width: 0; }
+.price-row #price-tools { margin: 0; }
+.price-row #price-tools summary { padding: 2px 0; }
+.price-row #price-tools[open] { flex-basis: 100%; }
+#view-list > .stack, #view-list { row-gap: 10px; }
 .linkish { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .skip-sec h3 { color: #E5322D; font-size: 0.86rem; }
 .skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
@@ -1322,8 +1328,8 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       </div>
       <div id="scan-out" hidden></div>
     </div>
+    <div class="price-row">
     <p class="small muted" id="price-src" hidden></p>
-    <p class="small" id="budget-line" hidden></p>
     <details class="cost-break" id="price-tools">
       <summary>Price details</summary>
       <div class="stack" style="gap:10px;padding-top:6px">
@@ -1335,6 +1341,8 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         </div>
       </div>
     </details>
+    </div>
+    <p class="small" id="budget-line" hidden></p>
     <p class="small muted" id="list-hint">Tap anything you already have or just put in the cart to cross it off.</p>
     <div id="list-body" class="view"></div>
     <div class="row">
@@ -2780,9 +2788,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var txt = total ? left + ' to get · ' + done + ' crossed off' : '';
     if (priced) txt += ' · about ' + money(cost) + (priced < left ? ' (' + (left - priced) + ' not priced)' : '');
     var estd = c.left.filter(function (r) { return r.price != null && r.priceSrc !== 'yours'; }).length;
-    $('price-src').textContent = estd ? (estd === priced ? 'Prices are estimates' : estd + ' of ' + priced + ' prices are estimates') + (priceWhere() ? ' for ' + priceWhere() + '.' : ' based on typical U.S. prices.') : '';
+    $('price-src').textContent = estd ? 'Prices for ' + (priceWhere() || 'a typical U.S. store') : '';
     $('price-src').hidden = !estd;
-    if (estd && !S.settings.store && !guest) { $('price-src').innerHTML = esc($('price-src').textContent) + ' <button class="linkish" type="button" data-act="go" data-view="settings">Pick your store for closer prices</button>'; }
+    if (estd && !S.settings.store && !guest) { $('price-src').innerHTML = esc($('price-src').textContent) + ' · <button class="linkish" type="button" data-act="go" data-view="settings">Pick your store</button>'; }
     $('list-summary').textContent = txt;
     var trip = 0, tripPriced = 0, bl = $('budget-line'), bud = S.settings.budget;
     c.active.forEach(function (r) { if (r.price != null) { trip += r.price; tripPriced++; } });
@@ -2803,10 +2811,11 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     S.list.extras.forEach(function (e) { onList[norm(e.text)] = true; });
     var favs = S.settings.favorites.filter(function (f) { return !onList[norm(f)]; });
     $('fav-row').innerHTML = favs.length ? '<div class="chips">' + favs.map(function (f) { return '<button class="chip" type="button" data-act="add-fav" data-text="' + esc(f) + '">+ ' + esc(f) + '</button>'; }).join('') + '</div>'
-      : (S.settings.favorites.length ? '' : '<p class="small muted">Tap the star on something you added to keep it here as a one-tap favourite.</p>');
+      : '';
+    $('fav-row').hidden = !favs.length;
     $('price-mode').textContent = priceMode ? 'Done with prices' : 'Edit prices';
     if (priceMode) $('price-tools').open = true;
-    $('list-hint').textContent = priceMode ? 'Type what each item usually costs you. Prices are remembered for next time.' : 'Tap anything you already have or just put in the cart to cross it off.';
+    $('list-hint').textContent = priceMode ? 'Type what each item usually costs you. Prices are remembered for next time.' : ''; $('list-hint').hidden = !priceMode;
     var skipped = rows.filter(function (r) { return r.skipped; });
     if (!total && !skipped.length) {
       $('list-body').innerHTML = '<div class="empty"><p><strong>Nothing on the list yet.</strong></p><p class="muted">Tick some meals for the week and their ingredients show up here, scaled and added together. You can also type anything into the box above.</p><button class="btn" type="button" data-act="go-meals">Pick meals</button></div>';
