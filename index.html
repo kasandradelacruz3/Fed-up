@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261031124047">
+<meta name="fedup-version" content="20261031124646">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1322,16 +1322,22 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       </div>
       <div id="scan-out" hidden></div>
     </div>
-    <div class="row between small">
-      <label class="muted" for="budget-input">Weekly budget</label>
-      <span class="pricebox">$<input type="text" inputmode="decimal" id="budget-input" placeholder="0.00"></span>
-    </div>
-    <p class="small" id="budget-line" hidden></p>
     <p class="small muted" id="price-src" hidden></p>
+    <p class="small" id="budget-line" hidden></p>
+    <details class="cost-break" id="price-tools">
+      <summary>Price details</summary>
+      <div class="stack" style="gap:10px;padding-top:6px">
+        <p class="small muted" style="margin:0">Prices are filled in for you. If one looks off, tap Edit prices and type what you pay. Fed Up remembers it for next time.</p>
+        <div><button class="btn" id="price-mode" type="button">Edit prices</button></div>
+        <div class="row between small">
+          <label class="muted" for="budget-input">Weekly budget</label>
+          <span class="pricebox">$<input type="text" inputmode="decimal" id="budget-input" placeholder="0.00"></span>
+        </div>
+      </div>
+    </details>
     <p class="small muted" id="list-hint">Tap anything you already have or just put in the cart to cross it off.</p>
     <div id="list-body" class="view"></div>
     <div class="row">
-      <button class="btn" id="price-mode" type="button">Edit prices</button>
       <button class="btn" id="copy-list" type="button">Copy list</button>
       <button class="btn danger" id="new-week" type="button">Start a new week</button>
     </div>
@@ -2130,11 +2136,12 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     } else { line = '#' + author; note = "The recipe author's estimate. Add prices to these ingredients on the Ingredients tab to see what it costs where you shop."; }
     if (c && c.none) { line = author ? '#' + author : 'No prices yet'; note = 'Add prices below to see what it costs where you shop.'; }
     var bareLine = c && !c.none && c.bare != null ? '<p class="cost-bare"><strong>' + esc(money(Math.round(c.bare * factor * 100) / 100) + (c.barePer ? ' · ' + money(c.barePer) + ' per serving' : '')) + '</strong> <span>without seasonings</span><span class="small muted">Leaves out spices, salt, pepper, bouillon and cooking oil, since most kitchens already have them.</span></p>' : '';
-    return '<div class="aisle"><h3>Cost to make</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(line) + '</p>' + bareLine + '<p class="small muted">' + esc(note) + '</p>' + (c ? costBreak(r, c) : '') + '</div>';
+    var shortNote = c && !c.none ? 'Estimated' + (priceWhere() ? ' for ' + priceWhere() : ' from typical U.S. prices') + (c.src.yours ? ', with ' + c.src.yours + (c.src.yours === 1 ? ' price' : ' prices') + ' you entered' : '') + '.' : note;
+    return '<div class="aisle"><h3>Cost to make</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(line) + '</p><p class="small muted">' + esc(shortNote) + '</p>' + (c ? costBreak(r, c, bareLine + '<p class="small muted">' + esc(note) + '</p>') : '') + '</div>';
   }
   var costOpen = false, costFix = -1;
   var SRC_LABEL = { yours: 'your price', area: 'people near you', est: 'typical price' };
-  function costBreak(r, c) {
+  function costBreak(r, c, top) {
     var flagged = c.lines.filter(function (l) { return l.how === 'whole' || l.how === 'pkg' || l.how === 'none'; }).length;
     var rows = c.lines.map(function (l) {
       var sub, warn = false;
@@ -2157,7 +2164,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           '<div class="row" style="gap:8px"><button class="btn primary small" type="submit">Save price</button><button class="btn quiet small" type="button" data-act="cost-cancel">Cancel</button></div>' +
           '<span class="small muted">This updates ' + esc(l.name) + ' in Ingredients &amp; prices, so every recipe that uses it gets the new price.</span></form>' : '') + '</li>';
     }).join('');
-    return '<details class="cost-break"' + (costOpen ? ' open' : '') + '><summary>See the price of each ingredient' + (flagged ? ' <span class="cb-flag">' + flagged + ' to check</span>' : '') + '</summary><ul class="plain">' + rows + '</ul></details>';
+    return '<details class="cost-break"' + (costOpen ? ' open' : '') + '><summary>See price details' + (flagged ? ' <span class="cb-flag">' + flagged + ' to check</span>' : '') + '</summary>' + (top || '') + '<ul class="plain">' + rows + '</ul></details>';
   }
   function fmtN(n) { return String(Math.round(n * 100) / 100); }
   var groupPhotos = {}, photoSubs = {};
@@ -2773,7 +2780,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var txt = total ? left + ' to get · ' + done + ' crossed off' : '';
     if (priced) txt += ' · about ' + money(cost) + (priced < left ? ' (' + (left - priced) + ' not priced)' : '');
     var estd = c.left.filter(function (r) { return r.price != null && r.priceSrc !== 'yours'; }).length;
-    $('price-src').textContent = estd ? (estd === priced ? 'Prices are estimates' : estd + ' of ' + priced + ' prices are estimates') + (priceWhere() ? ' for ' + priceWhere() + '. ' : ' based on typical U.S. prices. ') + 'Tap Edit prices to use your own.' : '';
+    $('price-src').textContent = estd ? (estd === priced ? 'Prices are estimates' : estd + ' of ' + priced + ' prices are estimates') + (priceWhere() ? ' for ' + priceWhere() + '.' : ' based on typical U.S. prices.') : '';
     $('price-src').hidden = !estd;
     if (estd && !S.settings.store && !guest) { $('price-src').innerHTML = esc($('price-src').textContent) + ' <button class="linkish" type="button" data-act="go" data-view="settings">Pick your store for closer prices</button>'; }
     $('list-summary').textContent = txt;
@@ -2798,6 +2805,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('fav-row').innerHTML = favs.length ? '<div class="chips">' + favs.map(function (f) { return '<button class="chip" type="button" data-act="add-fav" data-text="' + esc(f) + '">+ ' + esc(f) + '</button>'; }).join('') + '</div>'
       : (S.settings.favorites.length ? '' : '<p class="small muted">Tap the star on something you added to keep it here as a one-tap favourite.</p>');
     $('price-mode').textContent = priceMode ? 'Done with prices' : 'Edit prices';
+    if (priceMode) $('price-tools').open = true;
     $('list-hint').textContent = priceMode ? 'Type what each item usually costs you. Prices are remembered for next time.' : 'Tap anything you already have or just put in the cart to cross it off.';
     var skipped = rows.filter(function (r) { return r.skipped; });
     if (!total && !skipped.length) {
