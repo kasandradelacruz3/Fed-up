@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030231609">
+<meta name="fedup-version" content="20261031124047">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3166,7 +3166,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (own > 0) return { price: own, size: size, src: 'yours' };
     var a = AREA[skey(lib ? lib.name : name)], sz = size ? parseSize(size) : null;
     if (a && sz && sz.fam === a.fam) return { price: Math.round(a.unit * sz.base * 100) / 100, size: size, src: 'area', people: a.people };
-    if (est) return { price: Math.round(est.price * priceLevel() * 100) / 100, size: size, src: 'est' };
+    /* an estimate is for its own typical package, not the size someone typed for their product */
+    if (est) return { price: Math.round(est.price * priceLevel() * 100) / 100, size: est.size, src: 'est' };
     return null;
   }
   function priceNote(n) {
