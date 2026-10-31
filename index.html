@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261030230022">
+<meta name="fedup-version" content="20261030231609">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -272,6 +272,7 @@ dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
 .peek-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
 .peek-txt strong { color: var(--accent); font-size: 1rem; }
 .peek-txt .btn { align-self: flex-start; margin-top: 4px; }
+.linkish { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .skip-sec h3 { color: #E5322D; font-size: 0.86rem; }
 .skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
 .item.skip .pick { display: flex; align-items: center; }
@@ -817,11 +818,16 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <div><strong>My planning day</strong><p class="small muted">The day you usually plan your meals and shop. Fed Up reminds you that it's prep time on that day.</p></div>
       <div class="chips" id="set-days" role="group" aria-label="Planning day"><button class="chip" type="button" data-planday="0" aria-pressed="false">Sun</button><button class="chip" type="button" data-planday="1" aria-pressed="false">Mon</button><button class="chip" type="button" data-planday="2" aria-pressed="false">Tue</button><button class="chip" type="button" data-planday="3" aria-pressed="false">Wed</button><button class="chip" type="button" data-planday="4" aria-pressed="false">Thu</button><button class="chip" type="button" data-planday="5" aria-pressed="false">Fri</button><button class="chip" type="button" data-planday="6" aria-pressed="false">Sat</button><button class="chip" type="button" data-planday="any" aria-pressed="false">It changes</button></div>
     </div>
+    <div class="stack" style="gap:8px">
+      <p><strong>Where do you shop most?</strong></p>
+      <div class="chips" id="set-store" role="group" aria-label="Where you shop"></div>
+      <p class="small muted">Prices are adjusted to what that store usually charges, so recipe costs and your list total are closer to your receipt.</p>
+    </div>
     <div class="stack" style="gap:8px" id="zip-wrap">
       <label class="f" for="set-zip">Your ZIP code
         <input type="text" id="set-zip" inputmode="numeric" maxlength="5" placeholder="75001" autocomplete="off">
       </label>
-      <p class="small muted">Used to estimate grocery prices from what people near you pay. Fed Up only uses the first 3 digits to group nearby areas. Nobody can see your ZIP code or your prices, only averages from 2 or more people.</p>
+      <p class="small muted">Used to adjust prices for your part of the country, and to show what people near you pay. Fed Up only uses the first 3 digits to group nearby areas. Nobody can see your ZIP code or your prices, only averages from 2 or more people.</p>
     </div>
     <label class="check" for="set-baby">
       <input type="checkbox" id="set-baby">
@@ -1381,6 +1387,11 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <p><strong>What day do you usually plan your meals and shop?</strong></p>
       <div class="chips" id="welcome-days" role="group" aria-label="Planning day"><button class="chip" type="button" data-planday="0" aria-pressed="false">Sun</button><button class="chip" type="button" data-planday="1" aria-pressed="false">Mon</button><button class="chip" type="button" data-planday="2" aria-pressed="false">Tue</button><button class="chip" type="button" data-planday="3" aria-pressed="false">Wed</button><button class="chip" type="button" data-planday="4" aria-pressed="false">Thu</button><button class="chip" type="button" data-planday="5" aria-pressed="false">Fri</button><button class="chip" type="button" data-planday="6" aria-pressed="false">Sat</button><button class="chip" type="button" data-planday="any" aria-pressed="false">It changes</button></div>
       <p class="small muted">We'll remind you that it's prep time on that day.</p>
+    </div>
+    <div class="stack" style="gap:8px">
+      <p><strong>Where do you shop most?</strong></p>
+      <div class="chips" id="welcome-store" role="group" aria-label="Where you shop"></div>
+      <p class="small muted">So recipe prices match your store.</p>
     </div>
     <p><strong>Would you like baby features?</strong></p>
     <p class="muted">Baby features add a Baby food side to your meals for purées, mashes and finger foods, with age ranges, baby-friendly hashtags and a guide to what each recipe is a good source of. You also get a Baby log to record each new food your baby tries and how it went. Baby food ingredients go on the same shopping list as the rest of the family's.</p>
@@ -1995,6 +2006,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
   function applyBaby() {
     syncNav(); syncDayChips();
     if (document.activeElement !== $('set-zip')) $('set-zip').value = S.settings.zip || '';
+    $('set-store').innerHTML = storeChips(); if ($('welcome-store')) $('welcome-store').innerHTML = storeChips();
     var on = babyOn();
     $('mode-seg').hidden = !on; $('ed-kind-wrap').hidden = !on; $('set-baby').checked = on;
     if (!on && mode === 'baby') { mode = 'adult'; cat = ''; tagFilter = ''; try { localStorage.setItem('fed-up-mode', 'adult'); } catch (e) {} }
@@ -2111,7 +2123,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       line = 'About ' + money(Math.round(c.total * factor * 100) / 100) + (factor !== 1 ? ' for ' + servingsLabel(r, Math.round(base(r) * factor)) : '') + (c.per ? ' · ' + money(c.per) + ' per serving' : '');
       if (factor !== 1) note = '';
       note = (factor !== 1 ? 'The ingredient breakdown below is for the full recipe. ' : '') + priceNote(c.src) + (c.counted < c.rows ? ' ' + (c.rows - c.counted) + (c.rows - c.counted === 1 ? ' ingredient has' : ' ingredients have') + ' no price yet, so the real cost is a little higher.' : '') +
-        (c.src.yours < c.counted ? ' Add your own prices on the Ingredients page for the most accurate cost' + (S.settings.zip ? '.' : ', or add your ZIP code in Settings to see prices from people near you.') : '');
+        (c.src.yours < c.counted ? (S.settings.store && S.settings.zip ? ' Tap any price below to fix it.' : ' For closer prices, pick your store' + (S.settings.zip ? '' : ' and add your ZIP code') + ' in Settings.') : '');
       if (c.rough) note += ' Some amounts could not be compared with the package size. Check the ones marked below.';
       note += ' Prices are estimates and may be different where you shop.';
       if (c.counted < c.rows && author) note += ' The recipe author estimated #' + author + '.';
@@ -2121,7 +2133,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     return '<div class="aisle"><h3>Cost to make</h3><p style="font-weight:600;font-variant-numeric:tabular-nums">' + esc(line) + '</p>' + bareLine + '<p class="small muted">' + esc(note) + '</p>' + (c ? costBreak(r, c) : '') + '</div>';
   }
   var costOpen = false, costFix = -1;
-  var SRC_LABEL = { yours: 'your price', area: 'people near you', est: 'typical U.S. price' };
+  var SRC_LABEL = { yours: 'your price', area: 'people near you', est: 'typical price' };
   function costBreak(r, c) {
     var flagged = c.lines.filter(function (l) { return l.how === 'whole' || l.how === 'pkg' || l.how === 'none'; }).length;
     var rows = c.lines.map(function (l) {
@@ -2143,7 +2155,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           '<div class="cb-inputs"><label>Price<input type="text" inputmode="decimal" name="price" placeholder="0.00" value="' + esc(lib.price > 0 ? String(lib.price) : (l.price ? String(l.price) : '')) + '"></label>' +
           '<label>For<input type="text" name="size" placeholder="1 lb" value="' + esc(lib.size || l.size || '') + '"></label></div>' +
           '<div class="row" style="gap:8px"><button class="btn primary small" type="submit">Save price</button><button class="btn quiet small" type="button" data-act="cost-cancel">Cancel</button></div>' +
-          '<span class="small muted">This updates ' + esc(l.name) + ' on your Ingredients page, so every recipe that uses it gets the new price.</span></form>' : '') + '</li>';
+          '<span class="small muted">This updates ' + esc(l.name) + ' in Ingredients &amp; prices, so every recipe that uses it gets the new price.</span></form>' : '') + '</li>';
     }).join('');
     return '<details class="cost-break"' + (costOpen ? ' open' : '') + '><summary>See the price of each ingredient' + (flagged ? ' <span class="cb-flag">' + flagged + ' to check</span>' : '') + '</summary><ul class="plain">' + rows + '</ul></details>';
   }
@@ -2761,8 +2773,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var txt = total ? left + ' to get · ' + done + ' crossed off' : '';
     if (priced) txt += ' · about ' + money(cost) + (priced < left ? ' (' + (left - priced) + ' not priced)' : '');
     var estd = c.left.filter(function (r) { return r.price != null && r.priceSrc !== 'yours'; }).length;
-    $('price-src').textContent = estd ? (estd === priced ? 'Prices are estimates' : estd + ' of ' + priced + ' prices are estimates') + (S.settings.zip ? ': typical U.S. prices or what people near you pay. ' : ' based on typical U.S. prices. Add your ZIP code in Settings to use prices from people near you. ') + 'Tap Edit prices to use your own.' : '';
+    $('price-src').textContent = estd ? (estd === priced ? 'Prices are estimates' : estd + ' of ' + priced + ' prices are estimates') + (priceWhere() ? ' for ' + priceWhere() + '. ' : ' based on typical U.S. prices. ') + 'Tap Edit prices to use your own.' : '';
     $('price-src').hidden = !estd;
+    if (estd && !S.settings.store && !guest) { $('price-src').innerHTML = esc($('price-src').textContent) + ' <button class="linkish" type="button" data-act="go" data-view="settings">Pick your store for closer prices</button>'; }
     $('list-summary').textContent = txt;
     var trip = 0, tripPriced = 0, bl = $('budget-line'), bud = S.settings.budget;
     c.active.forEach(function (r) { if (r.price != null) { trip += r.price; tripPriced++; } });
@@ -3083,50 +3096,64 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     return out.sort(function (a, b) { return a.score - b.score || a.m.name.length - b.m.name.length || a.m.name.localeCompare(b.m.name); }).slice(0, limit || 8);
   }
 
-  /* ---------- typical U.S. grocery prices (estimates, autumn 2026) ----------
+  /* ---------- typical U.S. grocery prices (estimates, autumn 2026; core items from U.S. Bureau of Labor Statistics average prices, September 2026) ----------
      "Official name=price@package size". Used only when a person has no price of their own
      and there is no average from people near them. */
   var EST_SRC =
     'Yellow onion=0.99@1 count;White onion=1.09@1 count;Red onion=1.19@1 count;Sweet onion=1.29@1 count;Green onions=0.99@1 count;Shallot=0.89@1 count;Leek=1.79@1 count;Garlic clove=0.69@1 bulb;Ginger=4.49@1 lb;' +
     'Tomatillos=1.99@1 lb;Anaheim pepper=0.79@1 count;Habanero pepper=0.25@1 count;Nopales=3.49@1 lb;Chayote=1.29@1 count;Jícama=1.49@1 lb;Mexican squash=1.49@1 lb;Plantains=0.69@1 count;Key limes=2.49@1 lb;Epazote=1.49@1 count;Papaya=3.99@1 count;Guava=3.99@1 lb;Tamarind=2.99@1 lb;Prickly pear=0.79@1 count;' +
-    'Beef steak=8.99@1 lb;Skirt steak=11.99@1 lb;Mexican chorizo=2.99@9 oz;Beef shank=6.99@1 lb;Beef tripe=4.99@1 lb;Beef tongue=8.99@1 lb;Oxtail=10.99@1 lb;Beef cheek=8.99@1 lb;Chicken leg quarters=1.29@1 lb;' +
+    'Beef steak=10.16@1 lb;Skirt steak=13.55@1 lb;Mexican chorizo=2.99@9 oz;Beef shank=7.90@1 lb;Beef tripe=5.64@1 lb;Beef tongue=10.16@1 lb;Oxtail=10.99@1 lb;Beef cheek=10.16@1 lb;Chicken leg quarters=1.29@1 lb;' +
     'Queso fresco=3.99@10 oz;Cotija cheese=4.49@10 oz;Oaxaca cheese=4.99@10 oz;Chihuahua cheese=4.49@10 oz;Panela cheese=3.99@10 oz;Mexican crema=3.49@15 fl oz;Bolillos=0.50@1 count;Pan dulce=0.89@1 count;' +
     'Guajillo chiles=2.99@3 oz;Ancho chiles=3.49@3 oz;Pasilla chiles=3.49@3 oz;Chile de árbol=2.49@2 oz;Morita chiles=3.49@3 oz;California chiles=2.49@3 oz;Chipotle peppers in adobo=1.79@7 oz;Mexican oregano=2.49@0.75 oz;Achiote paste=2.49@3.5 oz;Tajín=3.99@5 oz;Cinnamon sticks=2.99@1.5 oz;Sazón seasoning=2.99@1.41 oz;Adobo seasoning=3.49@8 oz;' +
-    'Mexican chocolate=4.49@19 oz;Piloncillo=1.99@8 oz;Masa harina=4.49@4.4 lb;Tostadas=3.49@12 oz;Taco shells=2.99@12 count;Hominy=2.49@29 oz;Dried pinto beans=1.99@2 lb;Salsa verde=3.49@16 oz;Mole paste=3.99@8.25 oz;Pickled jalapeños=2.49@12 oz;Valentina hot sauce=1.99@12.5 fl oz;Corn husks=4.99@8 oz;Lard=3.99@16 oz;' +
+    'Mexican chocolate=4.49@19 oz;Piloncillo=1.99@8 oz;Masa harina=4.49@4.4 lb;Tostadas=3.49@12 oz;Taco shells=2.99@12 count;Hominy=2.49@29 oz;Dried pinto beans=3.29@2 lb;Salsa verde=3.49@16 oz;Mole paste=3.99@8.25 oz;Pickled jalapeños=2.49@12 oz;Valentina hot sauce=1.99@12.5 fl oz;Corn husks=4.99@8 oz;Lard=3.99@16 oz;' +
     'Sweetened condensed milk=2.49@14 oz;Evaporated milk=1.79@12 fl oz;Cajeta=5.99@13 oz;Chicharrones=2.99@3 oz;Maria cookies=1.49@7 oz;Jarritos=1.49@1 count;Mexican Coke=1.99@1 count;Horchata=3.99@64 fl oz;' +
     'Chicken bouillon=3.49@7.9 oz;Tomato bouillon=3.49@7.9 oz;Beef bouillon=3.29@7.9 oz;' +
-    'Russet potatoes=4.29@5 lb;Yukon gold potatoes=4.99@3 lb;Red potatoes=4.49@3 lb;Baby potatoes=4.29@24 oz;Sweet potatoes=1.29@1 lb;' +
+    'Russet potatoes=4.49@5 lb;Yukon gold potatoes=4.99@3 lb;Red potatoes=4.49@3 lb;Baby potatoes=4.29@24 oz;Sweet potatoes=1.29@1 lb;' +
     'Carrots=1.29@1 lb;Baby carrots=1.99@16 oz;Celery=2.29@1 count;Broccoli=2.49@1 lb;Cauliflower=3.49@1 count;Green beans=2.49@1 lb;Asparagus=3.99@1 lb;Brussels sprouts=3.49@1 lb;Cabbage=0.89@1 lb;Red cabbage=1.29@1 lb;' +
     'Zucchini=1.79@1 lb;Yellow squash=1.79@1 lb;Butternut squash=1.49@1 lb;Spaghetti squash=1.49@1 lb;Acorn squash=1.49@1 lb;Pumpkin=4.99@1 count;Cucumber=0.99@1 count;Mini cucumbers=3.49@16 oz;' +
     'Green bell pepper=0.99@1 count;Red bell pepper=1.69@1 count;Yellow bell pepper=1.69@1 count;Orange bell pepper=1.69@1 count;Mini sweet peppers=3.99@16 oz;Jalapeño=0.20@1 count;Poblano pepper=0.60@1 count;Serrano pepper=0.15@1 count;' +
-    'Tomatoes=1.79@1 lb;Cherry tomatoes=3.49@10 oz;Grape tomatoes=3.49@10 oz;Beefsteak tomatoes=2.49@1 lb;Avocado=1.25@1 count;Corn on the cob=0.69@1 count;' +
+    'Tomatoes=1.99@1 lb;Cherry tomatoes=3.49@10 oz;Grape tomatoes=3.49@10 oz;Beefsteak tomatoes=2.81@1 lb;Avocado=1.25@1 count;Corn on the cob=0.69@1 count;' +
     'Romaine lettuce=2.99@1 count;Iceberg lettuce=1.99@1 count;Spring mix=4.49@5 oz;Spinach=3.99@10 oz;Kale=2.49@1 count;Arugula=4.49@5 oz;Coleslaw mix=2.49@14 oz;' +
     'Mushrooms=2.49@8 oz;Baby bella mushrooms=2.99@8 oz;Portobello mushrooms=3.99@6 oz;Eggplant=1.99@1 count;Beets=2.99@1 lb;Radishes=1.49@6 oz;Snap peas=3.99@8 oz;Snow peas=3.99@8 oz;Bean sprouts=2.29@12 oz;' +
     'Cilantro=0.99@1 count;Parsley=1.29@1 count;Basil=2.99@1 count;Mint=2.49@1 count;Dill=2.49@1 count;Rosemary=2.49@1 count;Thyme=2.49@1 count;Chives=2.49@1 count;' +
-    'Lemons=0.69@1 count;Limes=0.39@1 count;Oranges=0.99@1 count;Clementines=4.99@3 lb;Apples=1.89@1 lb;Granny smith apples=1.99@1 lb;Bananas=0.65@1 lb;Strawberries=3.99@16 oz;Blueberries=3.99@11 oz;Raspberries=3.99@6 oz;Blackberries=3.49@6 oz;' +
+    'Lemons=0.59@1 count;Limes=0.39@1 count;Oranges=0.89@1 count;Clementines=4.99@3 lb;Apples=1.89@1 lb;Granny smith apples=1.99@1 lb;Bananas=0.66@1 lb;Strawberries=3.79@16 oz;Blueberries=3.99@11 oz;Raspberries=3.99@6 oz;Blackberries=3.49@6 oz;' +
     'Grapes=2.99@1 lb;Pineapple=2.99@1 count;Mango=1.29@1 count;Peaches=2.29@1 lb;Pears=1.79@1 lb;Watermelon=6.99@1 count;Cantaloupe=3.49@1 count;Kiwi=0.59@1 count;Cherries=4.99@1 lb;Plums=2.49@1 lb;Pomegranate=2.99@1 count;' +
-    'Chicken breasts=4.29@1 lb;Chicken thighs=3.49@1 lb;Bone-in chicken thighs=2.49@1 lb;Chicken drumsticks=1.99@1 lb;Chicken wings=3.99@1 lb;Chicken tenders=4.99@1 lb;Whole chicken=1.99@1 lb;Rotisserie chicken=6.99@1 count;Ground chicken=4.99@1 lb;' +
-    'Ground beef=5.99@1 lb;Ground turkey=4.99@1 lb;Ground pork=4.49@1 lb;Italian sausage=5.49@19 oz;Breakfast sausage=4.49@12 oz;Smoked sausage=4.49@14 oz;Bacon=6.49@12 oz;Turkey bacon=4.49@12 oz;Ham=4.99@9 oz;Deli turkey=4.99@9 oz;Pepperoni=3.49@6 oz;Hot dogs=4.29@1 lb;' +
-    'Pork chops=4.49@1 lb;Pork tenderloin=4.99@1 lb;Pork shoulder=2.99@1 lb;Stew meat=7.49@1 lb;Chuck roast=7.99@1 lb;Flank steak=11.99@1 lb;Sirloin steak=10.99@1 lb;Ribeye steak=15.99@1 lb;Meatballs=6.99@26 oz;' +
+    'Chicken breasts=4.20@1 lb;Chicken thighs=3.49@1 lb;Bone-in chicken thighs=2.49@1 lb;Chicken drumsticks=1.79@1 lb;Chicken wings=3.99@1 lb;Chicken tenders=4.99@1 lb;Whole chicken=2.06@1 lb;Rotisserie chicken=6.99@1 count;Ground chicken=4.99@1 lb;' +
+    'Ground beef=6.79@1 lb;Ground turkey=4.99@1 lb;Ground pork=4.49@1 lb;Italian sausage=5.49@19 oz;Breakfast sausage=4.49@12 oz;Smoked sausage=4.49@14 oz;Bacon=5.09@12 oz;Turkey bacon=4.49@12 oz;Ham=4.99@9 oz;Deli turkey=4.99@9 oz;Pepperoni=3.49@6 oz;Hot dogs=4.29@1 lb;' +
+    'Pork chops=4.55@1 lb;Pork tenderloin=4.99@1 lb;Pork shoulder=2.99@1 lb;Stew meat=7.49@1 lb;Chuck roast=9.19@1 lb;Flank steak=13.55@1 lb;Sirloin steak=14.11@1 lb;Ribeye steak=18.07@1 lb;Meatballs=6.99@26 oz;' +
     'Salmon=10.99@1 lb;Shrimp=8.99@1 lb;Tilapia=6.99@1 lb;Cod=9.99@1 lb;Canned tuna=1.29@5 oz;' +
-    'Eggs=3.49@12 count;Egg whites=4.49@32 fl oz;Milk=4.09@1 gallon;Skim milk=4.09@1 gallon;Almond milk=3.49@64 fl oz;Oat milk=4.49@64 fl oz;Heavy cream=5.49@32 fl oz;Half and half=2.99@32 fl oz;Butter=4.99@16 oz;' +
-    'Cheddar cheese=2.99@8 oz;Mozzarella cheese=2.99@8 oz;Fresh mozzarella=4.49@8 oz;Parmesan cheese=4.49@5 oz;Mexican blend cheese=2.99@8 oz;Monterey jack cheese=2.99@8 oz;Pepper jack cheese=2.99@8 oz;Swiss cheese=3.49@8 oz;Provolone cheese=3.49@8 oz;American cheese=3.29@12 oz;Feta cheese=3.99@6 oz;Cream cheese=2.49@8 oz;Cottage cheese=3.49@16 oz;Ricotta cheese=3.99@15 oz;String cheese=5.49@12 count;' +
+    'Eggs=2.29@12 count;Egg whites=4.49@32 fl oz;Milk=4.11@1 gallon;Skim milk=4.09@1 gallon;Almond milk=3.49@64 fl oz;Oat milk=4.49@64 fl oz;Heavy cream=5.49@32 fl oz;Half and half=2.99@32 fl oz;Butter=3.99@16 oz;' +
+    'Cheddar cheese=3.09@8 oz;Mozzarella cheese=2.99@8 oz;Fresh mozzarella=4.49@8 oz;Parmesan cheese=4.49@5 oz;Mexican blend cheese=2.99@8 oz;Monterey jack cheese=2.99@8 oz;Pepper jack cheese=2.99@8 oz;Swiss cheese=3.49@8 oz;Provolone cheese=3.49@8 oz;American cheese=3.55@12 oz;Feta cheese=3.99@6 oz;Cream cheese=2.49@8 oz;Cottage cheese=3.49@16 oz;Ricotta cheese=3.99@15 oz;String cheese=5.49@12 count;' +
     'Sour cream=2.29@16 oz;Greek yogurt=5.99@32 oz;Yogurt=3.49@32 oz;Yogurt cups=4.99@8 count;Whipped cream=2.49@8 oz;Refrigerated biscuits=2.29@8 count;Crescent rolls=3.29@8 count;Pie crust=3.99@2 count;Tortillas=3.29@10 count;Corn tortillas=2.49@30 count;Hummus=3.99@10 oz;Salsa=3.49@16 oz;Guacamole=4.99@8 oz;' +
-    'Bread=2.99@1 count;Whole wheat bread=3.49@1 count;Sourdough bread=4.49@1 count;French bread=2.99@1 count;Hamburger buns=2.79@8 count;Hot dog buns=2.79@8 count;Dinner rolls=3.49@12 count;English muffins=3.29@6 count;Bagels=3.99@6 count;Croissants=5.99@6 count;Pita bread=2.99@6 count;Naan=3.99@4 count;Hawaiian rolls=4.49@12 count;' +
-    'White rice=3.49@2 lb;Jasmine rice=4.49@2 lb;Brown rice=3.49@2 lb;Basmati rice=4.99@2 lb;Instant rice=3.49@14 oz;Quinoa=5.99@16 oz;Couscous=2.99@10 oz;Rolled oats=4.49@42 oz;Quick oats=4.49@42 oz;' +
-    'Spaghetti pasta=1.69@16 oz;Thin spaghetti pasta=1.69@16 oz;Angel hair pasta=1.69@16 oz;Linguine pasta=1.69@16 oz;Fettuccine pasta=1.69@16 oz;Bucatini pasta=2.99@16 oz;Pappardelle pasta=3.99@8.8 oz;Penne pasta=1.69@16 oz;Ziti pasta=1.69@16 oz;Mostaccioli pasta=1.69@16 oz;Rigatoni pasta=1.69@16 oz;Rotini pasta=1.69@16 oz;Fusilli pasta=1.69@16 oz;Cavatappi pasta=1.99@16 oz;Gemelli pasta=1.99@16 oz;Campanelle pasta=1.99@16 oz;Radiatori pasta=2.49@16 oz;Farfalle pasta=1.69@16 oz;Elbow pasta=1.69@16 oz;Shell pasta=1.69@16 oz;Jumbo shell pasta=2.49@12 oz;Ditalini pasta=1.69@16 oz;Orzo pasta=1.99@16 oz;Acini de pepe pasta=1.99@16 oz;Alphabet pasta=0.69@7 oz;Stelline pasta=0.69@7 oz;Rotelle pasta=1.99@16 oz;Lasagna pasta=2.49@16 oz;Manicotti pasta=2.49@8 oz;Cannelloni pasta=3.49@8.8 oz;Tortellini pasta=3.99@9 oz;Ravioli pasta=4.49@9 oz;Gnocchi pasta=2.99@16 oz;Whole wheat pasta=1.99@16 oz;Gluten free pasta=2.99@12 oz;Chickpea pasta=3.49@8 oz;Protein pasta=2.49@14.5 oz;Fideo pasta=0.69@7 oz;Egg noodles=2.49@12 oz;Ramen noodles=0.39@1 count;Mac and cheese=1.49@1 count;' +
+    'Bread=2.29@1 count;Whole wheat bread=3.49@1 count;Sourdough bread=4.49@1 count;French bread=2.99@1 count;Hamburger buns=2.79@8 count;Hot dog buns=2.79@8 count;Dinner rolls=3.49@12 count;English muffins=3.29@6 count;Bagels=3.99@6 count;Croissants=5.99@6 count;Pita bread=2.99@6 count;Naan=3.99@4 count;Hawaiian rolls=4.49@12 count;' +
+    'White rice=2.29@2 lb;Jasmine rice=4.49@2 lb;Brown rice=3.49@2 lb;Basmati rice=4.99@2 lb;Instant rice=3.49@14 oz;Quinoa=5.99@16 oz;Couscous=2.99@10 oz;Rolled oats=4.49@42 oz;Quick oats=4.49@42 oz;' +
+    'Spaghetti pasta=1.39@16 oz;Thin spaghetti pasta=1.39@16 oz;Angel hair pasta=1.39@16 oz;Linguine pasta=1.39@16 oz;Fettuccine pasta=1.39@16 oz;Bucatini pasta=2.99@16 oz;Pappardelle pasta=3.99@8.8 oz;Penne pasta=1.39@16 oz;Ziti pasta=1.39@16 oz;Mostaccioli pasta=1.39@16 oz;Rigatoni pasta=1.39@16 oz;Rotini pasta=1.39@16 oz;Fusilli pasta=1.39@16 oz;Cavatappi pasta=1.99@16 oz;Gemelli pasta=1.99@16 oz;Campanelle pasta=1.99@16 oz;Radiatori pasta=2.49@16 oz;Farfalle pasta=1.39@16 oz;Elbow pasta=1.39@16 oz;Shell pasta=1.39@16 oz;Jumbo shell pasta=2.49@12 oz;Ditalini pasta=1.39@16 oz;Orzo pasta=1.99@16 oz;Acini de pepe pasta=1.99@16 oz;Alphabet pasta=0.69@7 oz;Stelline pasta=0.69@7 oz;Rotelle pasta=1.99@16 oz;Lasagna pasta=2.49@16 oz;Manicotti pasta=2.49@8 oz;Cannelloni pasta=3.49@8.8 oz;Tortellini pasta=3.99@9 oz;Ravioli pasta=4.49@9 oz;Gnocchi pasta=2.99@16 oz;Whole wheat pasta=1.99@16 oz;Gluten free pasta=2.99@12 oz;Chickpea pasta=3.49@8 oz;Protein pasta=2.49@14.5 oz;Fideo pasta=0.69@7 oz;Egg noodles=2.49@12 oz;Ramen noodles=0.39@1 count;Mac and cheese=1.49@1 count;' +
     'Marinara sauce=3.49@24 oz;Alfredo sauce=3.49@15 oz;Pizza sauce=2.49@14 oz;Tomato sauce=0.99@15 oz;Tomato paste=0.99@6 oz;Diced tomatoes=1.29@14.5 oz;Crushed tomatoes=1.99@28 oz;Rotel=1.49@10 oz;Enchilada sauce=2.49@10 oz;Taco sauce=2.49@8 oz;' +
     'Black beans=1.19@15 oz;Pinto beans=1.19@15 oz;Kidney beans=1.19@15 oz;Chickpeas=1.29@15 oz;Refried beans=1.69@16 oz;Cannellini beans=1.49@15 oz;Baked beans=2.29@28 oz;Lentils=1.99@16 oz;Canned corn=1.19@15 oz;Green chiles=1.49@4 oz;' +
     'Chicken broth=2.79@32 fl oz;Beef broth=2.79@32 fl oz;Vegetable broth=2.79@32 fl oz;Cream of chicken soup=1.79@10.5 oz;Cream of mushroom soup=1.79@10.5 oz;Coconut milk=2.49@13.5 fl oz;' +
     'Olive oil=9.99@16.9 fl oz;Vegetable oil=4.99@48 fl oz;Avocado oil=8.99@16.9 fl oz;Coconut oil=6.99@14 fl oz;Cooking spray=3.99@6 oz;Sesame oil=4.99@5 fl oz;' +
-    'All-purpose flour=3.99@5 lb;Granulated sugar=4.29@4 lb;Brown sugar=3.29@2 lb;Powdered sugar=3.29@2 lb;Baking soda=1.29@16 oz;Baking powder=2.99@8.1 oz;Cornstarch=2.49@16 oz;Vanilla extract=8.99@2 fl oz;Chocolate chips=3.99@12 oz;Cocoa powder=4.49@8 oz;Yeast=1.99@3 count;Breadcrumbs=2.49@15 oz;Panko=2.99@8 oz;' +
+    'All-purpose flour=2.79@5 lb;Granulated sugar=4.09@4 lb;Brown sugar=3.29@2 lb;Powdered sugar=3.29@2 lb;Baking soda=1.29@16 oz;Baking powder=2.99@8.1 oz;Cornstarch=2.49@16 oz;Vanilla extract=8.99@2 fl oz;Chocolate chips=3.99@12 oz;Cocoa powder=4.49@8 oz;Yeast=1.99@3 count;Breadcrumbs=2.49@15 oz;Panko=2.99@8 oz;' +
     'Honey=7.49@16 oz;Maple syrup=9.99@12.5 fl oz;Peanut butter=3.49@16 oz;Almond butter=7.99@12 oz;Jelly=2.99@18 oz;Nutella=4.99@13 oz;' +
     'Soy sauce=3.49@10 fl oz;Teriyaki sauce=3.99@10 fl oz;Hoisin sauce=3.49@8 oz;Sriracha=4.49@17 oz;Hot sauce=3.49@12 fl oz;BBQ sauce=2.99@18 oz;Ketchup=3.49@32 oz;Mustard=1.99@14 oz;Dijon mustard=3.49@12 oz;Mayonnaise=5.49@30 fl oz;Ranch dressing=3.99@16 fl oz;Italian dressing=2.99@16 fl oz;Worcestershire sauce=3.49@10 fl oz;Apple cider vinegar=3.29@32 fl oz;White vinegar=2.49@32 fl oz;Balsamic vinegar=4.49@16.9 fl oz;Red wine vinegar=2.99@16 fl oz;Rice vinegar=3.29@12 fl oz;Lemon juice=2.99@15 fl oz;Lime juice=2.99@15 fl oz;' +
     'Salt=1.29@26 oz;Kosher salt=3.99@48 oz;Sea salt=3.49@26 oz;Black pepper=4.49@4 oz;Garlic powder=3.49@3 oz;Onion powder=3.49@3 oz;Paprika=3.49@2.5 oz;Smoked paprika=4.49@2 oz;Chili powder=3.49@2.5 oz;Cumin=3.99@2 oz;Italian seasoning=3.49@0.75 oz;Oregano=3.49@0.75 oz;Dried basil=3.49@0.75 oz;Dried parsley=2.99@0.5 oz;Dried thyme=3.49@0.75 oz;Cinnamon=3.49@2.4 oz;Nutmeg=4.99@1.1 oz;Red pepper flakes=3.49@1.5 oz;Cayenne pepper=3.49@1.75 oz;Taco seasoning=1.29@1 oz;Ranch seasoning=1.99@1 oz;Garlic salt=2.99@5 oz;Seasoned salt=3.49@8 oz;Everything bagel seasoning=3.49@2.3 oz;Bay leaves=3.99@0.15 oz;Curry powder=4.49@2 oz;' +
-    'Tortilla chips=3.99@13 oz;Potato chips=4.99@8 oz;Crackers=3.99@13.7 oz;Goldfish crackers=2.99@6.6 oz;Graham crackers=3.99@14.4 oz;Pretzels=3.49@16 oz;Popcorn=3.99@3 count;Granola=4.99@12 oz;Granola bars=3.99@8 count;Cereal=4.49@12 oz;Cheerios=4.99@12 oz;Raisins=3.49@12 oz;Almonds=6.99@16 oz;Walnuts=6.99@16 oz;Pecans=7.99@12 oz;Peanuts=3.99@16 oz;Chia seeds=5.99@12 oz;Flaxseed=4.49@16 oz;Applesauce=3.29@6 count;Fruit cups=3.49@4 count;Baby food pouches=1.49@1 count;Baby cereal=3.49@8 oz;' +
-    'Frozen broccoli=2.49@12 oz;Frozen mixed vegetables=1.99@12 oz;Frozen peas=1.79@12 oz;Frozen corn=1.79@12 oz;Frozen green beans=1.79@12 oz;Frozen spinach=1.99@12 oz;Frozen stir fry vegetables=2.99@16 oz;Frozen cauliflower rice=3.49@12 oz;Frozen berries=6.99@32 oz;Frozen strawberries=4.49@16 oz;Frozen blueberries=4.49@16 oz;Frozen mango=4.49@16 oz;Frozen fries=3.99@32 oz;Tater tots=3.99@32 oz;Frozen waffles=3.49@10 count;Frozen pizza=6.99@1 count;Frozen chicken nuggets=8.99@32 oz;Ice cream=5.49@48 fl oz;' +
-    'Water=4.99@24 count;Sparkling water=5.49@12 count;Orange juice=4.49@52 fl oz;Apple juice=3.49@64 fl oz;Juice boxes=4.99@10 count;Coffee=9.99@12 oz;Coffee pods=11.99@12 count;Tea=3.49@20 count;Coffee creamer=4.49@32 fl oz;' +
+    'Tortilla chips=3.99@13 oz;Potato chips=3.39@8 oz;Crackers=3.99@13.7 oz;Goldfish crackers=2.99@6.6 oz;Graham crackers=3.99@14.4 oz;Pretzels=3.49@16 oz;Popcorn=3.99@3 count;Granola=4.99@12 oz;Granola bars=3.99@8 count;Cereal=4.49@12 oz;Cheerios=4.99@12 oz;Raisins=3.49@12 oz;Almonds=6.99@16 oz;Walnuts=6.99@16 oz;Pecans=7.99@12 oz;Peanuts=3.99@16 oz;Chia seeds=5.99@12 oz;Flaxseed=4.49@16 oz;Applesauce=3.29@6 count;Fruit cups=3.49@4 count;Baby food pouches=1.49@1 count;Baby cereal=3.49@8 oz;' +
+    'Frozen broccoli=2.49@12 oz;Frozen mixed vegetables=1.99@12 oz;Frozen peas=1.79@12 oz;Frozen corn=1.79@12 oz;Frozen green beans=1.79@12 oz;Frozen spinach=1.99@12 oz;Frozen stir fry vegetables=2.99@16 oz;Frozen cauliflower rice=3.49@12 oz;Frozen berries=6.99@32 oz;Frozen strawberries=4.49@16 oz;Frozen blueberries=4.49@16 oz;Frozen mango=4.49@16 oz;Frozen fries=3.99@32 oz;Tater tots=3.99@32 oz;Frozen waffles=3.49@10 count;Frozen pizza=6.99@1 count;Frozen chicken nuggets=8.99@32 oz;Ice cream=4.49@48 fl oz;' +
+    'Water=4.99@24 count;Sparkling water=5.49@12 count;Orange juice=4.49@52 fl oz;Apple juice=3.49@64 fl oz;Juice boxes=4.99@10 count;Coffee=6.99@12 oz;Coffee pods=11.99@12 count;Tea=3.49@20 count;Coffee creamer=4.49@32 fl oz;' +
     'Paper towels=11.99@6 count;Toilet paper=12.99@12 count;Napkins=3.99@200 count;Aluminum foil=4.99@1 count;Plastic wrap=3.99@1 count;Parchment paper=4.49@1 count;Zip bags=4.49@40 count;Meal prep containers=12.99@20 count;Trash bags=12.99@40 count;Dish soap=3.99@1 count;Dishwasher pods=14.99@40 count;Laundry detergent=13.99@1 count;Diapers=24.99@84 count;Wipes=9.99@3 count;Hand soap=2.99@1 count;Sponges=4.49@6 count';
+  /* where people shop changes what they pay: price level compared with the U.S. average
+     (Consumer Reports 2025 comparison of 35 chains, and GroceryChop's 2026 U.S. grocery price index) */
+  var STORES = [
+    ['walmart', 'Walmart', 0.91], ['heb', 'H-E-B', 0.91], ['aldi', 'Aldi', 0.84], ['kroger', 'Kroger', 1.02], ['target', 'Target', 0.96],
+    ['costco', 'Costco', 0.80], ['sams', 'Sam\'s Club', 0.82], ['fiesta', 'Fiesta Mart', 0.95], ['lidl', 'Lidl', 0.84], ['winco', 'WinCo', 0.88],
+    ['publix', 'Publix', 1.10], ['safeway', 'Safeway', 0.99], ['albertsons', 'Albertsons', 1.13], ['traderjoes', 'Trader Joe\'s', 1.05], ['wholefoods', 'Whole Foods', 1.25], ['mix', 'A mix of stores', 1]
+  ];
+  var STORE_IDX = {}; STORES.forEach(function (x) { STORE_IDX[x[0]] = x; });
+  /* regional price level from Bureau of Labor Statistics average prices by region, September 2026 */
+  var REGIONS = { south: ['the South', 0.96], west: ['the West', 1.13], northeast: ['the Northeast', 1.03], midwest: ['the Midwest', 0.99] };
+  function regionOf(zip) { var d = String(zip || '').charAt(0); return /[01]/.test(d) ? 'northeast' : /[237]/.test(d) ? 'south' : /[456]/.test(d) ? 'midwest' : /[89]/.test(d) ? 'west' : ''; }
+  function priceLevel() { var st = STORE_IDX[S.settings.store], rg = REGIONS[regionOf(S.settings.zip)]; return (st ? st[2] : 1) * (rg ? rg[1] : 1); }
+  function priceWhere() { var st = STORE_IDX[S.settings.store], rg = REGIONS[regionOf(S.settings.zip)]; return [st && st[0] !== 'mix' ? st[1] : '', rg ? rg[0] : ''].filter(Boolean).join(' in '); }
+  function storeChips() { return STORES.map(function (x) { return '<button class="chip" type="button" data-store="' + x[0] + '" aria-pressed="' + (S.settings.store === x[0]) + '">' + esc(x[1]) + '</button>'; }).join(''); }
   var EST = {};
   EST_SRC.split(';').forEach(function (e) { var m = /^(.+)=([\d.]+)@(.+)$/.exec(e.trim()); if (m) EST[norm(m[1])] = { price: parseFloat(m[2]), size: m[3] }; });
 
@@ -3139,14 +3166,14 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (own > 0) return { price: own, size: size, src: 'yours' };
     var a = AREA[skey(lib ? lib.name : name)], sz = size ? parseSize(size) : null;
     if (a && sz && sz.fam === a.fam) return { price: Math.round(a.unit * sz.base * 100) / 100, size: size, src: 'area', people: a.people };
-    if (est) return { price: est.price, size: size, src: 'est' };
+    if (est) return { price: Math.round(est.price * priceLevel() * 100) / 100, size: size, src: 'est' };
     return null;
   }
   function priceNote(n) {
     var bits = [];
     if (n.yours) bits.push(n.yours + (n.yours === 1 ? ' price you entered' : ' prices you entered'));
     if (n.area) bits.push(n.area + (n.area === 1 ? ' price from people near you' : ' prices from people near you'));
-    if (n.est) bits.push(n.est + (n.est === 1 ? ' typical U.S. price' : ' typical U.S. prices'));
+    if (n.est) bits.push(n.est + (n.est === 1 ? ' typical price' : ' typical prices') + (priceWhere() ? ' for ' + priceWhere() : ''));
     if (!bits.length) return '';
     var last = bits.pop();
     return 'Based on ' + (bits.length ? bits.join(', ') + ' and ' + last : last) + '.';
@@ -4272,6 +4299,8 @@ var babyEd = $('ed-kind').value === 'baby';
     if (profMenu && !ev.target.closest('.prof-bar')) { profMenu = false; var pd = $('prof-drop'); if (pd) pd.hidden = true; var mb = document.querySelector('.menu-btn'); if (mb) mb.setAttribute('aria-expanded', 'false'); }
     var pdc = ev.target.closest('[data-planday]');
     if (pdc) { setPlanDay(pdc.dataset.planday); return; }
+    var stc = ev.target.closest('[data-store]');
+    if (stc) { S.settings.store = S.settings.store === stc.dataset.store ? '' : stc.dataset.store; save('settings'); render(); if (S.settings.store) toast('Prices now match ' + (STORE_IDX[S.settings.store][0] === 'mix' ? 'a typical store' : STORE_IDX[S.settings.store][1]) + '.'); return; }
     var b = ev.target.closest('[data-act]');
     if (!b) return;
     var act = b.dataset.act, id = b.dataset.id, k = b.dataset.key;
@@ -4875,7 +4904,7 @@ var babyEd = $('ed-kind').value === 'baby';
   function cleanWeek(d) { return { meals: Object.assign({}, d && d.meals), servings: Object.assign({}, d && d.servings), with: Object.assign({}, d && d.with) }; }
   function cleanList(d) { return { checked: Object.assign({}, d && d.checked), extras: clone((d && d.extras) || []), out: Object.assign({}, d && d.out) }; }
   function cleanSettings(d) { var out = cleanSettings0(d); [out.staples, out.prices].forEach(function (o) { Object.keys(o).forEach(function (k) { var c = skey(k); if (c && c !== k && o[c] === undefined) o[c] = o[k]; }); }); return out; }
-  function cleanSettings0(d) { return { zip: d && /^\d{5}$/.test(String(d.zip || '')) ? String(d.zip) : '', planDay: d && (d.planDay === 'any' || (typeof d.planDay === 'number' && d.planDay >= 0 && d.planDay <= 6)) ? d.planDay : null, staples: Object.assign({}, d && d.staples), favorites: clone((d && d.favorites) || []), prices: Object.assign({}, d && d.prices), budget: d && d.budget > 0 ? d.budget : 0, baby: d && typeof d.baby === 'boolean' ? d.baby : null, onHand: (d && Array.isArray(d.onHand) ? d.onHand : []).filter(function (x) { return typeof x === 'string' && x.trim(); }).slice(0, 200), lastWeek: Object.assign({}, d && d.lastWeek) }; }
+  function cleanSettings0(d) { return { zip: d && /^\d{5}$/.test(String(d.zip || '')) ? String(d.zip) : '', planDay: d && (d.planDay === 'any' || (typeof d.planDay === 'number' && d.planDay >= 0 && d.planDay <= 6)) ? d.planDay : null, staples: Object.assign({}, d && d.staples), favorites: clone((d && d.favorites) || []), prices: Object.assign({}, d && d.prices), budget: d && d.budget > 0 ? d.budget : 0, baby: d && typeof d.baby === 'boolean' ? d.baby : null, onHand: (d && Array.isArray(d.onHand) ? d.onHand : []).filter(function (x) { return typeof x === 'string' && x.trim(); }).slice(0, 200), lastWeek: Object.assign({}, d && d.lastWeek), store: d && typeof d.store === 'string' && /^[a-z]+$/.test(d.store) ? d.store : '' }; }
   function cleanFreezer(d) { return { items: clone((d && Array.isArray(d.items) && d.items) || []) }; }
   function cleanTracker(d) { return { foods: clone((d && Array.isArray(d.foods) && d.foods) || []) }; }
   var NOTES = {
