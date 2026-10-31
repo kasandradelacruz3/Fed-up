@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261031130357">
+<meta name="fedup-version" content="20261031134321">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2785,8 +2785,10 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var c = counts(rows), total = c.active.length, left = c.left.length, done = total - left;
     var cost = 0, priced = 0;
     c.left.forEach(function (r) { if (r.price != null) { cost += r.price; priced++; } });
-    var txt = total ? left + ' to get · ' + done + ' crossed off' : '';
-    if (priced) txt += ' · about ' + money(cost) + (priced < left ? ' (' + (left - priced) + ' not priced)' : '');
+    /* the whole trip: how much is shopped, and about what it all costs */
+    var tripCost = 0, tripN = 0; c.active.forEach(function (r) { if (r.price != null) { tripCost += r.price; tripN++; } });
+    var txt = total ? done + '/' + total + ' shopped' : '';
+    if (tripN) txt += ' • about ' + money(tripCost);
     var estd = c.left.filter(function (r) { return r.price != null && r.priceSrc !== 'yours'; }).length;
     $('price-src').textContent = estd ? 'Prices for ' + (priceWhere() || 'a typical U.S. store') : '';
     $('price-src').hidden = !estd;
