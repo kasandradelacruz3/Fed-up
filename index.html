@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261031134321">
+<meta name="fedup-version" content="20261102101858">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -410,21 +410,23 @@ ul.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template
 .cb-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cb-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; font-weight: 600; }
 /* My recipes: long cards, small photo on the left, details on the right */
-#mine-body .cards { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-#mine-body .rc { display: block; min-height: 112px; }
+#mine-body .cards { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+#mine-body .rc { display: block; min-height: 84px; border-radius: 14px; }
 #mine-body .rc-main { flex-direction: row; align-items: stretch; }
-#mine-body .rc-img { width: 112px; aspect-ratio: auto; min-height: 112px; flex: none; }
-#mine-body .rc-ph { font-size: 1.8rem; }
-#mine-body .rc-txt { padding: 12px 48px 44px 14px; gap: 3px; flex: 1; }
-#mine-body .rc .mname { font-size: 1rem; }
-#mine-body .rc-sub { font-size: 0.8rem; white-space: normal; }
+#mine-body .rc-img { width: 84px; aspect-ratio: auto; min-height: 84px; flex: none; }
+#mine-body .rc-ph { font-size: 1.5rem; }
+#mine-body .rc-txt { padding: 9px 44px 9px 12px; gap: 1px; flex: 1; justify-content: center; }
+#mine-body .rc .mname { font-size: 0.95rem; -webkit-line-clamp: 1; }
+#mine-body .rc-sub { font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #mine-body .rc-facts { color: var(--ink); font-weight: 600; }
-#mine-body .rc-tagline { margin-top: 2px; }
-#mine-body .rc-tagline .rc-origin { position: static; display: inline-block; max-width: 100%; }
-#mine-body .rc-badge { top: 10px; right: 10px; width: 32px; height: 32px; background: var(--accent-soft); color: var(--accent); }
+#mine-body .rc-tagline { margin-top: 2px; line-height: 1; }
+#mine-body .rc-tagline .rc-origin { position: static; display: inline-block; max-width: 100%; font-size: 0.62rem; padding: 2px 7px; }
+#mine-body .rc-badge { top: 8px; right: 8px; width: 30px; height: 30px; background: var(--accent-soft); color: var(--accent); }
 #mine-body .rc-badge[aria-pressed="true"] { background: var(--accent); color: #fff; }
-#mine-body .rc-foot { position: absolute; left: 112px; right: 0; bottom: 0; padding: 0 6px 4px 14px; min-height: 40px; }
-#mine-body .rc.on::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 16px; pointer-events: none; z-index: 2; }
+#mine-body .rc-foot { position: absolute; right: 4px; bottom: 2px; left: auto; padding: 0; min-height: 0; }
+#mine-body .rc-foot .rc-week { display: none; }
+#mine-body .rc-foot .ibtn { width: 34px; height: 34px; }
+#mine-body .rc.on::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 14px; pointer-events: none; z-index: 2; }
 #mine-body .rc.theirs.on::after { border-color: var(--ink); }
 @media (min-width: 640px) { #mine-body .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rc-sides { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 10px; }
