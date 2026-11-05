@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261104195332">
+<meta name="fedup-version" content="20261104200607">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -285,6 +285,25 @@ dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
 .star-card { background: var(--accent-tint); border-radius: 14px; padding: 10px 12px; display: grid; gap: 6px; }
 .star-card .bar { height: 6px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
 .star-card .bar b { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.star-bar { display: flex; flex-direction: column; gap: 5px; border: 0; background: none; padding: 2px 0; text-align: left; width: 100%; max-width: 240px; color: var(--muted); }
+.star-bar .sb-top { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; }
+.star-bar .st { color: #F5B301; letter-spacing: 1px; } .star-bar .st i { font-style: normal; color: var(--line); }
+.star-bar .sb-chev { margin-left: auto; color: var(--accent); }
+.star-bar .sb-track { height: 6px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; } .star-bar .sb-track b { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.star-card .btn { justify-self: start; }
+.sb-how { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 2px; }
+.prof-icons { display: flex; justify-content: center; gap: 28px; }
+.prof-ico { display: flex; flex-direction: column; align-items: center; gap: 5px; border: 0; background: none; padding: 0; font-size: 0.76rem; font-weight: 700; color: var(--ink); }
+.prof-ico .c { width: 54px; height: 54px; border-radius: 50%; background: #FF1F8F; color: #fff; display: grid; place-items: center; box-shadow: 0 6px 14px rgba(255, 31, 143, 0.28); }
+.prof-ico .c svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.prof-drop { background: var(--surface); border-radius: 18px; padding: 6px; }
+.prof-drop .menu.mini { box-shadow: none; border-radius: 12px; }
+.menu.mini .menu-row { padding: 9px 10px; gap: 12px; }
+.menu.mini .menu-ico { width: 30px; height: 30px; border-radius: 9px; }
+.menu.mini .menu-ico svg { width: 17px; height: 17px; }
+.menu.mini strong { flex: 1; font-size: 0.92rem; }
+.menu-count { background: #FF1F8F; color: #fff; font-size: 0.72rem; font-weight: 700; border-radius: 99px; padding: 1px 8px; }
+.menu-h { margin: 6px 10px 2px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .linkish { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .skip-sec h3 { color: #E5322D; font-size: 0.86rem; }
 .skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
@@ -3647,15 +3666,21 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var n = starLevel(starPts[o]);
     return '<span class="stars" aria-label="' + n + (n === 1 ? ' star, ' : ' stars, ') + esc(STAR_LEVELS[n - 1][1]) + '"><span class="st" aria-hidden="true">' + '★★★★★'.slice(0, n) + '<i>' + '★★★★★'.slice(0, 5 - n) + '</i></span> ' + esc(STAR_LEVELS[n - 1][1]) + '</span>';
   }
+  /* on your own profile: a slim bar you can tap */
+  var starOpen = false, starHow = false;
+  function starBar() {
+    askStars(uid); if (starPts[uid] == null) return '';
+    var pts = starPts[uid], n = starLevel(pts), pct = n >= 5 ? 100 : Math.round((pts - STAR_LEVELS[n - 1][0]) / (STAR_LEVELS[n][0] - STAR_LEVELS[n - 1][0]) * 100);
+    return '<button class="star-bar" type="button" data-act="star-open" aria-expanded="' + starOpen + '"><span class="sb-top"><span class="st" aria-hidden="true">' + '★★★★★'.slice(0, n) + '<i>' + '★★★★★'.slice(0, 5 - n) + '</i></span> ' + esc(STAR_LEVELS[n - 1][1]) +
+      '<span class="vh">, ' + n + (n === 1 ? ' star' : ' stars') + '. Tap to see your progress</span><span class="sb-chev" aria-hidden="true">' + (starOpen ? '⌄' : '›') + '</span></span><span class="sb-track" aria-hidden="true"><b style="width:' + pct + '%"></b></span></button>';
+  }
   /* on your own profile: how far to the next star */
   function starCard() {
     if (starPts[uid] == null) return '';
     var pts = starPts[uid], n = starLevel(pts);
-    if (n >= 5) return '<div class="star-card small"><span><b>You\'re a Head chef!</b> ★★★★★ Thank you for making Fed Up better for everyone.</span></div>';
-    var lo = STAR_LEVELS[n - 1][0], hi = STAR_LEVELS[n][0], pct = Math.round((pts - lo) / (hi - lo) * 100);
-    return '<div class="star-card small"><span><b>' + (hi - pts) + ' more ' + (hi - pts === 1 ? 'point' : 'points') + '</b> to ' + '★★★★★'.slice(0, n + 1) + ' ' + esc(STAR_LEVELS[n][1]) + '</span>' +
-      '<div class="bar" role="progressbar" aria-label="Progress to the next star" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><b style="width:' + pct + '%"></b></div>' +
-      '<span class="muted">Earn stars by sharing recipes (+2), posting meals (+3), getting likes (+1) and followers (+1), and when someone steals your recipe (+3).</span></div>';
+    var how = starHow ? '<ul class="sb-how"><li>Post a meal photo: +3</li><li>Someone steals your recipe: +3</li><li>Share a recipe: +2</li><li>Get a like or a follower: +1</li></ul>' : '';
+    return '<div class="star-card small"><span>' + (n >= 5 ? '<b>You\'re a Head chef!</b> ★★★★★ Thank you for making Fed Up better for everyone.' : '<b>' + (STAR_LEVELS[n][0] - pts) + ' more ' + (STAR_LEVELS[n][0] - pts === 1 ? 'point' : 'points') + '</b> to ' + '★★★★★'.slice(0, n + 1) + ' ' + esc(STAR_LEVELS[n][1])) + '</span>' +
+      how + '<button class="btn mini" type="button" data-act="star-how">' + (starHow ? 'Hide' : 'How to earn stars') + '</button></div>';
   }
   function followerCount(o) { ensureCounts([o]); return (followCounts[o] || {}).followers || 0; }
   function followingCount(o) { ensureCounts([o]); return (followCounts[o] || {}).following || 0; }
@@ -3982,6 +4007,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var f = followerCount(o), g = followingCount(o);
     return '<div class="stats"><span><strong>' + n + '</strong> ' + (n === 1 ? 'post' : 'posts') + '</span><span><strong>' + f + '</strong> ' + (f === 1 ? 'follower' : 'followers') + '</span><span><strong>' + g + '</strong> following</span></div>';
   }
+  function miniRow(act, view, title, icon, count) {
+    return '<li><button class="menu-row" type="button" data-act="' + act + '"' + (view ? ' data-view="' + view + '"' : '') + '><span class="menu-ico">' + icon + '</span><strong>' + esc(title) + '</strong>' + (count ? '<span class="menu-count">' + count + '</span>' : '') + '</button></li>';
+  }
   function menuRow(view, title, sub, icon) {
     return '<li><button class="menu-row" type="button" data-act="go" data-view="' + view + '"><span class="menu-ico">' + icon + '</span><span class="rl-txt"><strong>' + esc(title) + '</strong><span class="small muted">' + esc(sub) + '</span></span><span class="rl-go">' + ICON.arrow + '</span></button></li>';
   }
@@ -3991,26 +4019,30 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var seen = {}; S.tracker.foods.forEach(function (f) { seen[norm(f.name)] = true; }); var tried = Object.keys(seen).length;
     var mine = feedApi ? feedPosts.filter(function (p) { return p.owner === uid; }) : [];
     var html = '<div class="prof-head">' + avatarHtml(uid, true) + '<div class="stack" style="gap:4px;min-width:0"><h2>' + esc(uid ? (names[uid] || 'My kitchen') : 'My kitchen') + '</h2>' +
-      (feedApi && unames[uid] ? '<span class="handle">@' + esc(unames[uid]) + '</span>' : '') + (feedApi && uid ? starLine(uid) : '') +
-      (feedApi ? statsHtml(mine.length, uid) : '') + '</div></div>' + (feedApi && uid ? starCard() : '') +
+      (feedApi && unames[uid] ? '<span class="handle">@' + esc(unames[uid]) + '</span>' : '') + (feedApi && uid ? starBar() : '') +
+      (feedApi ? statsHtml(mine.length, uid) : '') + '</div></div>' + (feedApi && uid && starOpen ? starCard() : '') +
       (feedApi && bios[uid] ? '<p class="bio">' + esc(bios[uid]) + '</p>' : '') +
-      (feedApi && feedApi.saveProfile ? '<div><button class="btn wide" type="button" data-act="edit-profile">Edit profile</button></div>' : '');
-    var drop = '<ul class="plain menu prof-drop" id="prof-drop"' + (profMenu ? '' : ' hidden') + '>' +
-      menuRow('meals', picked ? 'My week' : 'Start my week', picked ? weekText(pickedIds()) + ' picked for this week' : 'Pick this week\'s meals and your list builds itself', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M9 4c-1 1.2 1 2.3 0 3.5M13 3c-1 1.3 1 2.7 0 4.5"/></svg>') +
-      (babyOn() ? menuRow('tracker', 'Baby log', tried ? tried + (tried === 1 ? ' food' : ' foods') + ' tried so far' : 'Log each new food and how it went', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>') : '') +
-      (feedApi && feedApi.sendFeedback ? menuRow('feedback', 'Send feedback', 'Tell us what you love and what to fix', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>') : '') +
-      (feedAdmin && feedApi.members ? menuRow('members', 'Members', members ? members.length + (members.length === 1 ? ' person has' : ' people have') + ' joined' : 'Everyone who has signed up', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg>') : '') +
-      (feedAdmin && feedApi.feedbackList ? menuRow('feedbacks', 'Feedback from users', feedbackRows.length ? feedbackRows.length + (feedbackRows.length === 1 ? ' message' : ' messages') : 'No messages yet', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>') : '') +
-      (feedAdmin ? menuRow('reports', 'Reported posts', reportCount() ? reportCount() + (reportCount() === 1 ? ' post needs' : ' posts need') + ' a look' : 'Nothing to review', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>') : '') +
-      menuRow('tour', 'Take the tour', 'A quick look at what Fed Up can do', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>') +
-      menuRow('terms', 'Terms of Service', 'The rules for using Fed Up', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>') +
-      (feedApi ? menuRow('guide', 'Community guidelines', 'What to post, and how your information is used', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg>') : '') +
-      menuRow('settings', 'Settings', babyOn() ? 'Baby features are on' : 'Baby features and your account', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>') + '</ul>';
+      '';
+    var drop = '<div class="prof-drop" id="prof-drop"' + (profMenu ? '' : ' hidden') + '>' +
+      '<ul class="plain menu mini">' +
+      (feedApi && feedApi.saveProfile ? miniRow('edit-profile', '', 'Edit profile', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>') : '') +
+      miniRow('go', 'meals', picked ? 'My week' : 'Start my week', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M9 4c-1 1.2 1 2.3 0 3.5M13 3c-1 1.3 1 2.7 0 4.5"/></svg>') +
+      (babyOn() ? miniRow('go', 'tracker', 'Baby log', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>') : '') +
+      miniRow('go', 'settings', 'Settings', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>') + '</ul>' +
+      '<p class="menu-h">Help</p><ul class="plain menu mini">' +
+      miniRow('go', 'tour', 'Take the tour', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>') +
+      (feedApi && feedApi.sendFeedback ? miniRow('go', 'feedback', 'Send feedback', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>') : '') +
+      miniRow('go', feedApi ? 'guide' : 'terms', 'Rules & privacy', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg>') + '</ul>' +
+      (feedAdmin ? '<p class="menu-h">Owner</p><ul class="plain menu mini">' +
+        (feedApi.members ? miniRow('go', 'members', 'Members' + (members ? ' (' + members.length + ')' : ''), '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg>') : '') +
+        (feedApi.feedbackList ? miniRow('go', 'feedbacks', 'Feedback from users', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>', feedbackRows.length || '') : '') +
+        miniRow('go', 'reports', 'Reported posts', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>', reportCount() || '') + '</ul>' : '') +
+      '</div>';
     var alerts = (feedAdmin ? reportCount() + feedbackRows.length : 0);
     html = '<div class="prof-bar"><button class="ibtn menu-btn" type="button" data-act="prof-menu" aria-label="Menu" aria-expanded="' + profMenu + '" aria-controls="prof-drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' + (alerts ? '<span class="dot" aria-hidden="true"></span>' : '') + '</button>' + drop + '</div>' + html;
-    html += '<div class="pink-btns">' +
-      '<button class="pink-btn" type="button" data-act="go" data-view="mine">' + ICON.book + '<span><strong>My recipes</strong><span>' + nrec + (nrec === 1 ? ' recipe' : ' recipes') + '</span></span></button>' +
-      '<button class="pink-btn" type="button" data-act="go" data-view="pantry"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg><span><strong>My kitchen</strong><span>' + kitSub() + '</span></span></button></div>';
+    html += '<div class="prof-icons">' +
+      '<button class="prof-ico" type="button" data-act="go" data-view="mine" aria-label="My recipes, ' + nrec + (nrec === 1 ? ' recipe' : ' recipes') + '"><span class="c">' + ICON.book + '</span>My recipes</button>' +
+      '<button class="prof-ico" type="button" data-act="go" data-view="pantry" aria-label="My kitchen, ' + esc(kitSub()) + '"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg></span>My kitchen</button></div>';
     if (feedApi) {
       var savedPosts = saves.map(function (sid) { return feedPosts.filter(function (x) { return x.id === sid; })[0]; }).filter(Boolean);
       html += '<div class="stack" style="gap:12px"><div class="prof-tabs" role="tablist">' +
@@ -4389,10 +4421,12 @@ var babyEd = $('ed-kind').value === 'baby';
       return;
     }
     if (act === 'keep-post') { feedApi.clearReports(id).then(function () { reports = reports.filter(function (r) { return r.post_id !== id; }); renderReports(); toast('Kept. Its reports are cleared.'); }, function () { toast("Couldn't clear those reports. Try again."); }); return; }
-    if (act === 'edit-profile') return openEditProfile(false);
+    if (act === 'edit-profile') { profMenu = false; return openEditProfile(false); }
     if (act === 'add-menu') { var open = $('add-sheet').hidden; $('add-sheet').hidden = !open; b.setAttribute('aria-expanded', open); return; }
     if (act === 'add-post') { closeAdd(); postFrom = (tab === 'profile' || tab === 'explore') ? tab : 'feed'; return openPostForm(); }
     if (act === 'add-recipe') { closeAdd(); if (tab !== 'mine' && tab !== 'meals' && tab !== 'profile') backTo = 'mine'; return openEditor(null); }
+    if (act === 'star-open') { starOpen = !starOpen; if (!starOpen) starHow = false; renderProfile(); return; }
+    if (act === 'star-how') { starHow = !starHow; renderProfile(); return; }
     if (act === 'prof-menu') { profMenu = !profMenu; $('prof-drop').hidden = !profMenu; b.setAttribute('aria-expanded', profMenu); return; }
     if (act === 'fb-done') { feedApi.clearFeedback(id).then(function () { feedbackRows = feedbackRows.filter(function (f) { return f.id !== id; }); renderFeedbacks(); }, function () { toast("Couldn't clear that message. Try again."); }); return; }
 
