@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261104202402">
+<meta name="fedup-version" content="20261105150433">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -12,7 +12,41 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fed Up">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}/* Shop My Kitchen */
+#profile-body .prof-tabs.five { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+#profile-body .prof-tabs.five button { flex-direction: column; gap: 2px !important; font-size: 0.74rem; padding-bottom: 9px; }
+.shop-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.shop-head h3 { margin: 0; font-family: var(--display); color: var(--accent); font-size: 1.2rem; }
+.shop-disc { font-size: 0.78rem; color: var(--muted); margin: 0; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.shop-tile { display: flex; flex-direction: column; text-align: left; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); padding: 0; color: inherit; font: inherit; cursor: pointer; min-width: 0; }
+.shop-tile .sp { aspect-ratio: 1; width: 100%; max-width: 100%; background: var(--accent-tint); display: grid; place-items: center; font-size: 2.2rem; overflow: hidden; }
+.shop-tile .sp img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shop-tile .st-t { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.shop-tile b { font-size: 0.9rem; line-height: 1.2; overflow-wrap: anywhere; }
+.shop-tile small { color: var(--muted); font-size: 0.74rem; }
+.shop-tile .tag { align-self: flex-start; }
+.shop-lock { border: 2px dashed var(--line); border-radius: 18px; padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; background: var(--accent-tint); }
+.shop-lock .ic { font-size: 2rem; }
+.shop-lock b { font-size: 1.1rem; }
+.shop-lock p { margin: 0; }
+.shop-meter { width: 100%; height: 12px; border-radius: 9px; background: #fff; border: 1px solid var(--line); overflow: hidden; }
+.shop-meter i { display: block; height: 100%; background: var(--accent); }
+.shop-big { width: 100%; max-width: 100%; aspect-ratio: 4 / 3; border-radius: 18px; background: var(--accent-tint); display: grid; place-items: center; font-size: 3.5rem; overflow: hidden; }
+.shop-big img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shop-why { background: var(--accent-tint); border-radius: 14px; padding: 10px 12px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.shop-why b { display: block; font-size: 0.8rem; color: var(--accent); margin-bottom: 2px; }
+a.shop-buy { display: flex; justify-content: space-between; align-items: center; text-decoration: none; }
+.se-photo { display: flex; align-items: center; gap: 12px; }
+.se-pic { width: 72px; height: 72px; border-radius: 12px; background: var(--accent-tint); display: grid; place-items: center; font-size: 0.75rem; color: var(--muted); overflow: hidden; flex: none; }
+.se-pic img { width: 100%; height: 100%; object-fit: cover; }
+.se-recipes { display: flex; flex-wrap: wrap; gap: 6px; }
+.se-recipes label { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 0.85rem; cursor: pointer; }
+.se-recipes input { margin: 0; }
+.user-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+.user-tabs button { border: 0; background: none; padding: 10px 4px 12px; font: inherit; font-weight: 700; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
+.user-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+</style>
 <title>Fed Up</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Instrument+Sans:wght@400;500;600;700&display=swap">
 <style>
@@ -1245,6 +1279,46 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     <div id="reports-body" class="stack"></div>
   </section>
 
+  <section class="view" id="view-shopitem" hidden>
+    <div><button class="btn quiet" type="button" data-act="shop-back">← Back</button></div>
+    <div id="shopitem-body" class="stack"></div>
+  </section>
+
+  <section class="view" id="view-shopedit" hidden>
+    <div class="row between">
+      <h2 id="se-title">Add a product</h2>
+      <button class="btn quiet" type="button" data-act="shop-back">Cancel</button>
+    </div>
+    <form id="se-form" class="stack" autocomplete="off" novalidate>
+      <label class="f" for="se-name">Product name
+        <input type="text" id="se-name" maxlength="80" placeholder="Air fryer, 6 qt">
+      </label>
+      <label class="f" for="se-url">Your link
+        <input type="url" id="se-url" maxlength="500" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://amzn.to/…">
+      </label>
+      <p class="small muted" style="margin-top:-6px">Your Amazon, LTK or brand link. It has to start with https://</p>
+      <div class="se-photo">
+        <span class="se-pic" id="se-preview">No photo</span>
+        <label class="btn small" for="se-file" id="se-file-label">Add a photo</label>
+        <input class="vh" type="file" id="se-file" accept="image/*">
+      </div>
+      <label class="f" for="se-note">Why you love it
+        <textarea id="se-note" maxlength="300" style="min-height:90px" placeholder="I use this almost every night…"></textarea>
+      </label>
+      <p class="small muted" id="se-note-count" style="margin-top:-6px">0/300</p>
+      <div class="stack" style="gap:6px"><strong class="small">Used in <span class="muted">(optional)</span></strong><div id="se-recipes" class="se-recipes"></div></div>
+      <p class="small" id="se-msg" role="status"></p>
+      <div><button class="btn primary" type="submit" id="se-save">Add to my shop</button></div>
+    </form>
+  </section>
+
+  <section class="view" id="view-shopreports" hidden>
+    <div><button class="btn quiet" type="button" data-act="go" data-view="profile">← Profile</button></div>
+    <h2>Reported shop links</h2>
+    <p class="small muted">Only you can see this page. Hide a product, delete it, or keep it to clear its reports.</p>
+    <div id="shopreports-body" class="stack"></div>
+  </section>
+
   <section class="view" id="view-guide" hidden>
     <div><button class="btn quiet" type="button" data-act="go" data-view="profile">← Profile</button></div>
     <h2>Community guidelines</h2>
@@ -1777,6 +1851,23 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     report: function (pid, reason) { return sb.from('post_reports').insert({ post_id: pid, reporter: uid, reason: String(reason || '').slice(0, 200) }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     reports: function () { return sb.from('post_reports').select('id,post_id,reason,created_at').limit(1000).then(function (r) { check(r); return r.data || []; }); },
     clearReports: function (pid) { return sb.from('post_reports').delete().eq('post_id', pid).then(check); },
+    /* Shop My Kitchen: Head chefs share kitchen products with their own links (the database checks the 100 points) */
+    shopList: function (owner) { return sb.from('shop_items').select('id,owner,name,url,photo_url,note,recipes,hidden,created_at').eq('owner', owner).order('created_at', { ascending: false }).limit(60).then(function (r) { check(r); return r.data || []; }); },
+    shopItems: function (ids) { return sb.from('shop_items').select('id,owner,name,url,photo_url,note,recipes,hidden,created_at').in('id', ids.slice(0, 200)).then(function (r) { check(r); return r.data || []; }); },
+    shopSave: function (item, photo) {
+      var id = item.id || newUuid(), file = uid + '/shop-' + id + '-' + Date.now() + '.jpg';
+      var up = photo ? sb.storage.from('feed').upload(file, dataUrlToBlob(photo), { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' }).then(function (r) { check(r); return sb.storage.from('feed').getPublicUrl(file).data.publicUrl; })
+        : Promise.resolve(item.photo_url || null);
+      return up.then(function (url) {
+        var row = { name: String(item.name).trim().slice(0, 80), url: String(item.url).trim().slice(0, 500), photo_url: url, note: String(item.note || '').trim().slice(0, 300), recipes: (item.recipes || []).slice(0, 20) };
+        return item.id ? sb.from('shop_items').update(row).eq('id', id).select('id') : sb.from('shop_items').insert(Object.assign({ id: id, owner: uid }, row)).select('id');
+      }).then(function (r) { check(r); if (!r.data || !r.data.length) throw { code: 'shop-denied' }; return id; });
+    },
+    shopDelete: function (id) { return sb.from('shop_items').delete().eq('id', id).then(check); },
+    shopHide: function (id, hidden) { return sb.from('shop_items').update({ hidden: !!hidden }).eq('id', id).then(check); },
+    shopReport: function (id, reason) { return sb.from('shop_reports').insert({ item_id: id, reporter: uid, reason: String(reason || '').slice(0, 200) }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
+    shopReports: function () { return sb.from('shop_reports').select('id,item_id,reason,created_at').limit(1000).then(function (r) { check(r); return r.data || []; }); },
+    shopClearReports: function (id) { return sb.from('shop_reports').delete().eq('item_id', id).then(check); },
     myProfile: function () {
       return profileReady.then(function () { return sb.from('profiles').select('id,display_name,username,bio,avatar_url').eq('id', uid).then(function (r) {
         if (r.error) return sb.from('profiles').select('id,display_name,username,bio').eq('id', uid);
@@ -3033,6 +3124,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (t === 'explore' || t === 'list') return t;
     if (t === 'frecipe') return secOf(frBack, d + 1);
     if (t === 'user') return secOf(userBack, d + 1);
+    if (t === 'shopitem') return secOf(shopBack, d + 1);
     if (t === 'editor' || t === 'cook') return secOf(backTo, d + 1);
     if (t === 'meals' || t === 'pantry') return feedApi ? 'profile' : 'meals';
     return 'profile';
@@ -3067,11 +3159,12 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (t === 'guide') legalContact();
     if (tab === 'cook' && t !== 'cook' && wake) { try { wake.release(); } catch (e) {} wake = null; }
     tab = t;
-    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'guide', 'terms', 'feedback', 'feedbacks', 'members', 'join'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
+    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'shopitem', 'shopedit', 'shopreports', 'guide', 'terms', 'feedback', 'feedbacks', 'members', 'join'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
     var sec = secOf(t, 0);
     ['feed', 'explore', 'meals', 'list', 'profile'].forEach(function (v) { $('tab-' + v).setAttribute('aria-selected', v === sec ? 'true' : 'false'); });
     if (t === 'explore') renderExplore();
     if (t === 'reports') renderReports();
+    if (t === 'shopreports') renderShopReports();
     if (t === 'feedbacks') renderFeedbacks();
     if (t === 'members') loadMembers();
     if (t === 'profile') renderProfile();
@@ -3616,7 +3709,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (guest) { show('explore'); loadFeed(); return; }
     restoreView();
     loadFollows(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
-    api.isAdmin().then(function (a) { if (a) { loadReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
+    api.isAdmin().then(function (a) { if (a) { loadReports(); loadShopReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
     if (api.deleteAccount) $('del-wrap').hidden = false;
     api.isAdmin().then(function (a) { feedAdmin = !!a; renderFeed(); }, function () {});
     loadFeed();
@@ -4047,23 +4140,219 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       (feedAdmin ? '<p class="menu-h">Owner</p><ul class="plain menu mini">' +
         (feedApi.members ? miniRow('go', 'members', 'Members' + (members ? ' (' + members.length + ')' : ''), '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg>') : '') +
         (feedApi.feedbackList ? miniRow('go', 'feedbacks', 'Feedback from users', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>', feedbackRows.length || '') : '') +
-        miniRow('go', 'reports', 'Reported posts', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>', reportCount() || '') + '</ul>' : '') +
+        miniRow('go', 'reports', 'Reported posts', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>', reportCount() || '') +
+        (feedApi.shopReports ? miniRow('go', 'shopreports', 'Reported shop links', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>', shopReportCount() || '') : '') + '</ul>' : '') +
       '</div>';
-    var alerts = (feedAdmin ? reportCount() + feedbackRows.length : 0);
+    var alerts = (feedAdmin ? reportCount() + feedbackRows.length + shopReportCount() : 0);
     html = '<div class="prof-bar"><button class="ibtn menu-btn" type="button" data-act="prof-menu" aria-label="Menu" aria-expanded="' + profMenu + '" aria-controls="prof-drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' + (alerts ? '<span class="dot" aria-hidden="true"></span>' : '') + '</button>' + drop + '</div>' + html;
     if (feedApi) {
       var savedPosts = saves.map(function (sid) { return feedPosts.filter(function (x) { return x.id === sid; })[0]; }).filter(Boolean);
-      html += '<div class="stack" style="gap:12px"><div class="prof-tabs" role="tablist">' +
+      html += '<div class="stack" style="gap:12px"><div class="prof-tabs' + (shopOn() ? ' five' : '') + '" role="tablist">' +
         '<button type="button" role="tab" data-act="prof-tab" data-tab2="posts" aria-selected="' + (profTab === 'posts') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Posts</button>' +
         '<button type="button" role="tab" data-act="prof-tab" data-tab2="saved" aria-selected="' + (profTab === 'saved') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>Saved</button>' +
         '<button type="button" role="tab" data-act="prof-tab" data-tab2="recipes" aria-selected="' + (profTab === 'recipes') + '">' + ICON.book + 'Recipes</button>' +
-        '<button type="button" role="tab" data-act="prof-tab" data-tab2="kitchen" aria-selected="' + (profTab === 'kitchen') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg>Kitchen</button></div>' +
-        (profTab === 'recipes' ? profRecipes() : profTab === 'kitchen' ? profKitchen() : profTab === 'saved'
+        '<button type="button" role="tab" data-act="prof-tab" data-tab2="kitchen" aria-selected="' + (profTab === 'kitchen') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg>Kitchen</button>' +
+        (shopOn() ? '<button type="button" role="tab" data-act="prof-tab" data-tab2="shop" aria-selected="' + (profTab === 'shop') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>Shop</button>' : '') + '</div>' +
+        (profTab === 'recipes' ? profRecipes() : profTab === 'kitchen' ? profKitchen() : profTab === 'shop' ? profShop() : profTab === 'saved'
           ? (savedPosts.length ? gridHtml(savedPosts) : '<p class="small muted">Tap the bookmark on any post to keep it here for later. Only you can see what you save.</p>')
           : (mine.length ? gridHtml(mine) : '<div class="stack" style="gap:8px;align-items:flex-start"><p class="small muted">Meals you share show up here.</p><button class="btn small" type="button" data-act="new-post">+ Share a meal</button></div>')) + '</div>';
     }
     $('profile-body').innerHTML = html;
   }
+  /* ---------- Shop My Kitchen: Head chefs (100+ points) share kitchen products with their own links ---------- */
+  var SHOP_MAX = 30, editBack = 'profile', shopBy = {}, shopAsked = {}, shopId = null, shopBack = 'profile', shopRep = false, shopDelArm = false, shopEditing = null, shopPhoto = null, shopReportRows = [], userTab = 'posts';
+  function shopOn() { return !!(feedApi && feedApi.shopList); }
+  function loadShop(o, force) {
+    if (!shopOn() || !o || (shopAsked[o] && !force)) return;
+    shopAsked[o] = true;
+    feedApi.shopList(o).then(function (rows) {
+      shopBy[o] = rows || [];
+      if (tab === 'profile') renderProfile(); else if (tab === 'user' && userId === o) renderUser(); else if (tab === 'shopitem') renderShopItem();
+    }, function () { delete shopAsked[o]; });
+  }
+  function shopVisible(o) { return (shopBy[o] || []).filter(function (x) { return !x.hidden || o === uid || feedAdmin; }); }
+  function shopFind(id) { var hit = null; Object.keys(shopBy).forEach(function (o) { (shopBy[o] || []).forEach(function (x) { if (x.id === id) hit = x; }); }); return hit; }
+  function shopStore(url) {
+    var h = ''; try { h = new URL(url).hostname.replace(/^www\./, ''); } catch (e) {}
+    if (/(^|\.)amazon\.|(^|\.)amzn\./.test(h)) return 'Amazon';
+    if (/(^|\.)(liketk\.it|ltk\.app|shopltk\.com|liketoknow\.it)$/.test(h)) return 'LTK';
+    if (/(^|\.)walmart\./.test(h)) return 'Walmart';
+    if (/(^|\.)target\.com$/.test(h)) return 'Target';
+    if (/(^|\.)heb\.com$/.test(h)) return 'H-E-B';
+    return h ? h.split('.').slice(-2, -1)[0].replace(/^./, function (c) { return c.toUpperCase(); }) : 'the store';
+  }
+  function shopSafeUrl(u) { if (!/^https:\/\/[^\s<>"]+$/.test(u || '')) return ''; try { var h = new URL(u).hostname; return /\.[a-z]{2,}$/i.test(h) ? u : ''; } catch (e) { return ''; } }
+  function shopPic(x, cls) { var img = safeImg(x.photo_url); return '<span class="' + cls + '">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy">' : '🍳') + '</span>'; }
+  function shopUsed(x) {
+    var titles = (x.recipes || []).map(function (pid) { return feedPosts.filter(function (p) { return p.id === pid; })[0]; }).filter(Boolean);
+    return titles;
+  }
+  function shopGrid(items) {
+    return '<div class="shop-grid">' + items.map(function (x) {
+      var used = shopUsed(x).length;
+      return '<button class="shop-tile" type="button" data-act="shop-open" data-id="' + esc(x.id) + '">' + shopPic(x, 'sp') + '<span class="st-t"><b>' + esc(x.name) + '</b>' +
+        (x.hidden ? '<span class="tag">Hidden</span>' : '<small>' + (used ? 'Used in ' + used + (used === 1 ? ' recipe' : ' recipes') : 'Shop on ' + esc(shopStore(x.url))) + '</small>') + '</span></button>';
+    }).join('') + '</div>';
+  }
+  /* the Shop tab on your own profile */
+  function profShop() {
+    if (!shopOn()) return '';
+    askStars(uid); loadShop(uid);
+    var items = shopBy[uid], pts = starPts[uid];
+    if (!items || pts == null) return '<p class="small muted">Loading your shop…</p>';
+    var head = pts >= 100;
+    if (!head && !items.length) {
+      return '<div class="shop-lock"><span class="ic" aria-hidden="true">🛍️</span><b>Unlock Shop My Kitchen</b>' +
+        '<p class="small">Reach <strong>Head chef</strong> to share your favorite kitchen products with your own links.</p>' +
+        '<span class="shop-meter" role="img" aria-label="' + pts + ' of 100 points"><i style="width:' + Math.min(100, pts) + '%"></i></span>' +
+        '<span class="small muted">' + pts + ' of 100 points · post meals, share recipes and get likes to earn more</span>' +
+        '<button class="btn mini" type="button" data-act="star-open">How to earn stars</button></div>';
+    }
+    return '<div class="stack" style="gap:10px"><div class="shop-head"><h3>Shop my kitchen</h3><span class="small muted">' + items.length + ' of ' + SHOP_MAX + '</span></div>' +
+      '<p class="shop-disc">People see "Some links may earn you money" on your shop.</p>' +
+      (items.length ? shopGrid(items) : '<p class="small muted">Share the kitchen things you use all the time, like your air fryer or favorite pan. Use your own Amazon, LTK or brand links.</p>') +
+      (head ? (items.length < SHOP_MAX ? '<div><button class="btn primary small" type="button" data-act="shop-add">+ Add a product</button></div>' : '<p class="small muted">Your shop is full. Delete a product to add a new one.</p>')
+        : '<p class="small muted">Get back to Head chef (100 points) to add new products. Your shop stays up.</p>') + '</div>';
+  }
+  /* someone else's shop, under their posts */
+  function userShopHtml(o) {
+    var items = shopVisible(o);
+    return '<div class="stack" style="gap:10px"><div class="shop-head"><h3>Shop my kitchen</h3></div><p class="shop-disc">Some links may earn ' + esc(handle(o) === 'You' ? 'you' : '@' + (unames[o] || who(o))) + ' money.</p>' + shopGrid(items) + '</div>';
+  }
+  function openShopItem(id) {
+    if (!shopFind(id)) return;
+    if (tab !== 'shopitem') shopBack = (tab === 'user' || tab === 'profile' || tab === 'shopreports') ? tab : 'profile';
+    shopId = id; shopRep = false; shopDelArm = false; show('shopitem'); renderShopItem(); window.scrollTo(0, 0);
+  }
+  function renderShopItem() {
+    var x = shopFind(shopId); if (!x) { $('shopitem-body').innerHTML = '<p class="muted">This product isn\'t available anymore.</p>'; return; }
+    var mine = x.owner === uid, nm = unames[x.owner] ? '@' + unames[x.owner] : who(x.owner), link = shopSafeUrl(x.url), used = shopUsed(x);
+    var html = '<div class="shop-big">' + (safeImg(x.photo_url) ? '<img src="' + esc(safeImg(x.photo_url)) + '" alt="' + esc(x.name) + '">' : '🍳') + '</div>' +
+      '<h2 style="margin:0">' + esc(x.name) + '</h2>' +
+      '<button class="who-btn" type="button" data-act="user" data-id="' + esc(x.owner) + '">' + avatarHtml(x.owner) + '<span class="post-who"><strong>' + esc(mine ? 'Your shop' : nm) + miniStars(x.owner) + '</strong></span></button>' +
+      (x.hidden ? '<p class="note">This product is hidden. Only ' + (mine ? 'you' : 'the creator') + ' and the site owner can see it.</p>' : '') +
+      (x.note ? '<p class="shop-why"><b>Why ' + esc(mine ? 'you love' : (names[x.owner] || nm) + ' loves') + ' it</b>' + esc(x.note) + '</p>' : '') +
+      (used.length ? '<p class="small">Used in ' + used.map(function (p) { return '<button class="linkish" type="button" data-act="open-post" data-id="' + esc(p.id) + '">' + esc(p.title) + '</button>'; }).join(', ') + '</p>' : '') +
+      (link ? '<a class="btn primary wide shop-buy" href="' + esc(link) + '" target="_blank" rel="sponsored nofollow noopener noreferrer">Shop on ' + esc(shopStore(link)) + ' <span aria-hidden="true">↗</span></a>' : '') +
+      '<p class="shop-disc" style="text-align:center">' + (mine ? 'This is your link. People see that you may earn money from it.' : 'This is ' + esc(nm) + '\'s link. They may earn money if you buy.') + '</p>';
+    if (mine) {
+      html += '<div class="row"><button class="btn small" type="button" data-act="shop-edit" data-id="' + esc(x.id) + '">Edit</button><button class="btn danger small" type="button" data-act="shop-del" data-id="' + esc(x.id) + '">' + (shopDelArm ? 'Tap again to delete' : 'Delete') + '</button></div>';
+    } else if (!guest) {
+      html += shopRep ? '<div class="stack" style="gap:6px"><span class="small muted">What\'s wrong with this link?</span><div class="row" style="flex-wrap:wrap">' +
+          ['Broken link', 'Not a kitchen product', 'Spam or unsafe'].map(function (r) { return '<button class="btn small" type="button" data-act="shop-report" data-id="' + esc(x.id) + '" data-reason="' + esc(r) + '">' + esc(r) + '</button>'; }).join('') + '</div></div>'
+        : '<div style="text-align:center"><button class="btn quiet small" type="button" data-act="shop-rep-open">Report this link</button></div>';
+    }
+    if (feedAdmin && !mine) html += '<div class="row"><button class="btn small" type="button" data-act="shop-hide" data-id="' + esc(x.id) + '">' + (x.hidden ? 'Show it again (owner)' : 'Hide it (owner)') + '</button><button class="btn danger small" type="button" data-act="shop-del" data-id="' + esc(x.id) + '">' + (shopDelArm ? 'Tap again to delete' : 'Delete (owner)') + '</button></div>';
+    $('shopitem-body').innerHTML = html;
+  }
+  function openShopEdit(id) {
+    var x = id ? shopFind(id) : null;
+    if (!x && (starPts[uid] || 0) < 100) { toast('Reach Head chef to add products to your shop.'); return; }
+    if (!x && (shopBy[uid] || []).length >= SHOP_MAX) { toast('Your shop is full. Delete a product to add a new one.'); return; }
+    shopEditing = x ? x.id : null; shopPhoto = null;
+    $('se-title').textContent = x ? 'Edit product' : 'Add a product';
+    $('se-save').textContent = x ? 'Save' : 'Add to my shop';
+    $('se-name').value = x ? x.name : ''; $('se-url').value = x ? x.url : ''; $('se-note').value = x ? x.note : ''; $('se-msg').textContent = '';
+    $('se-note-count').textContent = $('se-note').value.length + '/300';
+    shopPreview(x ? safeImg(x.photo_url) : '');
+    var posts = feedPosts.filter(function (p) { return p.owner === uid; }), on = x ? x.recipes || [] : [];
+    $('se-recipes').innerHTML = posts.length ? posts.slice(0, 60).map(function (p) { return '<label><input type="checkbox" value="' + esc(p.id) + '"' + (on.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(p.title) + '</label>'; }).join('') : '<span class="small muted">Meals you share show up here so you can link them.</span>';
+    editBack = tab === 'shopitem' ? 'shopitem' : 'profile';
+    show('shopedit'); window.scrollTo(0, 0);
+  }
+  function shopPreview(src) { $('se-preview').innerHTML = src ? '<img src="' + esc(src) + '" alt="Product photo">' : 'No photo'; $('se-file-label').textContent = src ? 'Change photo' : 'Add a photo'; }
+  function loadShopReports() {
+    if (!feedApi || !feedApi.shopReports) return;
+    feedApi.shopReports().then(function (rows) {
+      shopReportRows = rows || [];
+      var ids = []; shopReportRows.forEach(function (r) { if (ids.indexOf(r.item_id) < 0) ids.push(r.item_id); });
+      var done = function () { if (tab === 'profile') renderProfile(); if (tab === 'shopreports') renderShopReports(); };
+      if (!ids.length) return done();
+      feedApi.shopItems(ids).then(function (items) {
+        (items || []).forEach(function (x) { var arr = shopBy[x.owner] = shopBy[x.owner] || []; if (!arr.some(function (y) { return y.id === x.id; })) arr.push(x); });
+        var os = []; (items || []).forEach(function (x) { if (os.indexOf(x.owner) < 0) os.push(x.owner); });
+        if (user && os.length) user.profiles(os).then(function (ps) { os.forEach(function (o) { if (ps[o] && ps[o].name) names[o] = ps[o].name; if (ps[o] && ps[o].username) unames[o] = ps[o].username; }); done(); });
+        done();
+      }, function () {});
+    }, function () {});
+  }
+  function shopReportCount() { var by = {}; shopReportRows.forEach(function (r) { if (shopFind(r.item_id)) by[r.item_id] = true; }); return Object.keys(by).length; }
+  function renderShopReports() {
+    var by = {};
+    shopReportRows.forEach(function (r) { (by[r.item_id] = by[r.item_id] || []).push(r.reason || 'No reason given'); });
+    var ids = Object.keys(by).filter(shopFind);
+    if (!ids.length) { $('shopreports-body').innerHTML = '<div class="empty"><p><strong>No reported links right now.</strong></p><p class="muted">When someone reports a shop product, it shows up here.</p></div>'; return; }
+    $('shopreports-body').innerHTML = '<ul class="plain menu">' + ids.map(function (id) {
+      var x = shopFind(id), counts = {};
+      by[id].forEach(function (r) { counts[r] = (counts[r] || 0) + 1; });
+      return '<li class="report-row"><button class="tile mini" type="button" data-act="shop-open" data-id="' + esc(id) + '" aria-label="Open ' + esc(x.name) + '">' + (safeImg(x.photo_url) ? '<img src="' + esc(safeImg(x.photo_url)) + '" alt="">' : '<span class="tile-txt">' + esc(x.name) + '</span>') + '</button>' +
+        '<div class="stack" style="gap:4px;min-width:0;flex:1"><strong>' + esc(x.name) + (x.hidden ? ' <span class="tag">Hidden</span>' : '') + '</strong><span class="small muted">by ' + esc(unames[x.owner] ? '@' + unames[x.owner] : who(x.owner)) + ' · ' + by[id].length + (by[id].length === 1 ? ' report' : ' reports') + '</span>' +
+        '<span class="small">' + esc(Object.keys(counts).map(function (r) { return r + (counts[r] > 1 ? ' (' + counts[r] + ')' : ''); }).join(', ')) + '</span>' +
+        '<span class="small muted" style="overflow-wrap:anywhere">' + esc(x.url) + '</span>' +
+        '<div class="row" style="flex-wrap:wrap">' + (x.hidden ? '' : '<button class="btn small" type="button" data-act="shop-hide" data-id="' + esc(id) + '">Hide it</button>') + '<button class="btn small" type="button" data-act="shop-keep" data-id="' + esc(id) + '">Keep it</button></div></div></li>';
+    }).join('') + '</ul>';
+  }
+  function shopAct(act, b, id) {
+    if (act === 'shop-open') { openShopItem(id); return true; }
+    if (act === 'shop-back') {
+      if (tab === 'shopedit' && editBack === 'shopitem') { show('shopitem'); renderShopItem(); }
+      else if (tab === 'shopedit') show('profile');
+      else { show(shopBack); if (shopBack === 'user') renderUser(); }
+      window.scrollTo(0, 0); return true;
+    }
+    if (act === 'shop-add') { openShopEdit(null); return true; }
+    if (act === 'shop-edit') { openShopEdit(id); return true; }
+    if (act === 'user-tab') { userTab = b.dataset.tab2; renderUser(); return true; }
+    if (act === 'shop-rep-open') { shopRep = true; renderShopItem(); return true; }
+    if (act === 'shop-report') {
+      shopRep = false; renderShopItem();
+      feedApi.shopReport(id, b.dataset.reason).then(function () { toast('Thanks for letting us know. The site owner will take a look.'); if (feedAdmin) loadShopReports(); }, function () { toast("Couldn't send that report. Try again."); });
+      return true;
+    }
+    if (act === 'shop-del') {
+      if (!shopDelArm) { shopDelArm = true; renderShopItem(); setTimeout(function () { if (shopDelArm) { shopDelArm = false; if (tab === 'shopitem') renderShopItem(); } }, 4000); return true; }
+      shopDelArm = false; var x = shopFind(id);
+      feedApi.shopDelete(id).then(function () {
+        if (x) shopBy[x.owner] = (shopBy[x.owner] || []).filter(function (y) { return y.id !== id; });
+        shopReportRows = shopReportRows.filter(function (r) { return r.item_id !== id; });
+        toast('Deleted.'); show(shopBack); if (tab === 'user') renderUser();
+      }, function () { toast("Couldn't delete that. Try again."); });
+      return true;
+    }
+    if (act === 'shop-hide') {
+      var y = shopFind(id); if (!y) return true;
+      feedApi.shopHide(id, !y.hidden).then(function () {
+        y.hidden = !y.hidden; if (y.hidden) { feedApi.shopClearReports(id).then(function () {}, function () {}); shopReportRows = shopReportRows.filter(function (r) { return r.item_id !== id; }); }
+        toast(y.hidden ? 'Hidden. Only the creator and you can see it now.' : 'It shows on their shop again.');
+        if (tab === 'shopitem') renderShopItem(); if (tab === 'shopreports') renderShopReports();
+      }, function () { toast("Couldn't change that. Try again."); });
+      return true;
+    }
+    if (act === 'shop-keep') { feedApi.shopClearReports(id).then(function () { shopReportRows = shopReportRows.filter(function (r) { return r.item_id !== id; }); renderShopReports(); toast('Kept. Its reports are cleared.'); }, function () { toast("Couldn't clear those reports. Try again."); }); return true; }
+    return false;
+  }
+  $('se-note').addEventListener('input', function () { $('se-note-count').textContent = this.value.length + '/300'; });
+  $('se-file').addEventListener('change', function () {
+    var f = this.files && this.files[0]; this.value = ''; if (!f) return;
+    shrinkPhoto(f, 1000, 220000, function (d) { shopPhoto = d; shopPreview(d); }, function () { toast("That photo didn't work. Try another one."); });
+  });
+  $('se-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var name = $('se-name').value.trim(), url = $('se-url').value.trim(), msg = $('se-msg');
+    if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url;
+    if (!name) { msg.textContent = 'Give the product a name.'; $('se-name').focus(); return; }
+    if (!shopSafeUrl(url)) { msg.textContent = 'Paste a link that starts with https://'; $('se-url').focus(); return; }
+    var old = shopEditing ? shopFind(shopEditing) : null;
+    var recipes = Array.prototype.map.call($('se-recipes').querySelectorAll('input:checked'), function (c) { return c.value; });
+    var btn = $('se-save'); btn.disabled = true; msg.textContent = 'Saving…';
+    feedApi.shopSave({ id: shopEditing, name: name, url: url, note: $('se-note').value, recipes: recipes, photo_url: old ? old.photo_url : null }, shopPhoto).then(function (id) {
+      btn.disabled = false; msg.textContent = '';
+      feedApi.shopList(uid).then(function (rows) { shopBy[uid] = rows || []; shopAsked[uid] = true; profTab = 'shop'; shopId = id; shopBack = 'profile'; shopRep = false; shopDelArm = false; show('shopitem'); renderShopItem(); window.scrollTo(0, 0); toast(old ? 'Saved.' : 'Added to your shop!'); }, function () { show('profile'); });
+    }, function (e) {
+      btn.disabled = false;
+      msg.textContent = e && (e.code === 'shop-denied' || e.code === '42501' || /row-level security/i.test(e.message || '')) ? 'Only Head chefs can add products, up to ' + SHOP_MAX + ' each.' : "Couldn't save that. Check your connection and try again.";
+    });
+  });
   /* the Recipes tab on your profile: the 8 newest, then the full page */
   function profRecipes() {
     var all = Object.keys(S.recipes).sort(function (a, b) { return addedAt(b) - addedAt(a) || S.recipes[a].name.localeCompare(S.recipes[b].name); });
@@ -4087,7 +4376,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (!o) return;
     if (o === uid) { show('profile'); window.scrollTo(0, 0); return; }
     if (tab !== 'user') userBack = (tab === 'feed' || tab === 'explore' || tab === 'frecipe' || tab === 'profile') ? tab : 'feed';
-    userId = o; show('user'); renderUser(); window.scrollTo(0, 0);
+    if (userId !== o) userTab = 'posts';
+    userId = o; loadShop(o); show('user'); renderUser(); window.scrollTo(0, 0);
   }
   function renderUser() {
     if (!userId) return;
@@ -4096,7 +4386,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       (unames[o] ? '<span class="handle">@' + esc(unames[o]) + '</span>' : '') + starLine(o) +
       statsHtml(posts.length, o) + '</div></div>' + (bios[o] ? '<p class="bio">' + esc(bios[o]) + '</p>' : '') +
       '<div>' + (iFollow(o) ? '<button class="btn wide" type="button" data-act="unfollow" data-id="' + esc(o) + '">Following</button>' : '<button class="btn primary wide" type="button" data-act="follow" data-id="' + esc(o) + '">Follow</button>') + '</div>' +
-      (posts.length ? gridHtml(posts) : '<p class="muted">No posts yet.</p>');
+      (shopVisible(o).length ? '<div class="user-tabs" role="tablist"><button type="button" role="tab" data-act="user-tab" data-tab2="posts" aria-selected="' + (userTab !== 'shop') + '">Posts</button><button type="button" role="tab" data-act="user-tab" data-tab2="shop" aria-selected="' + (userTab === 'shop') + '">Shop</button></div>' : '') +
+      (userTab === 'shop' && shopVisible(o).length ? userShopHtml(o) : posts.length ? gridHtml(posts) : '<p class="muted">No posts yet.</p>');
   }
   function openPostView(id) {
     var p = feedPosts.filter(function (x) { return x.id === id; })[0];
@@ -4440,6 +4731,7 @@ var babyEd = $('ed-kind').value === 'baby';
     var act = b.dataset.act, id = b.dataset.id, k = b.dataset.key;
     if (act === 'new-post') { postFrom = (tab === 'profile' || tab === 'explore') ? tab : 'feed'; return openPostForm(); }
     if (act === 'user') return openUser(id);
+    if (act.indexOf('shop-') === 0 || act === 'user-tab') { if (shopAct(act, b, id)) return; }
     if (act === 'like') return toggleLike(id);
     if (act === 'save') return toggleSave(id);
     if (act === 'kit-open') { kitPlace = b.dataset.place; goView('pantry'); return; }
@@ -5149,7 +5441,7 @@ var babyEd = $('ed-kind').value === 'baby';
     like: 'like posts', toggle: 'plan your week and get a shopping list', 'post-week': 'plan your week and get a shopping list', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
     'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals'
   };
-  var GUEST_OK = { 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
+  var GUEST_OK = { 'shop-open': 1, 'shop-back': 1, 'user-tab': 1, 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
   var GUEST_OK_IDS = { 'tab-explore': 1, 'cook-back': 1, 'fr-back': 1, 'user-back': 1, 'join-dlg-close': 1, 'zoom-close': 1, 'feed-search': 1 };
   function askJoin(key) {
     $('join-dlg-why').textContent = 'Make a free account to ' + (JOIN_WHY[key] || 'use this') + '. It only takes a minute.';
