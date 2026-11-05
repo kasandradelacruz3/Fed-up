@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261104194021">
+<meta name="fedup-version" content="20261104195041">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -278,6 +278,13 @@ dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
 .price-row #price-tools summary { padding: 2px 0; }
 .price-row #price-tools[open] { flex-basis: 100%; }
 #view-list > .stack, #view-list { row-gap: 10px; }
+.stars { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.stars .st { color: #F5B301; letter-spacing: 1px; }
+.stars .st i { font-style: normal; color: var(--line); }
+.stars-mini { color: #F5B301; font-size: 0.7rem; letter-spacing: 0.5px; margin-left: 4px; vertical-align: 1px; font-weight: 400; }
+.star-card { background: var(--accent-tint); border-radius: 14px; padding: 10px 12px; display: grid; gap: 6px; }
+.star-card .bar { height: 6px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+.star-card .bar b { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
 .linkish { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .skip-sec h3 { color: #E5322D; font-size: 0.86rem; }
 .skip-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #E5322D; margin-right: 10px; align-self: center; }
@@ -1734,6 +1741,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     followCounts: function (ids) { return sb.rpc('follow_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
     follow: function (o) { return sb.from('follows').insert({ follower: uid, followee: o }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
     unfollow: function (o) { return sb.from('follows').delete().eq('follower', uid).eq('followee', o).then(check); },
+    starPoints: function (ids) { return sb.rpc('member_points', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
     likeCounts: function (ids) { return sb.rpc('post_like_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
     myLikes: function (ids) { if (guest) return Promise.resolve([]); return sb.from('post_likes').select('post_id').eq('user_id', uid).in('post_id', ids.slice(0, 200)).then(function (r) { check(r); return (r.data || []).map(function (x) { return x.post_id; }); }); },
     like: function (pid) { return sb.from('post_likes').insert({ post_id: pid, user_id: uid }).then(function (r) { if (r.error && r.error.code !== '23505') throw mapErr(r.error); }); },
@@ -3611,6 +3619,44 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
     }, function () { need.forEach(function (o) { delete countsAsked[o]; }); });
   }
+  /* ---------- stars: how active someone is in the community ---------- */
+  var STAR_LEVELS = [[0, 'New cook'], [5, 'Rising cook'], [20, 'Kitchen regular'], [50, 'Sous chef'], [100, 'Head chef']];
+  var starPts = {}, starAsked = {}, starQueue = [], starTimer = null;
+  function starLevel(pts) { var n = 1; STAR_LEVELS.forEach(function (l, i) { if (pts >= l[0]) n = i + 1; }); return n; }
+  function askStars(o) {
+    if (!o || starAsked[o] || !feedApi || !feedApi.starPoints) return;
+    starAsked[o] = true; starQueue.push(o);
+    if (starTimer) return;
+    starTimer = setTimeout(function () {
+      var ids = starQueue.splice(0); starTimer = null;
+      feedApi.starPoints(ids).then(function (rows) {
+        (rows || []).forEach(function (r) { starPts[r.user_id] = Number(r.points) || 0; });
+        if (tab === 'feed') renderFeed(); else if (tab === 'explore') renderExplore(); else if (tab === 'user') renderUser(); else if (tab === 'profile') renderProfile(); else if (tab === 'frecipe' && fview) renderFRecipe();
+      }, function () { ids.forEach(function (x) { delete starAsked[x]; }); });
+    }, 60);
+  }
+  /* tiny gold stars after a name */
+  function miniStars(o) {
+    askStars(o); if (starPts[o] == null) return '';
+    var n = starLevel(starPts[o]);
+    return '<span class="stars-mini" title="' + esc(STAR_LEVELS[n - 1][1]) + '" aria-label="' + n + (n === 1 ? ' star, ' : ' stars, ') + esc(STAR_LEVELS[n - 1][1]) + '">' + '★★★★★'.slice(0, n) + '</span>';
+  }
+  /* stars and level under a profile's name */
+  function starLine(o) {
+    askStars(o); if (starPts[o] == null) return '';
+    var n = starLevel(starPts[o]);
+    return '<span class="stars" aria-label="' + n + (n === 1 ? ' star, ' : ' stars, ') + esc(STAR_LEVELS[n - 1][1]) + '"><span class="st" aria-hidden="true">' + '★★★★★'.slice(0, n) + '<i>' + '★★★★★'.slice(0, 5 - n) + '</i></span> ' + esc(STAR_LEVELS[n - 1][1]) + '</span>';
+  }
+  /* on your own profile: how far to the next star */
+  function starCard() {
+    if (starPts[uid] == null) return '';
+    var pts = starPts[uid], n = starLevel(pts);
+    if (n >= 5) return '<div class="star-card small"><span><b>You\'re a Head chef!</b> ★★★★★ Thank you for making Fed Up better for everyone.</span></div>';
+    var lo = STAR_LEVELS[n - 1][0], hi = STAR_LEVELS[n][0], pct = Math.round((pts - lo) / (hi - lo) * 100);
+    return '<div class="star-card small"><span><b>' + (hi - pts) + ' more ' + (hi - pts === 1 ? 'point' : 'points') + '</b> to ' + '★★★★★'.slice(0, n + 1) + ' ' + esc(STAR_LEVELS[n][1]) + '</span>' +
+      '<div class="bar" role="progressbar" aria-label="Progress to the next star" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><b style="width:' + pct + '%"></b></div>' +
+      '<span class="muted">Earn stars by sharing recipes (+2), posting meals (+3), getting likes (+1) and followers (+1), and when someone steals your recipe (+3).</span></div>';
+  }
   function followerCount(o) { ensureCounts([o]); return (followCounts[o] || {}).followers || 0; }
   function followingCount(o) { ensureCounts([o]); return (followCounts[o] || {}).following || 0; }
   function bump(o, field, d) { if (!followCounts[o]) return; followCounts[o][field] = Math.max(0, (followCounts[o][field] || 0) + d); }
@@ -3777,7 +3823,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('members-body').innerHTML = '<ul class="plain menu">' + list.map(function (m) {
       var n = function (x) { return Number(x) || 0; };
       return '<li class="member"><button class="who-btn" type="button" data-act="user" data-id="' + esc(m.id) + '">' + avatarHtml(m.id) +
-        '<span class="post-who"><strong>' + esc(m.username ? '@' + m.username : 'No username yet') + (m.id === uid ? ' <span class="tag alt">You</span>' : '') + '</strong><span class="small muted">' + esc(m.display_name || '') + '</span></span></button>' +
+        '<span class="post-who"><strong>' + esc(m.username ? '@' + m.username : 'No username yet') + miniStars(m.id) + (m.id === uid ? ' <span class="tag alt">You</span>' : '') + '</strong><span class="small muted">' + esc(m.display_name || '') + '</span></span></button>' +
         '<div class="member-info"><span class="m-email">' + esc(m.email || '') + '</span>' +
         '<span class="small muted">Joined ' + esc(ago(m.joined)) + ' · Last visit ' + esc(ago(m.last_visit)) + '</span>' +
         '<span class="small">' + n(m.posts) + (n(m.posts) === 1 ? ' post' : ' posts') + ' · ' + n(m.recipes) + (n(m.recipes) === 1 ? ' recipe' : ' recipes') + ' · ' + n(m.followers) + (n(m.followers) === 1 ? ' follower' : ' followers') + ' · ' + n(m.following) + ' following</span>' +
@@ -3818,7 +3864,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var img = safeImg(p.photo), mine = p.owner === uid;
     var follow = !mine && !iFollow(p.owner) ? '<button class="btn quiet small follow-btn" type="button" data-act="follow" data-id="' + esc(p.owner) + '">Follow</button>' : '';
     return '<li class="post"><div class="post-head"><button class="who-btn" type="button" data-act="user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + '' +
-      '<span class="post-who"><strong>' + esc(handle(p.owner)) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' + follow +
+      '<span class="post-who"><strong>' + esc(handle(p.owner)) + miniStars(p.owner) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' + follow +
       '<button class="ibtn push" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) +
       (img ? '<button class="post-imgbtn" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="Open ' + esc(p.title) + '"><img class="post-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy"></button>' : '') +
       '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + creditLine(p) +
@@ -3922,7 +3968,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }
     var html = people.length ? '<ul class="plain people">' + people.map(function (o) {
       var n = feedPosts.filter(function (p) { return p.owner === o; }).length;
-      return '<li><button class="who-btn" type="button" data-act="user" data-id="' + esc(o) + '">' + avatarHtml(o) + '<span class="post-who"><strong>' + esc(handle(o)) + '</strong><span class="small muted">' + esc(who(o) + (n ? ' · ' + n + (n === 1 ? ' post' : ' posts') : '')) + '</span></span></button>' +
+      return '<li><button class="who-btn" type="button" data-act="user" data-id="' + esc(o) + '">' + avatarHtml(o) + '<span class="post-who"><strong>' + esc(handle(o)) + miniStars(o) + '</strong><span class="small muted">' + esc(who(o) + (n ? ' · ' + n + (n === 1 ? ' post' : ' posts') : '')) + '</span></span></button>' +
         (iFollow(o) ? '<button class="btn small" type="button" data-act="unfollow" data-id="' + esc(o) + '">Following</button>' : '<button class="btn primary small" type="button" data-act="follow" data-id="' + esc(o) + '">Follow</button>') + '</li>';
     }).join('') + '</ul>' : '';
     if (commMode === 'recipes') { $('explore-body').innerHTML = html + renderCommRecipes(q); return; }
@@ -3945,8 +3991,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var seen = {}; S.tracker.foods.forEach(function (f) { seen[norm(f.name)] = true; }); var tried = Object.keys(seen).length;
     var mine = feedApi ? feedPosts.filter(function (p) { return p.owner === uid; }) : [];
     var html = '<div class="prof-head">' + avatarHtml(uid, true) + '<div class="stack" style="gap:4px;min-width:0"><h2>' + esc(uid ? (names[uid] || 'My kitchen') : 'My kitchen') + '</h2>' +
-      (feedApi && unames[uid] ? '<span class="handle">@' + esc(unames[uid]) + '</span>' : '') +
-      (feedApi ? statsHtml(mine.length, uid) : '') + '</div></div>' +
+      (feedApi && unames[uid] ? '<span class="handle">@' + esc(unames[uid]) + '</span>' : '') + (feedApi && uid ? starLine(uid) : '') +
+      (feedApi ? statsHtml(mine.length, uid) : '') + '</div></div>' + (feedApi && uid ? starCard() : '') +
       (feedApi && bios[uid] ? '<p class="bio">' + esc(bios[uid]) + '</p>' : '') +
       (feedApi && feedApi.saveProfile ? '<div><button class="btn wide" type="button" data-act="edit-profile">Edit profile</button></div>' : '');
     var drop = '<ul class="plain menu prof-drop" id="prof-drop"' + (profMenu ? '' : ' hidden') + '>' +
@@ -3986,7 +4032,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (!userId) return;
     var o = userId, posts = feedPosts.filter(function (p) { return p.owner === o; });
     $('user-body').innerHTML = '<div class="prof-head">' + avatarHtml(o, true) + '<div class="stack" style="gap:4px;min-width:0"><h2>' + esc(who(o)) + '</h2>' +
-      (unames[o] ? '<span class="handle">@' + esc(unames[o]) + '</span>' : '') +
+      (unames[o] ? '<span class="handle">@' + esc(unames[o]) + '</span>' : '') + starLine(o) +
       statsHtml(posts.length, o) + '</div></div>' + (bios[o] ? '<p class="bio">' + esc(bios[o]) + '</p>' : '') +
       '<div>' + (iFollow(o) ? '<button class="btn wide" type="button" data-act="unfollow" data-id="' + esc(o) + '">Following</button>' : '<button class="btn primary wide" type="button" data-act="follow" data-id="' + esc(o) + '">Follow</button>') + '</div>' +
       (posts.length ? gridHtml(posts) : '<p class="muted">No posts yet.</p>');
@@ -4005,7 +4051,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var p = fview.post, r = fview.recipe, img = safeImg(p.photo), html = '';
     html += (img ? '<img class="fr-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '">' : '') +
       '<div class="stack" style="gap:8px"><h2>' + esc(p.title) + '</h2>' +
-      '<div class="post-head" style="padding:0"><button class="who-btn" type="button" data-act="user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + '<span class="post-who"><strong>' + esc(handle(p.owner)) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' +
+      '<div class="post-head" style="padding:0"><button class="who-btn" type="button" data-act="user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + '<span class="post-who"><strong>' + esc(handle(p.owner)) + miniStars(p.owner) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' +
       (p.owner !== uid ? (iFollow(p.owner) ? '<button class="btn small push" type="button" data-act="unfollow" data-id="' + esc(p.owner) + '">Following</button>' : '<button class="btn primary small push" type="button" data-act="follow" data-id="' + esc(p.owner) + '">Follow</button>') : '<span class="push"></span>') +
       '<button class="ibtn" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) + likeRow(p) + creditLine(p) + (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) + '</div>';
     if (fview.state === 'loading') html += '<p class="muted">Opening the recipe…</p>';
