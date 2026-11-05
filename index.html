@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261104195041">
+<meta name="fedup-version" content="20261104195332">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3620,7 +3620,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }, function () { need.forEach(function (o) { delete countsAsked[o]; }); });
   }
   /* ---------- stars: how active someone is in the community ---------- */
-  var STAR_LEVELS = [[0, 'New cook'], [5, 'Rising cook'], [20, 'Kitchen regular'], [50, 'Sous chef'], [100, 'Head chef']];
+  var STAR_LEVELS = [[0, 'New cook'], [5, 'Seasoned cook'], [20, 'Rising cook'], [50, 'Sous chef'], [100, 'Head chef']];
   var starPts = {}, starAsked = {}, starQueue = [], starTimer = null;
   function starLevel(pts) { var n = 1; STAR_LEVELS.forEach(function (l, i) { if (pts >= l[0]) n = i + 1; }); return n; }
   function askStars(o) {
