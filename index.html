@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261104201628">
+<meta name="fedup-version" content="20261104202402">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -293,6 +293,11 @@ dialog.split-dlg .split-opt span { opacity: 0.85; font-weight: 500; }
 .star-bar .sb-track { height: 6px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; } .star-bar .sb-track b { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
 .star-card .btn { justify-self: start; }
 .sb-how { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 2px; }
+.kit-peek { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.kit-peek button { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: var(--accent-tint); border-radius: 14px; padding: 10px 4px; color: var(--ink); }
+.kit-peek b { font-size: 1.2rem; color: var(--accent); } .kit-peek span { font-size: 0.75rem; font-weight: 600; }
+#profile-body .prof-tabs { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+.prof-tabs button { gap: 4px !important; padding-inline: 2px !important; font-size: 0.82rem; }
 .prof-icons { display: flex; justify-content: center; gap: 28px; }
 .prof-ico { display: flex; flex-direction: column; align-items: center; gap: 5px; border: 0; background: none; padding: 0; font-size: 0.76rem; font-weight: 700; color: var(--ink); }
 .prof-ico .c { width: 54px; height: 54px; border-radius: 50%; background: #FF1F8F; color: #fff; display: grid; place-items: center; box-shadow: 0 6px 14px rgba(255, 31, 143, 0.28); }
@@ -437,25 +442,25 @@ ul.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template
 .cb-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cb-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; font-weight: 600; }
 /* My recipes: long cards, small photo on the left, details on the right */
-#mine-body .cards { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-#mine-body .rc { display: block; min-height: 84px; border-radius: 14px; }
-#mine-body .rc-main { flex-direction: row; align-items: stretch; }
-#mine-body .rc-img { width: 84px; aspect-ratio: auto; min-height: 84px; flex: none; }
-#mine-body .rc-ph { font-size: 1.5rem; }
-#mine-body .rc-txt { padding: 9px 44px 9px 12px; gap: 1px; flex: 1; justify-content: center; }
-#mine-body .rc .mname { font-size: 0.95rem; -webkit-line-clamp: 1; }
-#mine-body .rc-sub { font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#mine-body .rc-facts { color: var(--ink); font-weight: 600; }
-#mine-body .rc-tagline { margin-top: 2px; line-height: 1; }
-#mine-body .rc-tagline .rc-origin { position: static; display: inline-block; max-width: 100%; font-size: 0.62rem; padding: 2px 7px; }
-#mine-body .rc-badge { top: 8px; right: 8px; width: 30px; height: 30px; background: var(--accent-soft); color: var(--accent); }
-#mine-body .rc-badge[aria-pressed="true"] { background: var(--accent); color: #fff; }
-#mine-body .rc-foot { position: absolute; right: 4px; bottom: 2px; left: auto; padding: 0; min-height: 0; }
-#mine-body .rc-foot .rc-week { display: none; }
-#mine-body .rc-foot .ibtn { width: 34px; height: 34px; }
-#mine-body .rc.on::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 14px; pointer-events: none; z-index: 2; }
-#mine-body .rc.theirs.on::after { border-color: var(--ink); }
-@media (min-width: 640px) { #mine-body .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mine-list .cards { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.mine-list .rc { display: block; min-height: 84px; border-radius: 14px; }
+.mine-list .rc-main { flex-direction: row; align-items: stretch; }
+.mine-list .rc-img { width: 84px; aspect-ratio: auto; min-height: 84px; flex: none; }
+.mine-list .rc-ph { font-size: 1.5rem; }
+.mine-list .rc-txt { padding: 9px 44px 9px 12px; gap: 1px; flex: 1; justify-content: center; }
+.mine-list .rc .mname { font-size: 0.95rem; -webkit-line-clamp: 1; }
+.mine-list .rc-sub { font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mine-list .rc-facts { color: var(--ink); font-weight: 600; }
+.mine-list .rc-tagline { margin-top: 2px; line-height: 1; }
+.mine-list .rc-tagline .rc-origin { position: static; display: inline-block; max-width: 100%; font-size: 0.62rem; padding: 2px 7px; }
+.mine-list .rc-badge { top: 8px; right: 8px; width: 30px; height: 30px; background: var(--accent-soft); color: var(--accent); }
+.mine-list .rc-badge[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.mine-list .rc-foot { position: absolute; right: 4px; bottom: 2px; left: auto; padding: 0; min-height: 0; }
+.mine-list .rc-foot .rc-week { display: none; }
+.mine-list .rc-foot .ibtn { width: 34px; height: 34px; }
+.mine-list .rc.on::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 14px; pointer-events: none; z-index: 2; }
+.mine-list .rc.theirs.on::after { border-color: var(--ink); }
+@media (min-width: 640px) { .mine-list .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rc-sides { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 10px; }
 .side-line { font-size: 0.74rem; color: var(--ink); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .side-line.muted { color: var(--muted); }
@@ -889,7 +894,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         <button class="chip" type="button" data-mine="saved" aria-pressed="false">Saved from others</button>
       </div>
     </div>
-    <div id="mine-body"><p class="muted">Loading your recipes…</p></div>
+    <div id="mine-body" class="mine-list"><p class="muted">Loading your recipes…</p></div>
   </section>
 
   <section class="view" id="view-cook" hidden>
@@ -3403,6 +3408,20 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   }
 
   /* ---------- my recipes: everything this person made or saved ---------- */
+  function mineCard(id) {
+      var r = S.recipes[id], n = portions(id), c = (r.ingredients || []).length;
+      var origin = r.savedFrom ? '<span class="rc-origin">Saved from ' + esc(who(r.savedFrom)) + '</span>' : r.shared ? '<span class="rc-origin mine">Shared</span>' : '';
+      var hv = kitOn() ? haveOf(r) : null;
+      var sub = [isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), hv && hv.total ? 'You have ' + hv.have.length + '/' + hv.total : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
+      return '<li class="rc' + (n ? ' on' : '') + (r.savedFrom ? ' theirs' : '') + '">' +
+        '<button class="rc-main" type="button" data-act="cook" data-id="' + esc(id) + '">' + rcImg(id, r, '') +
+        '<span class="rc-txt"><span class="mname">' + esc(r.name) + '</span><span class="rc-sub">' + esc(sub || ' ') + '</span>' +
+        (facts(r).length ? '<span class="rc-sub rc-facts">' + esc(facts(r).join(' · ')) + '</span>' : '') + (origin ? '<span class="rc-tagline">' + origin + '</span>' : '') + '</span></button>' +
+        '<button class="rc-badge" type="button" data-act="toggle" data-id="' + esc(id) + '" aria-pressed="' + (n ? 'true' : 'false') + '" aria-label="' + esc((n ? 'Remove ' : 'Add ') + r.name + (n ? ' from' : ' to') + ' this week') + '">' + (n ? '✓' : '+') + '</button>' +
+        '<div class="rc-foot"><span class="rc-week">' + (n ? 'On this week' : '') + '</span><span class="push"></span><button class="ibtn" type="button" data-act="edit" data-id="' + esc(id) + '" aria-label="Edit ' + esc(r.name) + '">' + ICON.edit + '</button></div></li>';
+  }
+  /* newest first: recipe ids start with the time they were made */
+  function addedAt(id) { var m = /^r([0-9a-z]{8})/.exec(id); return m ? parseInt(m[1], 36) : 0; }
   function renderMine() {
     var all = Object.keys(S.recipes).sort(function (a, b) { return S.recipes[a].name.localeCompare(S.recipes[b].name); });
     $('mine-tools').hidden = !all.length;
@@ -3425,16 +3444,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }
     var made = all.filter(function (id) { return !S.recipes[id].savedFrom; }).length;
     $('mine-body').innerHTML = '<p class="key"><span><i></i>' + made + ' made by you</span><span><i class="k"></i>' + (all.length - made) + ' saved from others</span></p><ul class="cards" style="margin-top:12px">' + ids.map(function (id) {
-      var r = S.recipes[id], n = portions(id), c = (r.ingredients || []).length;
-      var origin = r.savedFrom ? '<span class="rc-origin">Saved from ' + esc(who(r.savedFrom)) + '</span>' : r.shared ? '<span class="rc-origin mine">Shared</span>' : '';
-      var hv = kitOn() ? haveOf(r) : null;
-      var sub = [isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), hv && hv.total ? 'You have ' + hv.have.length + '/' + hv.total : c + (c === 1 ? ' ingredient' : ' ingredients')].filter(Boolean).join(' · ');
-      return '<li class="rc' + (n ? ' on' : '') + (r.savedFrom ? ' theirs' : '') + '">' +
-        '<button class="rc-main" type="button" data-act="cook" data-id="' + esc(id) + '">' + rcImg(id, r, '') +
-        '<span class="rc-txt"><span class="mname">' + esc(r.name) + '</span><span class="rc-sub">' + esc(sub || ' ') + '</span>' +
-        (facts(r).length ? '<span class="rc-sub rc-facts">' + esc(facts(r).join(' · ')) + '</span>' : '') + (origin ? '<span class="rc-tagline">' + origin + '</span>' : '') + '</span></button>' +
-        '<button class="rc-badge" type="button" data-act="toggle" data-id="' + esc(id) + '" aria-pressed="' + (n ? 'true' : 'false') + '" aria-label="' + esc((n ? 'Remove ' : 'Add ') + r.name + (n ? ' from' : ' to') + ' this week') + '">' + (n ? '✓' : '+') + '</button>' +
-        '<div class="rc-foot"><span class="rc-week">' + (n ? 'On this week' : '') + '</span><span class="push"></span><button class="ibtn" type="button" data-act="edit" data-id="' + esc(id) + '" aria-label="Edit ' + esc(r.name) + '">' + ICON.edit + '</button></div></li>';
+      return mineCard(id);
     }).join('') + '</ul>';
   }
 
@@ -4041,19 +4051,37 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       '</div>';
     var alerts = (feedAdmin ? reportCount() + feedbackRows.length : 0);
     html = '<div class="prof-bar"><button class="ibtn menu-btn" type="button" data-act="prof-menu" aria-label="Menu" aria-expanded="' + profMenu + '" aria-controls="prof-drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' + (alerts ? '<span class="dot" aria-hidden="true"></span>' : '') + '</button>' + drop + '</div>' + html;
-    html += '<div class="prof-icons">' +
-      '<button class="prof-ico" type="button" data-act="go" data-view="mine" aria-label="My recipes, ' + nrec + (nrec === 1 ? ' recipe' : ' recipes') + '"><span class="c">' + ICON.book + '</span>My recipes</button>' +
-      '<button class="prof-ico" type="button" data-act="go" data-view="pantry" aria-label="My kitchen, ' + esc(kitSub()) + '"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg></span>My kitchen</button></div>';
     if (feedApi) {
       var savedPosts = saves.map(function (sid) { return feedPosts.filter(function (x) { return x.id === sid; })[0]; }).filter(Boolean);
       html += '<div class="stack" style="gap:12px"><div class="prof-tabs" role="tablist">' +
-        '<button type="button" role="tab" data-act="prof-tab" data-tab2="posts" aria-selected="' + (profTab === 'posts') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>My posts</button>' +
-        '<button type="button" role="tab" data-act="prof-tab" data-tab2="saved" aria-selected="' + (profTab === 'saved') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>Saved</button></div>' +
-        (profTab === 'saved'
+        '<button type="button" role="tab" data-act="prof-tab" data-tab2="posts" aria-selected="' + (profTab === 'posts') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Posts</button>' +
+        '<button type="button" role="tab" data-act="prof-tab" data-tab2="saved" aria-selected="' + (profTab === 'saved') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>Saved</button>' +
+        '<button type="button" role="tab" data-act="prof-tab" data-tab2="recipes" aria-selected="' + (profTab === 'recipes') + '">' + ICON.book + 'Recipes</button>' +
+        '<button type="button" role="tab" data-act="prof-tab" data-tab2="kitchen" aria-selected="' + (profTab === 'kitchen') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6v2M8 13v3"/></svg>Kitchen</button></div>' +
+        (profTab === 'recipes' ? profRecipes() : profTab === 'kitchen' ? profKitchen() : profTab === 'saved'
           ? (savedPosts.length ? gridHtml(savedPosts) : '<p class="small muted">Tap the bookmark on any post to keep it here for later. Only you can see what you save.</p>')
           : (mine.length ? gridHtml(mine) : '<div class="stack" style="gap:8px;align-items:flex-start"><p class="small muted">Meals you share show up here.</p><button class="btn small" type="button" data-act="new-post">+ Share a meal</button></div>')) + '</div>';
     }
     $('profile-body').innerHTML = html;
+  }
+  /* the Recipes tab on your profile: the 8 newest, then the full page */
+  function profRecipes() {
+    var all = Object.keys(S.recipes).sort(function (a, b) { return addedAt(b) - addedAt(a) || S.recipes[a].name.localeCompare(S.recipes[b].name); });
+    if (!all.length) return '<div class="stack" style="gap:8px;align-items:flex-start"><p class="small muted">Recipes you add or steal show up here.</p><button class="btn small" type="button" data-act="new">+ New recipe</button></div>';
+    return '<div class="mine-list"><ul class="cards" style="margin:0">' + all.slice(0, 8).map(mineCard).join('') + '</ul></div>' +
+      '<div class="row" style="gap:8px"><button class="btn" type="button" data-act="go" data-view="mine" style="flex:1">See all ' + all.length + (all.length === 1 ? ' recipe' : ' recipes') + '</button><button class="btn quiet" type="button" data-act="new">+ New</button></div>';
+  }
+  /* the Kitchen tab on your profile: a quick look, then the full page */
+  function profKitchen() {
+    var cnt = function (pl) { return S.kitchen.items.filter(function (x) { return x.place === pl; }).length; };
+    var places = [['pantry', 'Pantry', cnt('pantry')], ['fridge', 'Fridge', cnt('fridge')], ['freezer', 'Freezer', S.freezer.items.length], ['staples', 'Staples', stapleKeys().length]];
+    var soon = S.kitchen.items.filter(function (it) { return isSoon(it) || (expDays(it) !== null && expDays(it) < 0); }).sort(function (a, b) { return expDays(a) - expDays(b); });
+    var low = S.kitchen.items.filter(function (it) { return it.level === 'low' && usable(it); });
+    return '<div class="kit-peek">' + places.map(function (p) { return '<button type="button" data-act="kit-open" data-place="' + p[0] + '"><b>' + p[2] + '</b><span>' + p[1] + '</span></button>'; }).join('') + '</div>' +
+      (soon.length ? '<div class="kit-alert small"><strong>Use these first:</strong> ' + soon.slice(0, 5).map(function (it) { var d = expDays(it); return esc(it.name) + ' <span class="muted">(' + (d < 0 ? 'expired' : d === 0 ? 'today' : d === 1 ? 'tomorrow' : d + ' days') + ')</span>'; }).join(', ') + '</div>' : '') +
+      (low.length ? '<div class="kit-alert small"><strong>Running low:</strong> ' + low.map(function (it) { return esc(it.name); }).join(', ') + '</div>' : '') +
+      (!S.kitchen.items.length && !S.freezer.items.length ? '<p class="small muted">Add what you have at home so it stays off your shopping list, and see what to use before it expires.</p>' : '') +
+      '<button class="btn" type="button" data-act="go" data-view="pantry">Open My kitchen</button>';
   }
   function openUser(o) {
     if (!o) return;
@@ -4414,6 +4442,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (act === 'user') return openUser(id);
     if (act === 'like') return toggleLike(id);
     if (act === 'save') return toggleSave(id);
+    if (act === 'kit-open') { kitPlace = b.dataset.place; goView('pantry'); return; }
     if (act === 'prof-tab') { profTab = b.dataset.tab2; renderProfile(); return; }
     if (act === 'post-menu') { menuFor = menuFor === id ? null : id; renderFeed(); if (fview) renderFRecipe(); return; }
     if (act === 'report') {
