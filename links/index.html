@@ -32,6 +32,8 @@
   .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .steps li { background: var(--blush); border: 2px solid var(--line); border-radius: 14px; padding: 10px 6px; display: grid; gap: 6px; justify-items: center; align-content: start; text-align: center; font-weight: 700; font-size: .88rem; line-height: 1.2; }
   .steps li:nth-child(2) { background: var(--petal); transform: translateY(4px); }
+  .steps li.wide { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; text-align: left; padding: 10px 12px; background: #fff; margin-top: 4px; transform: rotate(-.5deg); font-size: .92rem; }
+  .steps li.wide b { flex: none; }
   .steps b { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 2px solid var(--line); display: grid; place-items: center; font-family: var(--display); font-weight: 400; font-size: 1.1rem; padding-top: 2px; }
   a { -webkit-tap-highlight-color: transparent; }
   a:focus-visible { outline: 3px solid var(--rose); outline-offset: 3px; }
@@ -73,6 +75,7 @@
       <li><b>1</b>Add your recipes</li>
       <li><b>2</b>Select weekly meals</li>
       <li><b>3</b>Get your grocery list</li>
+      <li class="wide"><b>4</b>Snoop through the community's recipes and steal your faves 👀</li>
     </ol>
     <a class="go" href="https://fedupmeals.com">Start planning <span aria-hidden="true">→</span></a>
   </section>
