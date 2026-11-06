@@ -69,6 +69,23 @@
 <main>
   <h1>Hi, I'm Kasandra!</h1>
 
+  <section class="card ld" aria-labelledby="ldh">
+    <h2 id="ldh">The Latte Diaries <span class="free">New weekly</span></h2>
+    <p class="ldsub">A brand new latte every week at The Cake Bar.</p>
+    <div id="ld-now" class="ldnow" hidden></div>
+    <div>
+      <p class="ldlab">Past flavors</p>
+      <ul id="ld-past" class="chips"><li class="muted">Loading flavors…</li></ul>
+    </div>
+    <form id="ld-form" class="ldform" novalidate>
+      <label class="ldlab" for="ld-idea">Suggest a flavor</label>
+      <input id="ld-idea" name="idea" type="text" maxlength="120" placeholder="Strawberry shortcake, churro…" autocomplete="off" required>
+      <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="go send" type="submit">Send my idea <span aria-hidden="true">→</span></button>
+      <p id="ld-msg" class="ldmsg" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
   <section class="card" aria-labelledby="fu">
     <h2 id="fu">Fed Up Meals <span class="free">Free</span></h2>
     <ol class="steps">
@@ -91,22 +108,6 @@
     <div class="lbls" aria-hidden="true"><span>Instagram</span><span>TikTok</span><span>Facebook</span><span>Directions</span></div>
     <a class="row2" href="https://thecakebartx.com"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 2.5 14.4 0 17M12 3.5c-2.5 2.6-2.5 14.4 0 17"/></svg><span>Our website<small>thecakebartx.com</small></span></a>
     <a class="row2" href="tel:+18302146218"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg>(830) 214-6218</a>
-  </section>
-  <section class="card ld" aria-labelledby="ldh">
-    <h2 id="ldh">The Latte Diaries <span class="free">New weekly</span></h2>
-    <p class="ldsub">A brand new latte every week at The Cake Bar.</p>
-    <div id="ld-now" class="ldnow" hidden></div>
-    <div>
-      <p class="ldlab">Past flavors</p>
-      <ul id="ld-past" class="chips"><li class="muted">Loading flavors…</li></ul>
-    </div>
-    <form id="ld-form" class="ldform" novalidate>
-      <label class="ldlab" for="ld-idea">Suggest a flavor</label>
-      <input id="ld-idea" name="idea" type="text" maxlength="120" placeholder="Strawberry shortcake, churro…" autocomplete="off" required>
-      <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="go send" type="submit">Send my idea <span aria-hidden="true">→</span></button>
-      <p id="ld-msg" class="ldmsg" role="status" aria-live="polite"></p>
-    </form>
   </section>
 </main>
 <script>
