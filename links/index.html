@@ -73,9 +73,6 @@
     <h2 id="ldh">The Latte Diaries <span class="free">New weekly</span></h2>
     <p class="ldsub">A brand new latte every week at The Cake Bar.</p>
     <div id="ld-now" class="ldnow" hidden></div>
-    <div>
-      <ul id="ld-past" class="chips"><li class="muted">Loading flavors…</li></ul>
-    </div>
     <form id="ld-form" class="ldform" novalidate>
       <label class="ldlab" for="ld-idea">Suggest a flavor</label>
       <input id="ld-idea" name="idea" type="text" maxlength="120" placeholder="Strawberry shortcake, churro…" autocomplete="off" required>
@@ -112,13 +109,12 @@
 <script>
 (function () {
   var API = 'https://cakebar-app.pages.dev/api/latte';
-  var past = document.getElementById('ld-past'), now = document.getElementById('ld-now');
+  var now = document.getElementById('ld-now');
   function esc(t) { var d = document.createElement('span'); d.textContent = t; return d.innerHTML; }
   fetch(API).then(function (r) { return r.json(); }).then(function (d) {
-    var list = (d && d.flavors) || [], cur = list.filter(function (x) { return x.now; })[0], old = list.filter(function (x) { return !x.now; });
+    var list = (d && d.flavors) || [], cur = list.filter(function (x) { return x.now; })[0];
     if (cur) { now.hidden = false; now.innerHTML = 'This week' + '<b>' + esc(cur.name) + '</b>'; }
-    past.innerHTML = old.length ? old.map(function (x) { return '<li>' + esc(x.name) + '</li>'; }).join('') : '<li class="muted">Our first flavors are coming soon</li>';
-  }).catch(function () { past.innerHTML = '<li class="muted">Flavors are taking a break. Check back soon!</li>'; });
+  }).catch(function () {});
   var f = document.getElementById('ld-form'), msg = document.getElementById('ld-msg'), btn = f.querySelector('button');
   f.addEventListener('submit', function (e) {
     e.preventDefault();
