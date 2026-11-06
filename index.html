@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261105150433">
+<meta name="fedup-version" content="20261105220206">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -46,6 +46,67 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .user-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
 .user-tabs button { border: 0; background: none; padding: 10px 4px 12px; font: inherit; font-weight: 700; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
 .user-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+/* ---------- social: comments, notifications, swipe, share ---------- */
+.post-actions .cm-btn, .post-actions .sh-btn { display: inline-flex; align-items: center; gap: 4px; }
+.cm-count { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.made-strip { display: flex; gap: 8px; flex-wrap: wrap; }
+.made-btn { flex: 1; }
+.made-line { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); font-weight: 700; text-align: left; cursor: pointer; }
+.made-grid h3, .comments h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.comments { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
+.cm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.cm { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.cm .avatar { width: 34px; height: 34px; font-size: 0.9rem; }
+.cm-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cm-main p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
+.cm-meta { display: flex; gap: 10px; align-items: center; font-size: 0.78rem; color: var(--muted); }
+.cm-meta button { border: 0; background: none; padding: 0; font: inherit; color: var(--muted); cursor: pointer; text-decoration: underline; }
+.cm-name { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; }
+.cm-form { display: flex; gap: 8px; align-items: flex-end; position: relative; }
+.cm-form textarea { flex: 1; min-height: 44px; max-height: 140px; resize: none; }
+.tagit { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); font-weight: 700; cursor: pointer; }
+.tag-sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-sugg[hidden] { display: none; }
+.bell { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 40px; height: 40px; border: 0; background: none; border-radius: 50%; display: grid; place-items: center; color: var(--ink); padding: 0; cursor: pointer; }
+.bell svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bell .dot { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 0.68rem; font-weight: 700; display: grid; place-items: center; padding: 0 4px; border: 2px solid #fff; }
+.bell .dot[hidden] { display: none; }
+.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.note-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line); text-align: left; width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; font: inherit; color: inherit; cursor: pointer; }
+.note-row.new { background: var(--accent-tint); }
+.note-row .avatar { width: 40px; height: 40px; }
+.note-row .nt { min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
+.note-row .nt small { display: block; color: var(--muted); font-size: 0.78rem; }
+.note-row .nthumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--soft); }
+.swipe-open-btn { display: inline-flex; align-items: center; gap: 6px; }
+.swipe { position: fixed; inset: 0; z-index: 60; background: #000; }
+.swipe[hidden] { display: none; }
+.swipe-body { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.slide { position: relative; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden; color: #fff; display: flex; align-items: flex-end; }
+.slide img.sl-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.slide .sl-shade { position: absolute; inset: auto 0 0 0; height: 55%; background: linear-gradient(transparent, rgba(0, 0, 0, 0.78)); pointer-events: none; }
+.slide .sl-info { position: relative; padding: 16px 84px calc(24px + env(safe-area-inset-bottom, 0px)) 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.slide .sl-who { border: 0; background: none; color: #fff; font: inherit; font-weight: 700; padding: 0; text-align: left; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.slide .sl-who .avatar { width: 36px; height: 36px; border: 2px solid #fff; }
+.slide h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1.6rem; line-height: 1.15; text-shadow: 0 1px 8px rgba(0,0,0,.4); }
+.slide p { margin: 0; font-size: 0.95rem; line-height: 1.4; max-height: 4.2em; overflow: hidden; }
+.slide .tagit { color: #fff; text-decoration: underline; }
+.slide .sl-open { align-self: flex-start; border: 0; background: #fff; color: var(--ink); font: inherit; font-weight: 700; border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+.slide .sl-side { position: absolute; right: 10px; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.slide .sl-side button { border: 0; background: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+.slide .sl-side svg { width: 34px; height: 34px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 4px rgba(0,0,0,.45)); }
+.slide .sl-side [aria-pressed="true"] svg { fill: var(--accent); stroke: var(--accent); }
+.slide .sl-side .sv[aria-pressed="true"] svg { fill: #fff; stroke: #fff; }
+.slide .burst { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%) scale(0); font-size: 6rem; pointer-events: none; opacity: 0; }
+.slide .burst.go { animation: burst 0.8s ease-out; }
+@keyframes burst { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; } 25% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 70% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -60%) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .slide .burst.go { animation: none; } }
+.swipe-x { position: absolute; z-index: 2; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.slide.end { align-items: center; justify-content: center; text-align: center; background: var(--accent); }
+.slide.end .sl-info { padding: 24px; align-items: center; }
+.share-dlg { border: 0; border-radius: 18px; padding: 16px; width: min(92vw, 420px); max-height: 92vh; }
+.share-dlg::backdrop { background: rgba(0, 0, 0, 0.5); }
+.share-dlg img { width: 100%; max-width: 100%; border-radius: 12px; display: block; max-height: 60vh; object-fit: contain; background: var(--soft); }
 </style>
 <title>Fed Up</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Instrument+Sans:wght@400;500;600;700&display=swap">
@@ -788,6 +849,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 <div class="wrap">
   <header class="top">
     <button class="gear" id="open-settings" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="bell" id="bell" type="button" data-act="open-notes" aria-label="Notifications" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="dot" id="bell-dot" hidden></span></button>
     <h1>Fed Up</h1>
     <p class="muted">Pick what you're prepping this week. The shopping list builds itself from your recipes.</p>
     <p class="note" id="local-note" hidden></p>
@@ -1197,6 +1259,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <button class="chip" type="button" data-fkind="" aria-pressed="true">All</button>
       <button class="chip" type="button" data-fkind="adult" aria-pressed="false">Family meals</button>
       <button class="chip" type="button" data-fkind="baby" aria-pressed="false">Baby food</button>
+      <button class="chip swipe-open-btn" type="button" data-act="swipe-open-feed">▶ Swipe</button>
     </div>
     <div id="explore-body"><p class="muted">Loading…</p></div>
   </section>
@@ -1277,6 +1340,11 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     <h2>Reported posts</h2>
     <p class="small muted">Only you can see this page. Remove a post, or keep it to clear its reports.</p>
     <div id="reports-body" class="stack"></div>
+  </section>
+
+  <section class="view" id="view-notes" hidden>
+    <div class="row between"><h2>Notifications</h2></div>
+    <div id="notes-body" class="stack"></div>
   </section>
 
   <section class="view" id="view-shopitem" hidden>
@@ -1391,7 +1459,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
 
   <section class="view" id="view-post" hidden>
     <div class="row between">
-      <h2>Share your meal</h2>
+      <h2 id="post-head">Share your meal</h2>
       <button class="btn quiet" id="post-cancel" type="button">Cancel</button>
     </div>
     <form id="post-form" class="view" autocomplete="off">
@@ -1402,13 +1470,14 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           <input class="vh" type="file" id="post-file" accept="image/*">
         </div>
       </div>
-      <label class="f" for="post-recipe">Link your recipe
+      <label class="f" for="post-recipe" id="post-recipe-wrap">Link your recipe
         <select id="post-recipe"></select>
       </label>
       <p class="note small" id="post-credit" hidden></p>
       <label class="f" for="post-desc">Short description
-        <textarea id="post-desc" maxlength="280" style="min-height:80px" placeholder="What makes it good, who it's for, how long it takes…"></textarea>
+        <textarea id="post-desc" maxlength="280" style="min-height:80px" placeholder="What makes it good, who it's for, how long it takes… type @ to tag someone"></textarea>
       </label>
+      <div class="tag-sugg" id="post-sugg" hidden></div>
       <label class="f" for="post-tags">Hashtags
         <input type="text" id="post-tags" placeholder="healthy, high protein, quick">
       </label>
@@ -1464,6 +1533,18 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     </div>
   </section>
 </div>
+<div id="swipe" class="swipe" hidden role="dialog" aria-label="Swipe through meals">
+  <button class="swipe-x" type="button" data-act="swipe-close" aria-label="Close">×</button>
+  <div id="swipe-body" class="swipe-body"></div>
+</div>
+<dialog id="share-dlg" class="share-dlg">
+  <div class="stack" style="gap:10px">
+    <div class="row between"><strong id="share-title">Share</strong><button class="btn quiet small" type="button" id="share-close">Close</button></div>
+    <img id="share-img" alt="Share card preview">
+    <p class="small muted" id="share-how">Press and hold the picture to save it, then post it to TikTok or Instagram.</p>
+    <div class="row" style="flex-wrap:wrap"><button class="btn primary" type="button" id="share-go">Share</button><a class="btn" id="share-save" download="fed-up.png" href="#">Save picture</a></div>
+  </div>
+</dialog>
 <nav class="tabs" role="tablist" aria-label="Sections">
   <button class="tab" role="tab" id="tab-feed" data-tab="feed" aria-selected="false" hidden><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.500 12 3l9 7.500"/><path d="M5 9.500V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.500"/></svg></span>Home</button>
   <button class="tab" role="tab" id="tab-explore" data-tab="explore" aria-selected="false" hidden><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.500-3.500"/></svg></span>Community</button>
@@ -1809,9 +1890,9 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     },
     isAdmin: function () { if (guest) return Promise.resolve(false); return sb.rpc('is_admin').then(function (r) { return !r.error && r.data === true; }, function () { return false; }); },
     list: function () {
-      return sb.from('feed_posts').select('id,owner,title,description,tags,photo_url,price_cents,kind,created_at,credit').order('created_at', { ascending: false }).limit(100).then(function (r) {
+      return sb.from('feed_posts').select('id,owner,title,description,tags,photo_url,price_cents,kind,created_at,credit,made_from').order('created_at', { ascending: false }).limit(100).then(function (r) {
         check(r);
-        return (r.data || []).map(function (p) { return { id: p.id, owner: p.owner, title: p.title || '', description: p.description || '', tags: Array.isArray(p.tags) ? p.tags : [], photo: p.photo_url || '', price: p.price_cents || 0, kind: p.kind === 'baby' ? 'baby' : 'adult', at: p.created_at, credit: p.credit || null }; });
+        return (r.data || []).map(function (p) { return { id: p.id, owner: p.owner, title: p.title || '', description: p.description || '', tags: Array.isArray(p.tags) ? p.tags : [], photo: p.photo_url || '', price: p.price_cents || 0, kind: p.kind === 'baby' ? 'baby' : 'adult', at: p.created_at, credit: p.credit || null, madeFrom: p.made_from || null }; });
       });
     },
     /* the full recipe, or null when it is a paid recipe this person has not bought (the database decides, not this page) */
@@ -1827,7 +1908,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
           })
         : Promise.resolve(null);
       return upload.then(function (url) {
-        return sb.from('feed_posts').insert({ id: id, owner: uid, title: String(post.title).slice(0, 120), description: post.description || '', tags: post.tags || [], photo_url: url, price_cents: post.price === 200 ? 200 : 0, kind: post.kind === 'baby' ? 'baby' : 'adult', credit: post.credit && post.credit !== uid ? post.credit : null });
+        return sb.from('feed_posts').insert({ id: id, owner: uid, title: String(post.title).slice(0, 120), description: post.description || '', tags: post.tags || [], photo_url: url, price_cents: post.price === 200 ? 200 : 0, kind: post.kind === 'baby' ? 'baby' : 'adult', made_from: post.madeFrom || null, credit: post.credit && post.credit !== uid ? post.credit : null });
       }).then(function (r) {
         check(r);
         return sb.from('feed_recipes').insert({ post_id: id, owner: uid, data: recipe });
@@ -1852,6 +1933,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     reports: function () { return sb.from('post_reports').select('id,post_id,reason,created_at').limit(1000).then(function (r) { check(r); return r.data || []; }); },
     clearReports: function (pid) { return sb.from('post_reports').delete().eq('post_id', pid).then(check); },
     /* Shop My Kitchen: Head chefs share kitchen products with their own links (the database checks the 100 points) */
+    /* comments, notifications */
+    comments: function (pid) { return sb.from('post_comments').select('id,post_id,owner,body,created_at').eq('post_id', pid).order('created_at', { ascending: true }).limit(300).then(function (r) { check(r); return r.data || []; }); },
+    addComment: function (pid, body) { return sb.from('post_comments').insert({ post_id: pid, owner: uid, body: String(body).trim().slice(0, 500) }).select('id,post_id,owner,body,created_at').then(function (r) { check(r); return (r.data || [])[0]; }); },
+    delComment: function (id) { return sb.from('post_comments').delete().eq('id', id).then(check); },
+    commentCounts: function (ids) { return sb.rpc('post_comment_counts', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
+    notes: function () { if (guest) return Promise.resolve([]); return sb.from('notifications').select('id,actor,kind,post_id,comment_id,meta,read,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(60).then(function (r) { check(r); return r.data || []; }); },
+    notesRead: function () { return sb.from('notifications').update({ read: true }).eq('user_id', uid).eq('read', false).then(check); },
     shopList: function (owner) { return sb.from('shop_items').select('id,owner,name,url,photo_url,note,recipes,hidden,created_at').eq('owner', owner).order('created_at', { ascending: false }).limit(60).then(function (r) { check(r); return r.data || []; }); },
     shopItems: function (ids) { return sb.from('shop_items').select('id,owner,name,url,photo_url,note,recipes,hidden,created_at').in('id', ids.slice(0, 200)).then(function (r) { check(r); return r.data || []; }); },
     shopSave: function (item, photo) {
@@ -3125,6 +3213,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (t === 'frecipe') return secOf(frBack, d + 1);
     if (t === 'user') return secOf(userBack, d + 1);
     if (t === 'shopitem') return secOf(shopBack, d + 1);
+    if (t === 'notes') return 'feed';
     if (t === 'editor' || t === 'cook') return secOf(backTo, d + 1);
     if (t === 'meals' || t === 'pantry') return feedApi ? 'profile' : 'meals';
     return 'profile';
@@ -3159,7 +3248,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (t === 'guide') legalContact();
     if (tab === 'cook' && t !== 'cook' && wake) { try { wake.release(); } catch (e) {} wake = null; }
     tab = t;
-    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'shopitem', 'shopedit', 'shopreports', 'guide', 'terms', 'feedback', 'feedbacks', 'members', 'join'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
+    ['meals', 'list', 'editor', 'cook', 'ings', 'ingedit', 'feed', 'post', 'frecipe', 'more', 'prep', 'freezer', 'tracker', 'mine', 'settings', 'pantry', 'explore', 'profile', 'user', 'editprofile', 'reports', 'notes', 'shopitem', 'shopedit', 'shopreports', 'guide', 'terms', 'feedback', 'feedbacks', 'members', 'join'].forEach(function (v) { $('view-' + v).hidden = t !== v; });
     var sec = secOf(t, 0);
     ['feed', 'explore', 'meals', 'list', 'profile'].forEach(function (v) { $('tab-' + v).setAttribute('aria-selected', v === sec ? 'true' : 'false'); });
     if (t === 'explore') renderExplore();
@@ -3709,6 +3798,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (guest) { show('explore'); loadFeed(); return; }
     restoreView();
     loadFollows(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
+    loadNotes(); syncBell(); clearInterval(notesTimer); notesTimer = setInterval(function () { if (!document.hidden) loadNotes(); }, 60000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotes(); });
     api.isAdmin().then(function (a) { if (a) { loadReports(); loadShopReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
     if (api.deleteAccount) $('del-wrap').hidden = false;
     api.isAdmin().then(function (a) { feedAdmin = !!a; renderFeed(); }, function () {});
@@ -3718,7 +3809,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function splashDone() { (function wait() { if (!ready) return setTimeout(wait, 100); try { if (window.fedupSplashDone) window.fedupSplashDone(); } catch (e) {} if (!guest) setTimeout(maybeTour, 900); })(); }
   function loadFeed() {
     feedApi.list().then(function (posts) {
-      feedPosts = posts || []; feedState = 'ok'; splashDone(); loadLikes(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
+      feedPosts = posts || []; feedState = 'ok'; splashDone(); loadLikes(); loadCommentCounts(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
       var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); if (p.credit && ids.indexOf(p.credit) < 0) ids.push(p.credit); }); myFollows.forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); });
       if (user && ids.length) user.profiles(ids).then(function (ps) { ids.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (typeof ps[o].bio === 'string') bios[o] = ps[o].bio; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); renderFeed(); if (tab === 'profile') renderProfile(); renderExplore(); if (tab === 'user') renderUser(); if (fview) renderFRecipe(); });
     }, function () { feedState = 'error'; renderFeed(); splashDone(); });
@@ -3835,7 +3926,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function likeRow(p) {
     var n = likeCount(p.id), on = iLiked(p.id);
     return '<div class="post-actions"><button class="heart" type="button" data-act="like" data-id="' + esc(p.id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Unlike ' : 'Like ') + esc(p.title) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.7 4.5 7.1 4.5c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.4 3.4 4.3 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg></button>' +
-      '<span class="likes">' + (n ? n + (n === 1 ? ' like' : ' likes') : 'Be the first to like this') + '</span>' +
+      (feedApi && feedApi.comments ? '<button class="heart cm-btn" type="button" data-act="comments" data-id="' + esc(p.id) + '" aria-label="Comments on ' + esc(p.title) + '">' + CM_ICON + (cmCounts[p.id] ? '<span class="cm-count">' + cmCounts[p.id] + '</span>' : '') + '</button>' : '') +
+      '<button class="heart sh-btn" type="button" data-act="share-post" data-id="' + esc(p.id) + '" aria-label="Share ' + esc(p.title) + '">' + SH_ICON + '</button>' +
+      '<span class="likes">' + (n ? n + (n === 1 ? ' like' : ' likes') : '') + '</span>' +
       (feedApi && feedApi.savePost ? '<button class="heart save-btn" type="button" data-act="save" data-id="' + esc(p.id) + '" aria-pressed="' + (saves.indexOf(p.id) >= 0) + '" aria-label="' + (saves.indexOf(p.id) >= 0 ? 'Remove from saved' : 'Save') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg></button>' : '') + '</div>';
   }
   var REASONS = ['Spam or selling', 'Not family friendly', 'Unkind or bullying', 'Not their photo or recipe', 'Something else'];
@@ -3996,8 +4089,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       '<span class="post-who"><strong>' + esc(handle(p.owner)) + miniStars(p.owner) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' + follow +
       '<button class="ibtn push" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) +
       (img ? '<button class="post-imgbtn" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="Open ' + esc(p.title) + '"><img class="post-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy"></button>' : '') +
-      '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + creditLine(p) +
-      (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) +
+      '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + (p.madeFrom ? madeLine(p) : creditLine(p)) +
+      (p.description ? '<p>' + richText(p.description) + '</p>' : '') + hashLine(p.tags) +
+      (cmCounts[p.id] ? '<div><button class="linkish small muted" type="button" data-act="comments" data-id="' + esc(p.id) + '">View ' + (cmCounts[p.id] === 1 ? '1 comment' : 'all ' + cmCounts[p.id] + ' comments') + '</button></div>' : '') +
       '<div><button class="steal-btn" type="button" data-act="open-post" data-id="' + esc(p.id) + '">Steal this recipe <span aria-hidden="true">→</span></button></div>' +
       '</div></li>';
   }
@@ -4022,10 +4116,11 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       else {
         var wr = allRows(), wc = counts(wr), cost = 0, pr = 0; wc.left.forEach(function (r) { if (r.price != null) { cost += r.price; pr++; } });
         prepCard = '<button class="week-card" type="button" data-act="go" data-view="list"><span class="rl-txt"><strong>This week: ' + wk + (wk === 1 ? ' meal' : ' meals') + '</strong><span class="small">' + wc.left.length + (wc.left.length === 1 ? ' thing' : ' things') + ' to buy' + (pr ? ' · about ' + money(cost) : '') + '. Tap to see your shopping list.</span></span><span class="rl-go">' + ICON.arrow + '</span></button>' +
-          '<div style="margin-top:8px"><button class="btn quiet small" type="button" data-act="go" data-view="meals">Change this week\'s meals</button></div>';
+          '<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn quiet small" type="button" data-act="go" data-view="meals">Change this week\'s meals</button><button class="btn quiet small" type="button" data-act="share-week">Share my week 💕</button></div>';
       }
     }
-    $('feed-body').innerHTML = prepCard + (list.length ? '<ul class="plain posts"' + (prepCard ? ' style="margin-top:16px"' : '') + '>' + list.map(postCard).join('') + '</ul>' : '') + (list.length < 3 ? '<div style="margin-top:16px">' + invite + '</div>' : '');
+    var swipeBtn = feedPosts.some(function (p) { return safeImg(p.photo); }) ? '<div style="margin-top:14px"><button class="btn small swipe-open-btn" type="button" data-act="swipe-open-feed">▶ Swipe through meals</button></div>' : '';
+    $('feed-body').innerHTML = prepCard + swipeBtn + (list.length ? '<ul class="plain posts"' + (prepCard ? ' style="margin-top:16px"' : '') + '>' + list.map(postCard).join('') + '</ul>' : '') + (list.length < 3 ? '<div style="margin-top:16px">' + invite + '</div>' : '');
   }
   /* every recipe people have shared with the community, plus the recipes linked from posts */
   function commRecipes() {
@@ -4353,6 +4448,322 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       msg.textContent = e && (e.code === 'shop-denied' || e.code === '42501' || /row-level security/i.test(e.message || '')) ? 'Only Head chefs can add products, up to ' + SHOP_MAX + ' each.' : "Couldn't save that. Check your connection and try again.";
     });
   });
+  /* ---------- social: comments, @tags, "I made this", notifications, swipe and share cards ---------- */
+  var cmBy = {}, cmCounts = {}, cmAsked = {}, cmDelArm = null, notes = [], notesTimer = null, madeFor = null, swipeIds = [];
+  var CM_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.1A8 8 0 1 1 20 12z"/></svg>';
+  var SH_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>';
+  /* text with @usernames you can tap */
+  function richText(s) {
+    return esc(s).replace(/(^|[^A-Za-z0-9._@])@([A-Za-z0-9._]{3,20})/g, function (m, pre, h) {
+      return pre + '<button class="tagit" type="button" data-act="tag-user" data-handle="' + h.toLowerCase() + '">@' + h + '</button>';
+    });
+  }
+  function idOfHandle(h) { h = String(h || '').toLowerCase(); var hit = null; Object.keys(unames).forEach(function (o) { if ((unames[o] || '').toLowerCase() === h) hit = o; }); return hit; }
+  function openHandle(h) {
+    var o = idOfHandle(h); if (o) return openUser(o);
+    if (!user || !user.searchPeople) return;
+    user.searchPeople(h).then(function (rows) {
+      var p = (rows || []).filter(function (x) { return (x.username || '').toLowerCase() === h; })[0];
+      if (!p) { toast('Nobody on Fed Up has the username @' + h + '.'); return; }
+      if (p.display_name) names[p.id] = p.display_name; unames[p.id] = p.username; if (p.avatar_url) avatars[p.id] = p.avatar_url; if (typeof p.bio === 'string') bios[p.id] = p.bio;
+      openUser(p.id);
+    }, function () { toast("Couldn't open @" + h + ' right now.'); });
+  }
+  /* @tag suggestions while typing */
+  function tagSuggest(input, box) {
+    var show = function () {
+      var v = input.value.slice(0, input.selectionStart || input.value.length), m = /(^|\s)@([A-Za-z0-9._]{0,20})$/.exec(v);
+      if (!m) { box.hidden = true; box.innerHTML = ''; return; }
+      var q = m[2].toLowerCase(), seen = {}, list = [];
+      myFollows.concat(feedPosts.map(function (p) { return p.owner; })).forEach(function (o) { var u = unames[o]; if (u && o !== uid && !seen[u] && u.toLowerCase().indexOf(q) === 0) { seen[u] = true; list.push(u); } });
+      list = list.slice(0, 6);
+      box.hidden = !list.length;
+      box.innerHTML = list.map(function (u) { return '<button class="chip" type="button" data-tagpick="' + esc(u) + '">@' + esc(u) + '</button>'; }).join('');
+    };
+    input.addEventListener('input', show);
+    box.addEventListener('mousedown', function (ev) { if (ev.target.closest('[data-tagpick]')) ev.preventDefault(); });
+    box.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-tagpick]'); if (!b) return;
+      var pos = input.selectionStart || input.value.length, pre = input.value.slice(0, pos).replace(/@([A-Za-z0-9._]{0,20})$/, '@' + b.dataset.tagpick + ' ');
+      input.value = pre + input.value.slice(pos); input.focus(); try { input.setSelectionRange(pre.length, pre.length); } catch (e) {}
+      box.hidden = true;
+    });
+  }
+  function loadCommentCounts() {
+    if (!feedApi || !feedApi.commentCounts || !feedPosts.length) return;
+    feedApi.commentCounts(feedPosts.map(function (p) { return p.id; }).slice(0, 200)).then(function (rows) {
+      cmCounts = {}; (rows || []).forEach(function (r) { cmCounts[r.post_id] = Number(r.comments) || 0; });
+      renderFeed(); if (fview) renderFRecipe();
+    }, function () {});
+  }
+  function loadComments(pid, force) {
+    if (!feedApi || !feedApi.comments || (cmAsked[pid] && !force)) return;
+    cmAsked[pid] = true;
+    feedApi.comments(pid).then(function (rows) {
+      cmBy[pid] = rows || []; cmCounts[pid] = cmBy[pid].length;
+      var need = []; cmBy[pid].forEach(function (c) { if (!names[c.owner] && !unames[c.owner] && need.indexOf(c.owner) < 0) need.push(c.owner); });
+      if (need.length && user) user.profiles(need).then(function (ps) { need.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); if (fview && fview.post.id === pid) renderFRecipe(); }, function () {});
+      if (fview && fview.post.id === pid) renderFRecipe();
+    }, function () { delete cmAsked[pid]; });
+  }
+  function commentsHtml(p) {
+    var list = cmBy[p.id];
+    var rows = !list ? '<p class="small muted">Loading comments…</p>' : list.length ? '<ul class="cm-list">' + list.map(function (c) {
+      var canDel = !guest && (c.owner === uid || p.owner === uid || feedAdmin);
+      return '<li class="cm">' + '<button class="who-btn" type="button" data-act="user" data-id="' + esc(c.owner) + '" aria-label="' + esc(atName(c.owner)) + '">' + avatarHtml(c.owner) + '</button>' +
+        '<div class="cm-main"><button class="cm-name" type="button" data-act="user" data-id="' + esc(c.owner) + '">' + esc(c.owner === uid ? 'You' : handle(c.owner)) + miniStars(c.owner) + '</button><p>' + richText(c.body) + '</p>' +
+        '<span class="cm-meta"><span>' + esc(agoShort(c.created_at)) + '</span>' + (!guest && c.owner !== uid ? '<button type="button" data-act="cm-reply" data-handle="' + esc(unames[c.owner] || '') + '"' + (unames[c.owner] ? '' : ' hidden') + '>Reply</button>' : '') +
+        (canDel ? '<button type="button" data-act="cm-del" data-id="' + esc(c.id) + '">' + (cmDelArm === c.id ? 'Tap again to delete' : 'Delete') + '</button>' : '') + '</span></div></li>';
+    }).join('') + '</ul>' : '<p class="small muted">No comments yet. Say something nice!</p>';
+    var form = guest ? '<button class="btn small" type="button" data-join="up">Join to comment</button>'
+      : '<form class="cm-form" id="cm-form" autocomplete="off"><textarea id="cm-input" maxlength="500" rows="1" placeholder="Add a comment… type @ to tag someone" aria-label="Add a comment"></textarea><button class="btn primary small" type="submit" id="cm-send">Post</button></form><div class="tag-sugg" id="cm-sugg" hidden></div>';
+    return '<section class="comments" id="comments" aria-label="Comments"><h3>Comments' + (list && list.length ? ' (' + list.length + ')' : '') + '</h3>' + rows + form + '</section>';
+  }
+  function agoShort(ts) {
+    var s = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000);
+    return s < 60 ? 'now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : s < 604800 ? Math.floor(s / 86400) + 'd' : niceDate(String(ts).slice(0, 10)).replace(/, \d{4}$/, '');
+  }
+  /* comment box: keep what someone typed when the post view redraws */
+  var cmDraft = '';
+  function bindCommentForm(pid) {
+    var f = $('cm-form'), t = $('cm-input'); if (!f || !t) return;
+    t.value = cmDraft; tagSuggest(t, $('cm-sugg'));
+    t.addEventListener('input', function () { cmDraft = t.value; t.style.height = 'auto'; t.style.height = Math.min(140, t.scrollHeight) + 'px'; });
+    f.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var body = t.value.trim(); if (!body) { t.focus(); return; }
+      var btn = $('cm-send'); btn.disabled = true;
+      feedApi.addComment(pid, body).then(function (row) {
+        cmDraft = ''; (cmBy[pid] = cmBy[pid] || []).push(row || { id: 'tmp' + Date.now(), post_id: pid, owner: uid, body: body, created_at: new Date().toISOString() });
+        cmCounts[pid] = cmBy[pid].length; renderFRecipe(); renderFeed();
+        var c = $('comments'); if (c) c.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      }, function () { btn.disabled = false; toast("Couldn't post that comment. Try again."); });
+    });
+  }
+  /* "I made this!" posts */
+  function madeOf(pid) { return feedPosts.filter(function (x) { return x.madeFrom === pid; }); }
+  function madeLine(p) {
+    if (!p.madeFrom) return '';
+    var orig = feedPosts.filter(function (x) { return x.id === p.madeFrom; })[0];
+    return '<button class="made-line" type="button" data-act="open-post" data-id="' + esc(p.madeFrom) + '">📸 Made ' + (orig ? 'from ' + esc(orig.owner === uid ? 'your' : atName(orig.owner) + '\'s') + ' recipe' : 'from a community recipe') + ' →</button>';
+  }
+  function madeHtml(p) {
+    var list = madeOf(p.id);
+    return list.length ? '<section class="made-grid"><h3>📸 Made by the community (' + list.length + ')</h3>' + gridHtml(list) + '</section>' : '';
+  }
+  function openMadeForm() {
+    if (!fview) return;
+    var p = fview.post;
+    madeFor = { post: p, recipe: fview.recipe };
+    $('post-head').textContent = 'Share your version';
+    $('post-recipe-wrap').hidden = true; $('post-credit').hidden = false;
+    $('post-credit').textContent = 'Your photo shows up under ' + (p.owner === uid ? 'your' : atName(p.owner) + '\'s') + ' ' + p.title + ', and ' + (p.owner === uid ? 'it links back to your recipe.' : 'they get a notification that you made it.');
+    postPhoto = null; postPhotoPicked = false; postTagsTouched = true; $('post-desc').value = ''; $('post-file').value = ''; $('post-tags').value = (p.tags || []).join(', '); $('post-submit').disabled = false; $('post-submit').textContent = 'Post';
+    postPreview(); show('post'); window.scrollTo(0, 0);
+  }
+  /* notifications */
+  function loadNotes() {
+    if (guest || !feedApi || !feedApi.notes) return;
+    feedApi.notes().then(function (rows) {
+      notes = rows || []; syncBell();
+      var need = []; notes.forEach(function (n) { if (n.actor && !unames[n.actor] && need.indexOf(n.actor) < 0) need.push(n.actor); });
+      if (need.length && user) user.profiles(need).then(function (ps) { need.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); if (tab === 'notes') renderNotes(); }, function () {});
+      if (tab === 'notes') renderNotes();
+    }, function () {});
+  }
+  function unread() { return notes.filter(function (n) { return !n.read; }).length; }
+  function syncBell() {
+    var b = $('bell'); if (!b) return;
+    b.hidden = guest || !feedApi; var u = unread(), d = $('bell-dot');
+    d.hidden = !u; d.textContent = u > 9 ? '9+' : u;
+    b.setAttribute('aria-label', u ? 'Notifications, ' + u + ' new' : 'Notifications');
+  }
+  function noteText(n) {
+    var a = '<strong>' + esc(n.actor ? atName(n.actor) : 'Someone') + '</strong>', p = n.post_id ? feedPosts.filter(function (x) { return x.id === n.post_id; })[0] : null, t = p ? esc(p.title) : 'your post';
+    if (n.kind === 'like') return a + ' liked your ' + t;
+    if (n.kind === 'comment') return a + ' commented on your ' + t + (n.meta && n.meta.text ? ': "' + esc(String(n.meta.text).slice(0, 80)) + '"' : '');
+    if (n.kind === 'follow') return a + ' started following you';
+    if (n.kind === 'steal') return a + ' stole your recipe' + (n.meta && n.meta.name ? ' ' + esc(n.meta.name) : '') + ' 🙌';
+    if (n.kind === 'made') return a + ' made your recipe and posted a photo! 📸';
+    if (n.kind === 'tag') return a + ' tagged you' + (n.comment_id ? ' in a comment' : ' in a post') + (p ? ' on ' + t : '');
+    return a;
+  }
+  function renderNotes() {
+    if (!notes.length) { $('notes-body').innerHTML = '<div class="empty"><p><strong>No notifications yet.</strong></p><p class="muted">When people like, comment on, steal or make your recipes, or follow you, you\'ll see it here.</p></div>'; return; }
+    $('notes-body').innerHTML = '<ul class="notes">' + notes.map(function (n) {
+      var p = n.post_id ? feedPosts.filter(function (x) { return x.id === n.post_id; })[0] : null, img = p ? safeImg(p.photo) : '';
+      var go = n.post_id && p ? 'data-act="note-post" data-id="' + esc(n.post_id) + '"' + (n.comment_id ? ' data-cm="1"' : '') : n.actor ? 'data-act="user" data-id="' + esc(n.actor) + '"' : '';
+      return '<li><button class="note-row' + (n.read ? '' : ' new') + '" type="button" ' + go + '>' + (n.actor ? avatarHtml(n.actor) : '<span class="avatar">★</span>') +
+        '<span class="nt">' + noteText(n) + '<small>' + esc(agoShort(n.created_at)) + '</small></span>' + (img ? '<img class="nthumb" src="' + esc(thumbOf(img)) + '" data-full="' + esc(img) + '" alt="" onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}">' : '<span></span>') + '</button></li>';
+    }).join('') + '</ul>';
+  }
+  function openNotes() {
+    show('notes'); renderNotes(); window.scrollTo(0, 0);
+    if (unread() && feedApi.notesRead) { feedApi.notesRead().then(function () { setTimeout(function () { notes.forEach(function (n) { n.read = true; }); syncBell(); }, 1500); }, function () {}); }
+  }
+  /* full-screen swipe feed */
+  function openSwipe(startId) {
+    var list = feedPosts.filter(function (p) { return safeImg(p.photo) && (!feedKind || p.kind === feedKind); });
+    if (!list.length) { toast('No meal photos to swipe through yet.'); return; }
+    swipeIds = list.map(function (p) { return p.id; });
+    $('swipe-body').innerHTML = list.map(slideHtml).join('') + '<section class="slide end"><div class="sl-info"><h3>You\'re all caught up!</h3><p>Follow more people or share a meal of your own.</p><button class="sl-open" type="button" data-act="swipe-close">Back to Fed Up</button></div></section>';
+    $('swipe').hidden = false; document.body.style.overflow = 'hidden';
+    var i = startId ? swipeIds.indexOf(startId) : 0; $('swipe-body').scrollTop = Math.max(0, i) * $('swipe-body').clientHeight;
+    try { history.pushState({ swipe: 1 }, ''); } catch (e) {}
+  }
+  function closeSwipe(fromHistory) {
+    if ($('swipe').hidden) return;
+    $('swipe').hidden = true; $('swipe-body').innerHTML = ''; document.body.style.overflow = '';
+    if (!fromHistory) { try { if (history.state && history.state.swipe) history.back(); } catch (e) {} }
+  }
+  window.addEventListener('popstate', function () { closeSwipe(true); });
+  function slideHtml(p) {
+    var img = safeImg(p.photo), on = iLiked(p.id), n = likeCount(p.id), c = cmCounts[p.id] || 0, sv = saves.indexOf(p.id) >= 0;
+    return '<section class="slide" data-id="' + esc(p.id) + '"><img class="sl-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy" data-dbl="' + esc(p.id) + '"><span class="sl-shade"></span><span class="burst" aria-hidden="true">💗</span>' +
+      '<div class="sl-info"><button class="sl-who" type="button" data-act="swipe-user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + esc(handle(p.owner)) + miniStars(p.owner) + '</button>' +
+      '<h3>' + esc(p.title) + '</h3>' + (p.description ? '<p>' + richText(p.description) + '</p>' : '') +
+      '<button class="sl-open" type="button" data-act="swipe-open" data-id="' + esc(p.id) + '">' + (p.owner === uid ? 'Open recipe' : 'Steal this recipe') + ' →</button></div>' +
+      '<div class="sl-side"><button type="button" data-act="swipe-like" data-id="' + esc(p.id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Unlike' : 'Like') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.7 4.5 7.1 4.5c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.4 3.4 4.3 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg><span>' + (n || '') + '</span></button>' +
+      '<button type="button" data-act="swipe-cm" data-id="' + esc(p.id) + '" aria-label="Comments">' + CM_ICON + '<span>' + (c || '') + '</span></button>' +
+      '<button class="sv" type="button" data-act="swipe-save" data-id="' + esc(p.id) + '" aria-pressed="' + sv + '" aria-label="Save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg><span>Save</span></button>' +
+      '<button type="button" data-act="swipe-share" data-id="' + esc(p.id) + '" aria-label="Share">' + SH_ICON + '<span>Share</span></button></div></section>';
+  }
+  function refreshSlide(pid) {
+    var s = $('swipe-body').querySelector('.slide[data-id="' + pid + '"]'); if (!s) return;
+    var p = feedPosts.filter(function (x) { return x.id === pid; })[0]; if (!p) return;
+    var lk = s.querySelector('[data-act=swipe-like]'), sv = s.querySelector('[data-act=swipe-save]');
+    lk.setAttribute('aria-pressed', iLiked(pid)); lk.querySelector('span').textContent = likeCount(pid) || '';
+    sv.setAttribute('aria-pressed', saves.indexOf(pid) >= 0);
+  }
+  var lastTap = { id: null, t: 0 };
+  $('swipe-body').addEventListener('click', function (ev) {
+    var im = ev.target.closest('[data-dbl]'); if (!im) return;
+    var id = im.dataset.dbl, now = Date.now();
+    if (lastTap.id === id && now - lastTap.t < 350) {
+      lastTap = { id: null, t: 0 };
+      if (guest) { askJoin('like'); return; }
+      var b = im.parentNode.querySelector('.burst'); b.classList.remove('go'); void b.offsetWidth; b.classList.add('go');
+      if (!iLiked(id)) { toggleLike(id); refreshSlide(id); }
+    } else lastTap = { id: id, t: now };
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !$('swipe').hidden) closeSwipe(); });
+  /* share cards: a picture made for TikTok and Instagram stories */
+  function loadImg(src) {
+    return new Promise(function (ok) {
+      if (!src) return ok(null);
+      var i = new Image(); if (/^https?:/.test(src)) i.crossOrigin = 'anonymous';
+      i.onload = function () { ok(i); }; i.onerror = function () { ok(null); }; i.src = src;
+    });
+  }
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function wrapLines(g, text, max, maxLines) {
+    var words = String(text).split(/\s+/), lines = [], cur = '';
+    words.forEach(function (w) { var t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > max && cur) { lines.push(cur); cur = w; } else cur = t; });
+    if (cur) lines.push(cur);
+    if (lines.length > maxLines) { lines = lines.slice(0, maxLines); lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, '') + '…'; }
+    return lines;
+  }
+  function cardBase(g) {
+    var W = 1080, H = 1920; g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#FBCFE2'; for (var y = 0; y < H; y += 90) for (var x = (y / 90) % 2 ? 90 : 0; x < W; x += 180) g.fillRect(x, y, 90, 90);
+    g.fillStyle = '#E0247A'; g.textAlign = 'center'; g.font = '84px Caprasimo, Georgia, serif'; g.fillText('FED UP', W / 2, 170);
+  }
+  function cardFoot(g, line) {
+    var W = 1080; g.fillStyle = '#E0247A'; roundRect(g, 140, 1690, 800, 130, 65); g.fill();
+    g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.font = '700 52px "Instrument Sans", system-ui, sans-serif'; g.fillText(line, W / 2, 1772);
+  }
+  function makePostCard(p) {
+    var c = document.createElement('canvas'); c.width = 1080; c.height = 1920; var g = c.getContext('2d');
+    return Promise.all([document.fonts ? document.fonts.load('84px Caprasimo').catch(function () {}) : null, loadImg(safeImg(p.photo))]).then(function (res) {
+      var im = res[1]; cardBase(g);
+      g.fillStyle = '#ffffff'; roundRect(g, 90, 240, 900, 1380, 48); g.fill();
+      if (im) { g.save(); roundRect(g, 130, 280, 820, 820, 32); g.clip(); var s = Math.max(820 / im.width, 820 / im.height), w = im.width * s, h = im.height * s; g.drawImage(im, 130 + (820 - w) / 2, 280 + (820 - h) / 2, w, h); g.restore(); }
+      else { g.fillStyle = '#FFF0F7'; roundRect(g, 130, 280, 820, 820, 32); g.fill(); g.font = '220px serif'; g.textAlign = 'center'; g.fillText('🍽️', 540, 770); }
+      g.fillStyle = '#1E1418'; g.textAlign = 'center'; g.font = '72px Caprasimo, Georgia, serif';
+      var lines = wrapLines(g, p.title, 800, 2); lines.forEach(function (l, i) { g.fillText(l, 540, 1210 + i * 84); });
+      g.fillStyle = '#6E5562'; g.font = '600 46px "Instrument Sans", system-ui, sans-serif'; g.fillText('by ' + (unames[p.owner] ? '@' + unames[p.owner] : who(p.owner)), 540, 1230 + lines.length * 84);
+      g.fillStyle = '#E0247A'; g.font = '700 44px "Instrument Sans", system-ui, sans-serif'; g.fillText('Steal this recipe for free 💕', 540, 1540);
+      cardFoot(g, 'fedupmeals.com');
+      return c;
+    });
+  }
+  function makeWeekCard() {
+    var c = document.createElement('canvas'); c.width = 1080; c.height = 1920; var g = c.getContext('2d');
+    var ids = pickedIds().filter(function (id) { return ALL[id] && !isExtra(ALL[id]); }).slice(0, 8);
+    return Promise.all([document.fonts ? document.fonts.load('84px Caprasimo').catch(function () {}) : null].concat(ids.map(function (id) { return loadImg(photoOf(id)); }))).then(function (res) {
+      cardBase(g);
+      g.fillStyle = '#ffffff'; roundRect(g, 90, 240, 900, 1380, 48); g.fill();
+      g.fillStyle = '#1E1418'; g.textAlign = 'center'; g.font = '76px Caprasimo, Georgia, serif'; g.fillText('My week of meals', 540, 360);
+      var rowH = Math.min(150, Math.floor(1120 / Math.max(1, ids.length)));
+      ids.forEach(function (id, i) {
+        var y = 420 + i * rowH, im = res[i + 1], sz = rowH - 24;
+        g.save(); roundRect(g, 150, y, sz, sz, 20); g.clip();
+        if (im) { var s = Math.max(sz / im.width, sz / im.height); g.drawImage(im, 150 + (sz - im.width * s) / 2, y + (sz - im.height * s) / 2, im.width * s, im.height * s); } else { g.fillStyle = '#FFF0F7'; g.fillRect(150, y, sz, sz); }
+        g.restore();
+        g.fillStyle = '#1E1418'; g.textAlign = 'left'; g.font = '700 ' + Math.min(48, Math.round(rowH * 0.34)) + 'px "Instrument Sans", system-ui, sans-serif';
+        g.fillText(wrapLines(g, ALL[id].name, 650, 1)[0], 150 + sz + 36, y + sz / 2 + 16);
+      });
+      g.fillStyle = '#E0247A'; g.textAlign = 'center'; g.font = '700 44px "Instrument Sans", system-ui, sans-serif'; g.fillText('My grocery list built itself 🛒', 540, 1560);
+      cardFoot(g, 'Plan yours at fedupmeals.com');
+      return c;
+    });
+  }
+  var shareBlob = null, shareText = '';
+  function openShare(make, title, text) {
+    toast('Making your picture…');
+    make().then(function (c) {
+      c.toBlob(function (blob) {
+        if (!blob) { toast("Couldn't make the picture. Try again."); return; }
+        shareBlob = blob; shareText = text;
+        var url = URL.createObjectURL(blob);
+        $('share-title').textContent = title; $('share-img').src = url; $('share-save').href = url;
+        var file = new File([blob], 'fed-up.png', { type: 'image/png' });
+        $('share-go').hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+        $('share-how').textContent = $('share-go').hidden ? 'Press and hold the picture (or tap Save picture), then post it to TikTok or Instagram.' : 'Tap Share to send it straight to TikTok, Instagram or your messages.';
+        try { $('share-dlg').showModal(); } catch (e) {}
+      }, 'image/png');
+    }, function () { toast("Couldn't make the picture. Try again."); });
+  }
+  $('share-close').addEventListener('click', function () { $('share-dlg').close(); });
+  $('share-dlg').addEventListener('click', function (ev) { if (ev.target === this) this.close(); });
+  $('share-go').addEventListener('click', function () {
+    if (!shareBlob) return;
+    var file = new File([shareBlob], 'fed-up.png', { type: 'image/png' });
+    navigator.share({ files: [file], text: shareText }).then(function () { $('share-dlg').close(); }, function () {});
+  });
+  function sharePost(pid) {
+    var p = feedPosts.filter(function (x) { return x.id === pid; })[0]; if (!p) return;
+    openShare(function () { return makePostCard(p); }, 'Share ' + p.title, p.title + ' on Fed Up 💕 Steal the recipe for free at fedupmeals.com');
+  }
+  function shareWeek() {
+    if (!pickedIds().length) { toast('Pick your meals for the week first.'); return; }
+    openShare(makeWeekCard, 'Share my week', 'My meals this week, planned on Fed Up 💕 fedupmeals.com');
+  }
+  function socialAct(act, b, id) {
+    if (act === 'tag-user') { if (!$('swipe').hidden) closeSwipe(); openHandle(b.dataset.handle); return true; }
+    if (act === 'comments') { openPostView(id); setTimeout(function () { var c = $('comments'); if (c) c.scrollIntoView({ block: 'start' }); var t = $('cm-input'); if (t) t.focus(); }, 60); return true; }
+    if (act === 'cm-reply') { var t = $('cm-input'); if (t && b.dataset.handle) { t.value = '@' + b.dataset.handle + ' ' + t.value.replace(/^@\S+\s/, ''); cmDraft = t.value; t.focus(); } return true; }
+    if (act === 'cm-del') {
+      if (cmDelArm !== id) { cmDelArm = id; renderFRecipe(); setTimeout(function () { if (cmDelArm === id) { cmDelArm = null; if (fview) renderFRecipe(); } }, 4000); return true; }
+      cmDelArm = null; var pid = fview && fview.post.id;
+      feedApi.delComment(id).then(function () { if (pid) { cmBy[pid] = (cmBy[pid] || []).filter(function (c) { return c.id !== id; }); cmCounts[pid] = cmBy[pid].length; } renderFRecipe(); renderFeed(); toast('Comment deleted.'); }, function () { toast("Couldn't delete that. Try again."); });
+      return true;
+    }
+    if (act === 'made-it') { openMadeForm(); return true; }
+    if (act === 'share-post') { sharePost(id); return true; }
+    if (act === 'share-week') { shareWeek(); return true; }
+    if (act === 'open-notes') { openNotes(); return true; }
+    if (act === 'note-post') { var cm = b.dataset.cm; openPostView(id); if (cm) setTimeout(function () { var c = $('comments'); if (c) c.scrollIntoView({ block: 'start' }); }, 300); return true; }
+    if (act === 'swipe-open-feed') { openSwipe(); return true; }
+    if (act === 'swipe-close') { closeSwipe(); return true; }
+    if (act === 'swipe-open') { closeSwipe(); openPostView(id); return true; }
+    if (act === 'swipe-user') { closeSwipe(); openUser(id); return true; }
+    if (act === 'swipe-cm') { closeSwipe(); socialAct('comments', b, id); return true; }
+    if (act === 'swipe-like') { toggleLike(id); refreshSlide(id); return true; }
+    if (act === 'swipe-save') { toggleSave(id); refreshSlide(id); return true; }
+    if (act === 'swipe-share') { sharePost(id); return true; }
+    return false;
+  }
   /* the Recipes tab on your profile: the 8 newest, then the full page */
   function profRecipes() {
     var all = Object.keys(S.recipes).sort(function (a, b) { return addedAt(b) - addedAt(a) || S.recipes[a].name.localeCompare(S.recipes[b].name); });
@@ -4393,7 +4804,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var p = feedPosts.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
     if (tab !== 'frecipe') frBack = (tab === 'feed' || tab === 'explore' || tab === 'user' || tab === 'profile') ? tab : 'feed';
-    fview = { post: p, state: 'loading', recipe: null };
+    if (!fview || fview.post.id !== id) { cmDraft = ''; cmDelArm = null; }
+    fview = { post: p, state: 'loading', recipe: null }; loadComments(id, true);
     show('frecipe'); renderFRecipe(); window.scrollTo(0, 0);
     feedApi.recipe(id).then(function (r) { if (!fview || fview.post.id !== id) return; fview.recipe = r || null; fview.state = r ? 'open' : 'locked'; renderFRecipe(); },
       function () { if (!fview || fview.post.id !== id) return; fview.state = 'error'; renderFRecipe(); });
@@ -4405,7 +4817,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       '<div class="stack" style="gap:8px"><h2>' + esc(p.title) + '</h2>' +
       '<div class="post-head" style="padding:0"><button class="who-btn" type="button" data-act="user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + '<span class="post-who"><strong>' + esc(handle(p.owner)) + miniStars(p.owner) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' +
       (p.owner !== uid ? (iFollow(p.owner) ? '<button class="btn small push" type="button" data-act="unfollow" data-id="' + esc(p.owner) + '">Following</button>' : '<button class="btn primary small push" type="button" data-act="follow" data-id="' + esc(p.owner) + '">Follow</button>') : '<span class="push"></span>') +
-      '<button class="ibtn" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) + likeRow(p) + creditLine(p) + (p.description ? '<p>' + esc(p.description) + '</p>' : '') + hashLine(p.tags) + '</div>';
+      '<button class="ibtn" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) + likeRow(p) + (p.madeFrom ? madeLine(p) : creditLine(p)) + (p.description ? '<p>' + richText(p.description) + '</p>' : '') + hashLine(p.tags) +
+      (feedApi && feedApi.comments ? '<div class="made-strip"><button class="btn made-btn" type="button" data-act="made-it">📸 I made this!</button><button class="btn" type="button" data-act="share-post" data-id="' + esc(p.id) + '">Share</button></div>' : '') + '</div>';
     if (fview.state === 'loading') html += '<p class="muted">Opening the recipe…</p>';
     else if (fview.state === 'error') html += '<p class="note">The recipe could not load. Go back and try again.</p>';
     else if (fview.state === 'locked') html += '<p class="note">This recipe is not available right now.</p>';
@@ -4418,7 +4831,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps</h3>' + (r.notes ? stepsHtml(r, 1) : '<p class="steps"><span class="muted">No steps written.</span></p>') + '</div>';
     }
+    if (feedApi && feedApi.comments) html += madeHtml(p) + commentsHtml(p);
     $('fr-body').innerHTML = html;
+    if (feedApi && feedApi.comments) bindCommentForm(p.id);
   }
   function shrinkData(dataUrl, maxSide, maxLen, done) {
     var img = new Image();
@@ -4467,6 +4882,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var ids = Object.keys(S.recipes).sort(function (a, b) { return S.recipes[a].name.localeCompare(S.recipes[b].name); });
     if (!ids.length) { toast('Add a recipe first: tap + then + RECIPE. Then you can post it.'); return; }
     $('post-recipe').innerHTML = ids.map(function (id) { return '<option value="' + esc(id) + '">' + esc(S.recipes[id].name) + '</option>'; }).join('');
+    madeFor = null; $('post-head').textContent = 'Share your meal'; $('post-recipe-wrap').hidden = false;
     postPhoto = null; postPhotoPicked = false; postTagsTouched = false; $('post-desc').value = ''; $('post-file').value = ''; $('post-submit').disabled = false;
     postPreview(); fillPostTags(); show('post'); window.scrollTo(0, 0);
   }
@@ -4732,6 +5148,7 @@ var babyEd = $('ed-kind').value === 'baby';
     if (act === 'new-post') { postFrom = (tab === 'profile' || tab === 'explore') ? tab : 'feed'; return openPostForm(); }
     if (act === 'user') return openUser(id);
     if (act.indexOf('shop-') === 0 || act === 'user-tab') { if (shopAct(act, b, id)) return; }
+    if (socialAct(act, b, id)) return;
     if (act === 'like') return toggleLike(id);
     if (act === 'save') return toggleSave(id);
     if (act === 'kit-open') { kitPlace = b.dataset.place; goView('pantry'); return; }
@@ -4967,7 +5384,8 @@ var babyEd = $('ed-kind').value === 'baby';
     renderIngs(); renderEdSteps(); $('ed-paste').value = ''; $('ed-paste-box').hidden = true;
     toast('Filled in ' + got.ingredients.length + (got.ingredients.length === 1 ? ' ingredient' : ' ingredients') + '. Check the amounts and aisles.');
   });
-  $('post-cancel').addEventListener('click', function () { show(postFrom); });
+  $('post-cancel').addEventListener('click', function () { if (madeFor) { madeFor = null; show('frecipe'); return; } show(postFrom); });
+  tagSuggest($('post-desc'), $('post-sugg'));
   $('fr-back').addEventListener('click', function () { fview = null; show(frBack === 'user' && !userId ? 'feed' : frBack); });
   $('ep-cancel').addEventListener('click', function () { show('profile'); window.scrollTo(0, 0); });
   $('ep-bio').addEventListener('input', epCount);
@@ -5032,6 +5450,19 @@ var babyEd = $('ed-kind').value === 'baby';
   });
   $('post-form').addEventListener('submit', function (ev) {
     ev.preventDefault();
+    if (madeFor && feedApi) {
+      var mp = madeFor.post, mtags = $('post-tags').value.split(/[,\n]/).map(cleanTag).filter(Boolean).slice(0, 12);
+      if (!postPhoto) { toast('Add a photo of what you made first.'); return; }
+      var mbtn = $('post-submit'); mbtn.disabled = true; mbtn.textContent = 'Posting…';
+      var mfin = function () { mbtn.disabled = false; mbtn.textContent = 'Post'; };
+      shrinkData(postPhoto, 360, 40000, function (thumb) {
+        var rec = madeFor.recipe ? plain(madeFor.recipe) : { name: mp.title, ingredients: [], notes: '' };
+        feedApi.create({ title: mp.title, description: $('post-desc').value.trim().slice(0, 280), tags: mtags, price: 0, kind: mp.kind, photo: postPhoto, thumb: thumb, credit: mp.credit || (mp.owner !== uid ? mp.owner : null), madeFrom: mp.id }, rec).then(function () {
+          mfin(); madeFor = null; postPhoto = null; show('feed'); feedState = 'loading'; renderFeed(); loadFeed(); toast('Posted! 📸');
+        }, function () { mfin(); toast("Couldn't post that. Check your connection and try again."); });
+      });
+      return;
+    }
     var r = S.recipes[$('post-recipe').value];
     if (!r || !feedApi) return;
     var seen = {}, tags = $('post-tags').value.split(/[,\n]/).map(cleanTag).filter(function (t) { if (!t || seen[t]) return false; seen[t] = true; return true; }).slice(0, 12);
@@ -5439,10 +5870,10 @@ var babyEd = $('ed-kind').value === 'baby';
     'tab-feed': 'get a home feed of the people you follow', 'tab-list': 'build your shopping list', 'new-post': 'share your recipes and meals',
     'open-settings': 'set your prices, store and settings', 'cook-edit': 'save this recipe to your recipes', 'save-post': 'steal this recipe and save it to your recipes',
     like: 'like posts', toggle: 'plan your week and get a shopping list', 'post-week': 'plan your week and get a shopping list', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
-    'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals'
+    'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals', 'made-it': 'post a photo of what you made', 'swipe-like': 'like posts', 'swipe-save': 'save recipes', 'cm-reply': 'comment', 'cm-del': 'comment', 'share-week': 'plan and share your week'
   };
-  var GUEST_OK = { 'shop-open': 1, 'shop-back': 1, 'user-tab': 1, 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
-  var GUEST_OK_IDS = { 'tab-explore': 1, 'cook-back': 1, 'fr-back': 1, 'user-back': 1, 'join-dlg-close': 1, 'zoom-close': 1, 'feed-search': 1 };
+  var GUEST_OK = { 'tag-user': 1, comments: 1, 'swipe-open-feed': 1, 'swipe-close': 1, 'swipe-open': 1, 'swipe-user': 1, 'swipe-cm': 1, 'share-post': 1, 'swipe-share': 1, 'shop-open': 1, 'shop-back': 1, 'user-tab': 1, 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
+  var GUEST_OK_IDS = { 'share-close': 1, 'share-go': 1, 'share-save': 1, 'tab-explore': 1, 'cook-back': 1, 'fr-back': 1, 'user-back': 1, 'join-dlg-close': 1, 'zoom-close': 1, 'feed-search': 1 };
   function askJoin(key) {
     $('join-dlg-why').textContent = 'Make a free account to ' + (JOIN_WHY[key] || 'use this') + '. It only takes a minute.';
     try { if (!$('join-dlg').open) $('join-dlg').showModal(); } catch (e) {}
@@ -5456,7 +5887,7 @@ var babyEd = $('ed-kind').value === 'baby';
     var j = ev.target.closest && ev.target.closest('[data-join]');
     if (j) { ev.preventDefault(); openAuth(j.dataset.join); return; }
     var el = ev.target.closest && ev.target.closest('button, a, input[type=checkbox], input[type=file], label');
-    if (!el || el.closest('#auth, #view-join, #view-terms, #view-guide, #join-dlg, #step-tip, #zoom')) return;
+    if (!el || el.closest('#auth, #view-join, #view-terms, #view-guide, #join-dlg, #step-tip, #zoom, #share-dlg')) return;
     if (el.tagName === 'A' && !el.dataset.act) return;
     var id = el.id, act = el.dataset.act;
     if (id === 'tab-profile') { ev.preventDefault(); ev.stopPropagation(); show('join'); window.scrollTo(0, 0); return; }
