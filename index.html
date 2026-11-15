@@ -107,6 +107,18 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .share-dlg { border: 0; border-radius: 18px; padding: 16px; width: min(92vw, 420px); max-height: 92vh; }
 .share-dlg::backdrop { background: rgba(0, 0, 0, 0.5); }
 .share-dlg img { width: 100%; max-width: 100%; border-radius: 12px; display: block; max-height: 60vh; object-fit: contain; background: var(--soft); }
+/* quick ways to fill in a recipe */
+.quick-fill { border: 2px solid var(--accent); background: var(--accent-tint); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.qf-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.qf-head strong { font-size: 1.05rem; }
+.qf-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.qf-tab { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px 6px; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; }
+.qf-tab[aria-selected="true"] { border-color: var(--accent); background: var(--accent); color: #fff; }
+.qf-pane textarea { min-height: 130px; }
+#qf-msg:empty { display: none; }
+.mic-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.step-quick { display: flex; flex-direction: column; gap: 8px; }
+#ed-steps-text { min-height: 140px; }
 </style>
 <title>Fed Up</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Instrument+Sans:wght@400;500;600;700&display=swap">
@@ -1007,6 +1019,36 @@ ul.menu li + li { border-top: 1px solid var(--line); }
       <button class="btn quiet" id="ed-cancel" type="button">Cancel</button>
     </div>
     <form id="editor-form" class="view" autocomplete="off">
+      <div class="quick-fill" id="qf">
+        <div class="qf-head"><strong>Fill it in fast</strong><span class="small muted">or type it all below</span></div>
+        <div class="qf-tabs" role="tablist" aria-label="Ways to add this recipe">
+          <button type="button" role="tab" class="qf-tab" data-qf="link" aria-selected="false" id="qf-tab-link">🔗 Link</button>
+          <button type="button" role="tab" class="qf-tab" data-qf="paste" aria-selected="false">📋 Paste</button>
+          <button type="button" role="tab" class="qf-tab" data-qf="talk" aria-selected="false">🎙️ Talk</button>
+        </div>
+        <div class="qf-pane stack" id="qf-link" hidden>
+          <label class="f" for="qf-url">Recipe website link
+            <input type="url" id="qf-url" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://www.allrecipes.com/recipe/…">
+          </label>
+          <p class="small muted" style="margin-top:-6px">Works with most recipe websites and food blogs. For TikTok or Instagram, copy the caption and use Paste instead.</p>
+          <div><button class="btn primary" type="button" id="qf-link-go">Get the recipe</button></div>
+        </div>
+        <div class="qf-pane stack" id="qf-paste" hidden>
+          <label class="f" for="ed-paste">Paste the recipe
+            <textarea id="ed-paste" placeholder="Copy a recipe from a website, a TikTok caption, a note or a text and paste it here. Emojis and bullets are fine."></textarea>
+          </label>
+          <div><button class="btn primary" id="ed-paste-go" type="button">Fill it in for me</button></div>
+        </div>
+        <div class="qf-pane stack" id="qf-talk" hidden>
+          <p class="small" id="qf-talk-how">Say your ingredients with their amounts, like <em>"two pounds of chicken thighs, a can of black beans, one cup of rice."</em> Then say <strong>"steps"</strong> and tell how to make it.</p>
+          <div class="row" style="flex-wrap:wrap"><button class="btn mic-btn" type="button" id="qf-mic" hidden>🎙️ Tap to talk</button><span class="small muted" id="qf-mic-note"></span></div>
+          <label class="f" for="qf-said">What you said
+            <textarea id="qf-said" placeholder="Tap the 🎙️ on your keyboard and start talking…"></textarea>
+          </label>
+          <div><button class="btn primary" id="qf-talk-go" type="button">Fill it in for me</button></div>
+        </div>
+        <p class="small" id="qf-msg" role="status"></p>
+      </div>
       <div class="photo-edit">
         <div class="big" id="ed-photo-preview">No photo</div>
         <div class="stack" style="gap:8px">
@@ -1065,15 +1107,6 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         </label>
       </div>
       <div class="stack" style="gap:8px">
-        <div class="row between"><button class="btn small" id="ed-paste-toggle" type="button">Paste a recipe instead of typing</button></div>
-        <div class="stack" id="ed-paste-box" style="gap:8px" hidden>
-          <label class="f" for="ed-paste">Paste the recipe text
-            <textarea id="ed-paste" placeholder="Copy a recipe from a website, a note or a message and paste it here. Lines that start with an amount become ingredients."></textarea>
-          </label>
-          <div><button class="btn primary" id="ed-paste-go" type="button">Fill in from this text</button></div>
-        </div>
-      </div>
-      <div class="stack" style="gap:8px">
         <div class="small" style="font-weight:600">Ingredients</div>
         <p class="small muted">Start typing and pick a name from the list, so the same item always has the same name and your shopping list adds it up as one line. Amounts are for the servings above. Leave the unit blank to count packages: ½ means half of one, and halves from different meals add up before the list rounds up to what you buy.</p>
         <ul class="plain ings" id="ed-ings"></ul>
@@ -1096,6 +1129,15 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         <ol class="plain step-edit" id="ed-steps"></ol>
         <div class="step-ings" id="ed-step-ings" hidden></div>
         <div><button class="btn small" id="ed-step-add" type="button">+ Add step</button></div>
+        <div class="step-quick">
+          <div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn small" id="ed-steps-bulk-toggle" type="button">📋 Paste or say all the steps at once</button></div>
+          <div class="stack" id="ed-steps-bulk" style="gap:8px" hidden>
+            <textarea id="ed-steps-text" placeholder="Type, paste or say every step in one go. Put each step on its own line, or just write it all out and Fed Up splits it into steps."></textarea>
+            <div><button class="btn primary small" id="ed-steps-split" type="button">Split into steps</button></div>
+          </div>
+          <div class="small muted" style="margin-top:4px">Tap to add a common step, then change the details:</div>
+          <div class="chips" id="ed-step-starters"></div>
+        </div>
         <textarea id="ed-notes" hidden></textarea>
       </div>
       <label class="check" for="ed-share" id="ed-share-wrap" hidden>
@@ -1932,6 +1974,13 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     reports: function () { return sb.from('post_reports').select('id,post_id,reason,created_at').limit(1000).then(function (r) { check(r); return r.data || []; }); },
     clearReports: function (pid) { return sb.from('post_reports').delete().eq('post_id', pid).then(check); },
     /* Shop My Kitchen: Head chefs share kitchen products with their own links (the database checks the 100 points) */
+    recipeFromLink: function (url) {
+      return sb.functions.invoke('recipe-from-link', { body: { url: url } }).then(function (r) {
+        if (!r.error) return r.data;
+        var ctx = r.error.context;
+        return (ctx && ctx.json ? ctx.json().catch(function () { return {}; }) : Promise.resolve({})).then(function (b) { throw { code: (b && b.error) || 'failed' }; });
+      });
+    },
     /* comments, notifications */
     comments: function (pid) { return sb.from('post_comments').select('id,post_id,owner,body,created_at').eq('post_id', pid).order('created_at', { ascending: true }).limit(300).then(function (r) { check(r); return r.data || []; }); },
     addComment: function (pid, body) { return sb.from('post_comments').insert({ post_id: pid, owner: uid, body: String(body).trim().slice(0, 500) }).select('id,post_id,owner,body,created_at').then(function (r) { check(r); return (r.data || [])[0]; }); },
@@ -2579,33 +2628,98 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   }
   function pickedIds() { return Object.keys(ALL).filter(function (id) { return portions(id) > 0; }); }
 
-  /* turn pasted recipe text into a name, ingredient rows and steps */
-  var UNIT_RE = /^(cups?|c\.|tablespoons?|tbsps?\.?|tbs\.?|teaspoons?|tsps?\.?|ounces?|oz\.?|pounds?|lbs?\.?|grams?|g|kg|ml|l|liters?|litres?|cans?|jars?|cloves?|bunch(?:es)?|packages?|pkgs?\.?|sticks?|slices?|pinch(?:es)?|dash(?:es)?|heads?|bags?|bottles?|box(?:es)?)\b\.?\s*(?:of\s+)?(.*)$/i;
+  /* turn pasted, spoken or website recipe text into a name, ingredient rows and steps */
+  var UNIT_RE = /^(cups?|c\.|tablespoons?|tbsps?\.?|tbs\.?|teaspoons?|tsps?\.?|ounces?|oz\.?|pounds?|lbs?\.?|grams?|g|kg|ml|l|liters?|litres?|cans?|jars?|cloves?|bunch(?:es)?|packages?|pkgs?\.?|packets?|envelopes?|containers?|sticks?|slices?|pieces?|pinch(?:es)?|dash(?:es)?|handfuls?|heads?|bags?|bottles?|box(?:es)?|dozen|quarts?|qts?\.?|pints?|pts?\.?|gallons?|gal\.?|fl\.? ?oz\.?|sprigs?|stalks?|leaves|leaf)\b\.?\s*(?:of\s+)?(.*)$/i;
   var QTY_RE = /^((?:\d+\s+)?\d+\s*\/\s*\d+|\d+\s*[½⅓⅔¼¾⅛⅜⅝⅞]|[½⅓⅔¼¾⅛⅜⅝⅞]|\d*\.?\d+)(?:\s*(?:-|–|to)\s*[\d.\/½⅓⅔¼¾⅛⅜⅝⅞]+)?\s*(.*)$/;
+  var WORD_NUM = { a: '1', an: '1', one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9', ten: '10', eleven: '11', twelve: '12', half: '1/2', quarter: '1/4' };
+  /* "two and a half cups" -> "2 1/2 cups", "a couple of" -> "2", "half a cup" -> "1/2 cup" */
+  function wordAmount(line) {
+    var l = line;
+    l = l.replace(/^(a\s+)?couple\s+(of\s+)?/i, '2 ').replace(/^(a\s+)?few\s+/i, '3 ').replace(/^(a\s+)?dozen\s+(of\s+)?/i, '12 ');
+    l = l.replace(/^half\s+(a|an)\s+/i, '1/2 ').replace(/^(a|one)\s+(half|quarter)\s+(of\s+)?(a|an)?\s*/i, function (m, x, h) { return (h.toLowerCase() === 'half' ? '1/2' : '1/4') + ' '; });
+    l = l.replace(/^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|an?)\s+and\s+(a\s+)?(half|quarter)\s+/i, function (m, w, a, h) { return WORD_NUM[w.toLowerCase()] + ' ' + (h.toLowerCase() === 'half' ? '1/2' : '1/4') + ' '; });
+    l = l.replace(/^(\d+)\s+and\s+(a\s+)?(half|quarter)\s+/i, function (m, d, a, h) { return d + ' ' + (h.toLowerCase() === 'half' ? '1/2' : '1/4') + ' '; });
+    l = l.replace(/^(a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half|quarter)\s+(?=\S)/i, function (m, w) {
+      if (/^an?$/i.test(w) && !UNIT_RE.test(l.slice(m.length))) return m; /* "a pinch of salt" yes, "A simple dinner" no */
+      return WORD_NUM[w.toLowerCase()] + ' ';
+    });
+    return l;
+  }
+  var DECOR_RE = /^[\s\-*•▢☐□·▪▫◦○●►▶➤➔→➡⇒✓✔✅☑❤♥★☆✨🔸🔹🔶🔷👉👇⬇️‍️]+/;
+  var EMOJI_RE = null, EMOJI_END = null;
+  try { EMOJI_RE = new RegExp('^(?:[\\p{Extended_Pictographic}\\u200d\\uFE0F]\\s*)+', 'u'); EMOJI_END = new RegExp('(?:\\s*[\\p{Extended_Pictographic}\\u200d\\uFE0F])+\\s*$', 'u'); } catch (e) {}
+  function stripEnd(s) { var o = String(s); if (EMOJI_END) o = o.replace(EMOJI_END, ''); return o.replace(/[\s:✨⭐★☆❤♥!]+$/, '').trim(); }
+  function stripDecor(s) {
+    var out = String(s).replace(DECOR_RE, '');
+    try { out = out.replace(/^(?:[\p{Extended_Pictographic}‍️]\s*)+/u, ''); } catch (e) {}
+    return out.replace(DECOR_RE, '').trim();
+  }
   function parseRecipeText(text) {
     var out = { name: '', ingredients: [], notes: [] }, where = 'auto', idx = libIndex();
-    String(text || '').split(/\r?\n/).forEach(function (raw) {
-      var line = raw.replace(/^[\s\-*•▢☐□·]+/, '').trim();
-      if (!line) return;
-      if (/^(ingredients?|what you(?:'ll)? need|you will need)\b.{0,12}$/i.test(line)) { where = 'ing'; return; }
-      if (/^(instructions?|directions?|method|steps?|preparation|how to make( it)?)\b.{0,12}$/i.test(line)) { where = 'steps'; return; }
-      if (where === 'steps') { out.notes.push(line); return; }
+    var src = String(text || '').replace(/\r/g, '');
+    /* spoken or one-line recipes: start a new section where someone says "steps" or "ingredients" */
+    var cap = function (w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); };
+    src = src.replace(/([.,;!])\s+(ingredients?|steps|instructions|directions)\s*[:.,;!-]?\s+/gi, function (m, p, w) { return p + '\n' + cap(w) + '\n'; })
+      .replace(/(^|\n)[ \t]*(ingredients?|steps|instructions|directions)[ \t]*[:.,;!-][ \t]*(?=\S)/gi, function (m, p, w) { return p + cap(w) + '\n'; })
+      .replace(/^\s*(ingredients?)\s+(?=\S)/i, function (m, w) { return cap(w) + '\n'; });
+    var lines = [];
+    src.split(/\n/).forEach(function (raw) { lines.push(raw); });
+    var addIng = function (line) {
+      line = wordAmount(line.replace(/^(and|plus|also|then)\s+/i, ''));
       var m = QTY_RE.exec(line);
       if (m && /^[.)]\s/.test(m[2])) m = null; /* "1. Preheat the oven" is a step, not an amount */
       if (m && m[2]) {
-        var rest = m[2], unit = '', u = UNIT_RE.exec(rest);
+        var rest = m[2].replace(/^\((?:[^)]*)\)\s*/, function (p) { return /\d/.test(p) ? '' : p; }), unit = '', u = UNIT_RE.exec(rest);
         if (u && u[2]) { unit = u[1].replace(/\.$/, '').toLowerCase(); rest = u[2]; }
-        var name = rest.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim();
+        rest = rest.replace(/^of\s+/i, '');
+        var name = rest.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+(to taste|or more|optional)$/i, '').replace(/[.;!]+$/, '').replace(/\s+/g, ' ').trim();
+        name = stripEnd(name);
         if (name && name.length <= 60) {
           var lid = idx[norm(name)];
-          out.ingredients.push({ qty: m[1].replace(/\s+/g, ' ').replace(/\s*\/\s*/, '/').replace(/(\d)([½⅓⅔¼¾⅛⅜⅝⅞])/, '$1 $2'), unit: unit, name: name.charAt(0).toUpperCase() + name.slice(1), aisle: lid ? S.ings[lid].aisle : 'Other' });
-          return;
+          out.ingredients.push({ qty: m[1].replace(/\s+/g, ' ').replace(/\s*\/\s*/, '/').replace(/(\d)([½⅓⅔¼¾⅛⅜⅝⅞])/, '$1 $2'), unit: unit, name: lid ? S.ings[lid].name : name.charAt(0).toUpperCase() + name.slice(1), aisle: lid ? S.ings[lid].aisle : 'Other' });
+          return true;
         }
       }
-      if (where === 'ing' && line.length <= 50) { var l2 = idx[norm(line)]; out.ingredients.push({ qty: '', unit: '', name: line, aisle: l2 ? S.ings[l2].aisle : 'Other' }); return; }
-      if (!out.name && !out.ingredients.length && !out.notes.length && line.length <= 70) { out.name = line; return; }
+      return false;
+    };
+    var addPlain = function (line) {
+      line = stripEnd(line.replace(/[.;!]+$/, '').trim());
+      if (!line || line.length > 50) return false;
+      var l2 = idx[norm(line)];
+      out.ingredients.push({ qty: '', unit: '', name: l2 ? S.ings[l2].name : line.charAt(0).toUpperCase() + line.slice(1), aisle: l2 ? S.ings[l2].aisle : 'Other' });
+      return true;
+    };
+    lines.forEach(function (raw) {
+      var line = stripDecor(raw);
+      if (!line) return;
+      if (/^(#[\w-]+\s*)+$/.test(line)) return; /* hashtags from a caption */
+      if (/^(recipe|full recipe|ingredients|steps) (below|👇)|^(follow|save this|like and|comment|link in bio|tag a friend)\b/i.test(line) && line.length < 60) return;
+      var head = stripEnd(line);
+      if (/^(ingredients?|what you(?:'ll)? need|you will need|you'll need|shopping list)$/i.test(head)) { where = 'ing'; return; }
+      if (/^(instructions?|directions?|method|steps?|preparation|how to make( it)?|how to)$/i.test(head)) { where = 'steps'; return; }
+      var inline = /^(ingredients?|you(?:'ll)? need)\s*:\s*(.+)$/i.exec(line);
+      if (inline) { where = 'ing'; line = inline[2]; }
+      if (where === 'steps') {
+        if (line.length > 160) splitBulkSteps(line).forEach(function (s) { out.notes.push(s); });
+        else out.notes.push(line);
+        return;
+      }
+      if (where === 'ing' && /:$/.test(line) && line.length <= 40 && !QTY_RE.test(line)) return; /* "For the sauce:" */
+      /* a comma list on one line: "2 lb chicken, 1 can beans, 1 cup rice" or what someone said out loud */
+      var bits = line.split(/\s*,\s*|\s*;\s*|\s+and\s+(?=(?:\d|[½⅓⅔¼¾]|a |an |one |two |three |four |five |six |half |a couple))/i).map(function (b) { return b.trim(); }).filter(Boolean);
+      var amountLike = function (b) { return QTY_RE.test(wordAmount(b.replace(/^(and|plus)\s+/i, ''))) && !/^\d+\s*[.)]\s/.test(b); };
+      if (bits.length >= 2 && (where === 'ing' || amountLike(bits[0])) && bits.filter(amountLike).length >= Math.ceil(bits.length / 2) && line.length < 600) {
+        bits.forEach(function (b) { if (!addIng(b) && where === 'ing') addPlain(b); });
+        return;
+      }
+      if (addIng(line)) return;
+      if (where === 'ing' && addPlain(line)) return;
+      if (!out.name && !out.ingredients.length && !out.notes.length && line.length <= 70) { out.name = stripEnd(line).replace(/[!.]+$/, '') || line; return; }
       out.notes.push(line);
     });
+    /* everything said or pasted as one long paragraph: split it into steps */
+    if (out.notes.length === 1 && /[.!?]\s+\S/.test(out.notes[0])) out.notes = splitBulkSteps(out.notes[0]);
+    out.notes = out.notes.map(function (n) { return n.charAt(0).toUpperCase() + n.slice(1); });
     return out;
   }
 
@@ -4918,7 +5032,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('ed-servings').value = draft.servings > 0 ? draft.servings : '';
     $('ed-mins').value = draft.mins > 0 ? draft.mins : ''; $('ed-method').value = METHODS.indexOf(draft.method) >= 0 ? draft.method : '';
     $('ed-cal').value = draft.cal > 0 ? draft.cal : ''; $('ed-protein').value = draft.protein > 0 ? draft.protein : '';
-    $('ed-paste').value = ''; $('ed-paste-box').hidden = true; draft.cats = r ? catsOf(r) : []; draft.sides = r && Array.isArray(r.sides) ? r.sides.slice() : []; renderEdCats();
+    $('ed-paste').value = ''; $('qf-said').value = ''; $('qf-url').value = ''; qfOn = 'x'; qfShow('x'); $('ed-steps-text').value = ''; $('ed-steps-bulk').hidden = true; draft.cats = r ? catsOf(r) : []; draft.sides = r && Array.isArray(r.sides) ? r.sides.slice() : []; renderEdCats();
     draft.good = r ? goodOf(r) : []; draft.goodTouched = !!(r && Array.isArray(r.goodFor)); renderEdGood();
     $('ed-kind').value = r ? (isBaby(r) ? 'baby' : 'adult') : mode; $('ed-stage').value = r && STAGES.indexOf(r.stage) >= 0 ? r.stage : ''; syncKind();
     $('ed-delete').hidden = !r;
@@ -5370,17 +5484,129 @@ var babyEd = $('ed-kind').value === 'baby';
     S.tracker.foods.push({ id: newId(), name: name.slice(0, 60), date: toDate($('tk-date').value) ? $('tk-date').value : today(), how: $('tk-how').value, react: $('tk-react').value === 'yes', note: $('tk-note').value.trim().slice(0, 200) });
     $('tk-name').value = ''; $('tk-note').value = ''; $('tk-how').value = ''; $('tk-react').value = ''; save('tracker'); render(); toast('Logged.');
   });
-  $('ed-paste-toggle').addEventListener('click', function () { $('ed-paste-box').hidden = !$('ed-paste-box').hidden; if (!$('ed-paste-box').hidden) $('ed-paste').focus(); });
-  $('ed-paste-go').addEventListener('click', function () {
-    var got = parseRecipeText($('ed-paste').value);
-    if (!got.ingredients.length && !got.notes.length) { toast("Couldn't find a recipe in that text. Paste the ingredient list with amounts."); return; }
-    readIngs();
-    draft.ingredients = draft.ingredients.filter(function (g) { return g.name; }).concat(got.ingredients);
+  /* ---------- fill in a recipe fast: from a link, pasted text or talking ---------- */
+  var qfOn = '';
+  function qfShow(which) {
+    qfOn = qfOn === which ? '' : which;
+    Array.prototype.forEach.call(document.querySelectorAll('.qf-tab'), function (b) { b.setAttribute('aria-selected', String(b.dataset.qf === qfOn)); });
+    ['link', 'paste', 'talk'].forEach(function (k) { $('qf-' + k).hidden = qfOn !== k; });
+    qfMsg('');
+    var focus = { link: 'qf-url', paste: 'ed-paste', talk: 'qf-said' }[qfOn];
+    if (focus) setTimeout(function () { try { $(focus).focus(); } catch (e) {} }, 30);
+  }
+  function qfMsg(t, bad) { $('qf-msg').textContent = t; $('qf-msg').style.color = bad ? 'var(--danger, #B0124F)' : ''; }
+  /* put what we found into the form; returns how many ingredients were added */
+  function fillRecipe(got) {
+    readIngs(); syncSteps();
+    var keep = draft.ingredients.filter(function (g) { return g.name; });
+    draft.ingredients = keep.concat(got.ingredients || []);
     if (!draft.ingredients.length) draft.ingredients = [blankIng()];
     if (got.name && !$('ed-name').value.trim()) $('ed-name').value = got.name;
-    if (got.notes.length) $('ed-notes').value = joinSteps(splitSteps($('ed-notes').value).concat(got.notes));
-    renderIngs(); renderEdSteps(); $('ed-paste').value = ''; $('ed-paste-box').hidden = true;
-    toast('Filled in ' + got.ingredients.length + (got.ingredients.length === 1 ? ' ingredient' : ' ingredients') + '. Check the amounts and aisles.');
+    if (got.servings > 0 && !$('ed-servings').value.trim()) $('ed-servings').value = got.servings;
+    if (got.mins > 0 && !$('ed-mins').value.trim()) $('ed-mins').value = got.mins;
+    if (got.notes && got.notes.length) $('ed-notes').value = joinSteps(splitSteps($('ed-notes').value).concat(got.notes));
+    renderIngs(); renderEdSteps();
+    return (got.ingredients || []).length;
+  }
+  function qfDone(n, steps, extra) {
+    qfMsg('');
+    toast('Filled in ' + n + (n === 1 ? ' ingredient' : ' ingredients') + (steps ? ' and ' + steps + (steps === 1 ? ' step' : ' steps') : '') + '. Check the amounts, then save.' + (extra || ''));
+    qfOn = 'x'; qfShow('x');
+    var ing = $('ed-ings'); if (ing) ing.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  function fillFromText(text, emptyMsg) {
+    var got = parseRecipeText(text);
+    if (!got.ingredients.length && !got.notes.length) { qfMsg(emptyMsg, true); return false; }
+    var n = fillRecipe(got); qfDone(n, got.notes.length);
+    return true;
+  }
+  $('qf-url').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); $('qf-link-go').click(); } });
+  $('qf').addEventListener('click', function (ev) { var b = ev.target.closest('[data-qf]'); if (b) qfShow(b.dataset.qf); });
+  $('ed-paste-go').addEventListener('click', function () {
+    if (fillFromText($('ed-paste').value, "Couldn't find a recipe in that. Make sure it has the ingredients with their amounts.")) $('ed-paste').value = '';
+  });
+  $('qf-talk-go').addEventListener('click', function () {
+    stopMic();
+    if (fillFromText($('qf-said').value, 'Say or type your ingredients first, like "two cups of rice."')) $('qf-said').value = '';
+  });
+  $('qf-link-go').addEventListener('click', function () {
+    var url = $('qf-url').value.trim();
+    if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url;
+    if (!/^https?:\/\/[^\s]+\.[^\s]+/i.test(url)) { qfMsg('Paste the full link to the recipe page.', true); return; }
+    if (!feedApi || !feedApi.recipeFromLink) { qfMsg('Getting recipes from links needs you to be signed in.', true); return; }
+    var btn = $('qf-link-go'); btn.disabled = true; btn.textContent = 'Getting it…'; qfMsg('This can take a few seconds.');
+    feedApi.recipeFromLink(url).then(function (r) {
+      btn.disabled = false; btn.textContent = 'Get the recipe';
+      var got = parseRecipeText('Ingredients\n' + (r.ingredients || []).join('\n'));
+      got.name = r.name || ''; got.notes = (r.steps || []).slice(0, 40); got.servings = r.servings; got.mins = r.mins;
+      if (!got.ingredients.length) { qfMsg("That page didn't list ingredients Fed Up can read. Copy the recipe and use Paste instead.", true); return; }
+      var n = fillRecipe(got);
+      var photoNote = '';
+      if (r.image && !draft.photo) { shrinkData(r.image, 800, 120000, function (d) { if (!draft || draft.photo) return; draft.photo = d; draft.photoChanged = true; edPhotoPreview(); }); photoNote = ' The photo came too.'; }
+      $('qf-url').value = '';
+      qfDone(n, got.notes.length, photoNote + (r.source ? ' From ' + r.source + '.' : ''));
+    }, function (e) {
+      btn.disabled = false; btn.textContent = 'Get the recipe';
+      var c = e && e.code;
+      qfMsg(c === 'social_link' ? "TikTok, Instagram, Facebook and YouTube don't share their recipes with other apps. Copy the caption and use 📋 Paste instead."
+        : c === 'no_recipe' ? "Couldn't find a recipe on that page. Copy the recipe and use 📋 Paste instead."
+        : c === 'site_blocked' ? "That website wouldn't let Fed Up read it. Copy the recipe and use 📋 Paste instead."
+        : c === 'bad_link' ? 'That link doesn\'t look right. Copy it again from your browser.'
+        : "Couldn't open that page. Check your connection, or copy the recipe and use 📋 Paste instead.", true);
+    });
+  });
+  /* talking: use the phone's own speech typing when the browser offers it */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, micBase = '';
+  function stopMic() { if (rec) { try { rec.stop(); } catch (e) {} } }
+  if (SR) {
+    $('qf-mic').hidden = false; $('qf-said').placeholder = 'Tap "Tap to talk" or the 🎙️ on your keyboard and start talking…';
+    $('qf-mic').addEventListener('click', function () {
+      if (rec) { stopMic(); return; }
+      try {
+        rec = new SR(); rec.lang = 'en-US'; rec.continuous = true; rec.interimResults = true;
+        micBase = $('qf-said').value.trim();
+        rec.onresult = function (ev) {
+          var txt = ''; for (var i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript + ' ';
+          $('qf-said').value = (micBase ? micBase + ' ' : '') + txt.trim();
+        };
+        rec.onend = function () { rec = null; $('qf-mic').classList.remove('on'); $('qf-mic').textContent = '🎙️ Tap to talk'; $('qf-mic-note').textContent = ''; };
+        rec.onerror = function (e) { $('qf-mic-note').textContent = e && e.error === 'not-allowed' ? 'Allow the microphone in your settings, or use the 🎙️ on your keyboard.' : ''; };
+        rec.start(); $('qf-mic').classList.add('on'); $('qf-mic').textContent = '⏹ Stop'; $('qf-mic-note').textContent = 'Listening…';
+      } catch (e) { rec = null; $('qf-mic-note').textContent = 'Use the 🎙️ on your keyboard instead.'; }
+    });
+  }
+  /* steps: all at once, or tap a common one */
+  var STEP_STARTERS = ['Preheat the oven to 400°F.', 'Bring a large pot of salted water to a boil.', 'Heat a little oil in a pan over medium heat.', 'Season with salt and pepper.', 'Simmer for 10 minutes, stirring now and then.', 'Bake for 25 minutes, until golden.', 'Let it rest for 5 minutes before serving.', 'Serve and enjoy!'];
+  function splitBulkSteps(text) {
+    var t = String(text || '').replace(/\r/g, '').trim(); if (!t) return [];
+    var lines = t.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.length === 1 || splitSteps(t).length === 1) {
+      /* one long paragraph: split it into sentences, keeping very short ones with the next */
+      var sent = t.replace(/\s+/g, ' ').match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) || [t], out = [];
+      sent.map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (s) {
+        s = s.replace(/^(then|and then|next|after that|now|finally|lastly)[,\s]+/i, ''); s = s.charAt(0).toUpperCase() + s.slice(1);
+        if (s.length < 20 && out.length) out[out.length - 1] += ' ' + s; else out.push(s);
+      });
+      return out;
+    }
+    return splitSteps(t);
+  }
+  function addStepText(txt) {
+    syncSteps();
+    var steps = splitSteps($('ed-notes').value);
+    steps.push(txt);
+    $('ed-notes').value = joinSteps(steps); renderEdSteps(true);
+  }
+  $('ed-step-starters').innerHTML = STEP_STARTERS.map(function (s) { return '<button class="chip" type="button" data-starter="' + esc(s) + '">+ ' + esc(s.replace(/[.!]$/, '')) + '</button>'; }).join('');
+  $('ed-step-starters').addEventListener('click', function (ev) { var b = ev.target.closest('[data-starter]'); if (b) addStepText(b.dataset.starter); });
+  $('ed-steps-bulk-toggle').addEventListener('click', function () { $('ed-steps-bulk').hidden = !$('ed-steps-bulk').hidden; if (!$('ed-steps-bulk').hidden) $('ed-steps-text').focus(); });
+  $('ed-steps-split').addEventListener('click', function () {
+    var parts = splitBulkSteps($('ed-steps-text').value);
+    if (!parts.length) { toast('Type, paste or say your steps first.'); return; }
+    syncSteps();
+    $('ed-notes').value = joinSteps(splitSteps($('ed-notes').value).concat(parts));
+    renderEdSteps(); $('ed-steps-text').value = ''; $('ed-steps-bulk').hidden = true;
+    toast('Added ' + parts.length + (parts.length === 1 ? ' step' : ' steps') + '. Tap any step to change it.');
   });
   $('post-cancel').addEventListener('click', function () { if (madeFor) { madeFor = null; show('frecipe'); return; } show(postFrom); });
   tagSuggest($('post-desc'), $('post-sugg'));
