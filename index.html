@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261115113651">
+<meta name="fedup-version" content="20261116211335">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -119,6 +119,42 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .mic-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 .step-quick { display: flex; flex-direction: column; gap: 8px; }
 #ed-steps-text { min-height: 140px; }
+/* ---------- Start cooking: grab, then cook, one step at a time ---------- */
+.start-cook { width: 100%; font-size: 1.08rem; padding: 14px; box-shadow: 0 6px 16px rgba(255, 31, 143, 0.28); }
+.cookmode { position: fixed; inset: 0; z-index: 70; background: var(--bg, #fff); display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.cookmode[hidden] { display: none; }
+.cm-top { display: flex; align-items: center; gap: 12px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+.cm-x { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--accent-tint); font-size: 1.6rem; line-height: 1; color: var(--ink); cursor: pointer; flex: none; }
+.cm-where { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cm-where strong { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-tpill { background: var(--accent); color: #fff; border-radius: 999px; padding: 6px 12px; font-weight: 700; font-variant-numeric: tabular-nums; flex: none; }
+.cm-tpill.ring { animation: cmring 0.6s ease-in-out infinite alternate; }
+@keyframes cmring { from { transform: scale(1); } to { transform: scale(1.08); } }
+.cm-prog { height: 6px; background: var(--line); margin: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); border-radius: 9px; overflow: hidden; }
+.cm-prog i { display: block; height: 100%; background: var(--accent); transition: width 0.25s ease; }
+.cm-body { flex: 1; overflow-y: auto; padding: 18px max(16px, env(safe-area-inset-right, 0px)) 18px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; max-width: 640px; width: 100%; margin: 0 auto; }
+.cm-h { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1.7rem; color: var(--accent); line-height: 1.15; }
+.cm-sub { margin: -8px 0 0; color: var(--muted); }
+.cm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cm-item { width: 100%; display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center; text-align: left; border: 0; border-radius: 14px; padding: 14px; background: var(--accent-tint); font: inherit; font-size: 1.1rem; color: var(--ink); cursor: pointer; }
+.cm-item .bx { width: 28px; height: 28px; border-radius: 8px; border: 2px solid #CDBFC6; background: #fff; display: grid; place-items: center; font-weight: 700; }
+.cm-item .amt { font-weight: 700; color: var(--accent); white-space: nowrap; }
+.cm-item[aria-pressed="true"] { background: #E6F4EC; color: #1F7A4A; }
+.cm-item[aria-pressed="true"] .bx { background: #1F7A4A; border-color: #1F7A4A; color: #fff; }
+.cm-item[aria-pressed="true"] .nm { text-decoration: line-through; }
+.cm-step { font-size: 1.45rem; line-height: 1.45; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+.cm-step b.scaled { color: var(--accent); }
+.cm-label { font-weight: 700; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.85rem; }
+.cm-timer { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid var(--accent); border-radius: 16px; padding: 12px 14px; }
+.cm-timer .tm { font-family: var(--display); font-size: 2rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.cm-timer .lb { font-weight: 700; }
+.cm-nav { display: grid; grid-template-columns: 1fr 1.7fr; gap: 10px; margin-top: auto; padding-top: 8px; }
+.cm-nav.one { grid-template-columns: 1fr; }
+.cm-nav .btn { font-size: 1.1rem; padding: 16px 10px; justify-content: center; }
+.cm-done { align-items: center; text-align: center; justify-content: center; }
+.cm-done .em { font-size: 4rem; line-height: 1; }
+.cm-done .btn { width: 100%; justify-content: center; }
+@media (prefers-reduced-motion: reduce) { .cm-tpill.ring { animation: none; } .cm-prog i { transition: none; } }
 </style>
 <title>Fed Up</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Instrument+Sans:wght@400;500;600;700&display=swap">
@@ -1574,6 +1610,15 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     </div>
   </section>
 </div>
+<div id="cookmode" class="cookmode" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title">
+  <div class="cm-top">
+    <button class="cm-x" type="button" data-cm="close" aria-label="Stop cooking">×</button>
+    <div class="cm-where"><strong id="cm-title"></strong><span id="cm-of" class="small muted"></span></div>
+    <span class="cm-tpill" id="cm-tpill" hidden></span>
+  </div>
+  <div class="cm-prog"><i id="cm-bar"></i></div>
+  <div class="cm-body" id="cm-body" aria-live="polite"></div>
+</div>
 <div id="swipe" class="swipe" hidden role="dialog" aria-label="Swipe through meals">
   <button class="swipe-x" type="button" data-act="swipe-close" aria-label="Close">×</button>
   <div id="swipe-body" class="swipe-body"></div>
@@ -2699,6 +2744,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       if (/^(instructions?|directions?|method|steps?|preparation|how to make( it)?|how to)$/i.test(head)) { where = 'steps'; return; }
       var inline = /^(ingredients?|you(?:'ll)? need)\s*:\s*(.+)$/i.exec(line);
       if (inline) { where = 'ing'; line = inline[2]; }
+      var listLine = !!inline;
       if (where === 'steps') {
         if (line.length > 160) splitBulkSteps(line).forEach(function (s) { out.notes.push(s); });
         else out.notes.push(line);
@@ -2708,7 +2754,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       /* a comma list on one line: "2 lb chicken, 1 can beans, 1 cup rice" or what someone said out loud */
       var bits = line.split(/\s*,\s*|\s*;\s*|\s+and\s+(?=(?:\d|[½⅓⅔¼¾]|a |an |one |two |three |four |five |six |half |a couple))/i).map(function (b) { return b.trim(); }).filter(Boolean);
       var amountLike = function (b) { return QTY_RE.test(wordAmount(b.replace(/^(and|plus)\s+/i, ''))) && !/^\d+\s*[.)]\s/.test(b); };
-      if (bits.length >= 2 && (where === 'ing' || amountLike(bits[0])) && bits.filter(amountLike).length >= Math.ceil(bits.length / 2) && line.length < 600) {
+      var amounts = bits.filter(amountLike).length;
+      if (bits.length >= 2 && (where === 'ing' || amountLike(bits[0])) && (amounts >= 2 || listLine) && amounts >= Math.ceil(bits.length / 2) - (listLine ? bits.length : 0) && line.length < 600) {
         bits.forEach(function (b) { if (!addIng(b) && where === 'ing') addPlain(b); });
         return;
       }
@@ -3304,6 +3351,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     $('cook-body').innerHTML = (photoOf(cookId) ? '<img class="fr-img" src="' + esc(photoOf(cookId)) + '" alt="Photo of ' + esc(r.name) + '">' : '') + '<div class="stack full" style="gap:4px"><h2>' + esc(r.name) + '</h2><p class="muted">' + esc([r.group ? 'Shared by ' + who(r.owner) : '', isBaby(r) ? ['Baby food', r.stage].filter(Boolean).join(', ') : catsOf(r).join(' & '), line].filter(Boolean).join(' · ')) + '</p>' + (showTags(r).length ? '<p class="hash">' + esc(showTags(r).map(function (t) { return '#' + t; }).join('  ')) + '</p>' : '') + '</div>' +
       ([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).length ? '<p class="small muted full">' + esc([r.mins > 0 ? r.mins + ' min' : '', r.method || ''].filter(Boolean).join(' · ')) + '</p>' : '') +
       (goodOf(r).length ? '<div class="aisle"><h3>Good source of</h3><div class="chips" style="padding-top:6px">' + goodOf(r).map(function (n) { return '<span class="chip">' + esc(n) + '</span>'; }).join('') + '</div><p class="small muted">' + (Array.isArray(r.goodFor) ? 'Chosen by the recipe author.' : 'A general guide based on the ingredients.') + ' Not medical advice.</p></div>' : '') +
+      (splitSteps(r.notes || '').length ? '<button class="btn primary start-cook" type="button" data-act="start-cook" data-id="' + esc(cookId) + '">👩‍🍳 Start cooking</button>' : '') +
       '<button class="btn ' + (n ? 'on-week' : 'primary') + ' week-btn" type="button" data-act="toggle" data-id="' + esc(cookId) + '" aria-pressed="' + (n ? 'true' : 'false') + '">' + (n ? '✓ On this week\'s plan' : '+ Add to this week') + '</button>' +
       '<div class="serv-row"><span><strong>Servings</strong><span class="small muted">' + (n ? 'On this week\'s plan' : r.servings > 0 ? 'Recipe makes ' + r.servings : '') + '</span></span><span class="stepper"><button type="button" data-act="cserv-less" aria-label="Fewer servings">−</button><span>' + shown + '</span><button type="button" data-act="cserv-more" aria-label="More servings">+</button></span></div>' +
       havePill(r) +
@@ -4851,6 +4899,165 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (!pickedIds().length) { toast('Pick your meals for the week first.'); return; }
     openShare(makeWeekCard, 'Share my week', 'My meals this week, planned on Fed Up 💕 fedupmeals.com');
   }
+  /* ---------- Start cooking: grab what a step needs, then do that step ---------- */
+  var cm = null, cmWake = null, cmTimer = null, cmTick = null, cmAudio = null;
+  var CM_STOP = /^(fresh|large|small|medium|chopped|diced|minced|sliced|ground|shredded|grated|whole|dried|frozen|canned|can|cans|cup|cups|red|green|white|black|yellow|sweet|hot|cold|warm|boneless|skinless|low|fat|free|sodium|extra|virgin|light|dark|plain|unsalted|salted|raw|cooked|lean|thin|thick|optional|and|with|for|the|of|or|to|taste|into|piece|pieces|room|temperature|packed|divided|softened|melted|peeled|halved|crushed|bone|skin|style|baby|mix|mixed|leaves|leaf|package|packet|jar|bag|box|bunch|head|clove|cloves|stick|sticks|slice|slices|your|favorite|any|some|more|few|little|big|bite|size|sized)$/;
+  function cmWords(s) {
+    var out = {};
+    String(s || '').toLowerCase().replace(/ñ/g, 'n').replace(/é/g, 'e').split(/[^a-z]+/).forEach(function (w) {
+      if (w.length < 3 || CM_STOP.test(w)) return;
+      out[w] = 1; out[w.replace(/(oes|ies|es|s)$/, function (m) { return m === 'ies' ? 'y' : m === 'oes' ? 'o' : ''; })] = 1;
+    });
+    return out;
+  }
+  function cmUses(stepText, ingName) {
+    var have = cmWords(stepText), want = Object.keys(cmWords(ingName));
+    return want.some(function (w) { return have[w]; });
+  }
+  function cmAmount(g, factor) {
+    var q = parseQty(g.qty);
+    return !isNaN(q) && q > 0 ? amountText(q * factor, normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' ');
+  }
+  function cmMinutes(text) {
+    var m = /(\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*\d+(?:\.\d+)?)?\s*(hours?|hrs?|minutes?|mins?)\b/i.exec(String(text || ''));
+    if (!m) return 0;
+    var n = parseFloat(m[1]) * (/^h/i.test(m[2]) ? 60 : 1);
+    return n > 0 && n <= 24 * 60 ? Math.round(n * 60) : 0;
+  }
+  /* r: the recipe; opts: { name, factor, recipeId, postId } */
+  function openCookMode(r, opts) {
+    var steps = splitSteps(r.notes || ''), ings = (r.ingredients || []).filter(function (g) { return g && g.name; });
+    if (!steps.length) { toast('This recipe has no steps yet.'); return; }
+    var factor = opts.factor || 1, taken = {}, perStep = steps.map(function () { return []; });
+    steps.forEach(function (st, i) {
+      ings.forEach(function (g, j) { if (!taken[j] && cmUses(st, g.name)) { taken[j] = true; perStep[i].push(j); } });
+    });
+    /* anything no step mentions goes in the first checklist */
+    var rest = []; ings.forEach(function (g, j) { if (!taken[j]) rest.push(j); });
+    perStep[0] = rest.concat(perStep[0]);
+    var stages = [];
+    steps.forEach(function (st, i) {
+      if (perStep[i].length) stages.push({ type: 'grab', step: i, items: perStep[i].map(function (j) { return { key: 'i' + j, name: ings[j].name, amt: cmAmount(ings[j], factor) }; }) });
+      stages.push({ type: 'step', step: i, text: st, secs: cmMinutes(st) });
+    });
+    stages.push({ type: 'done' });
+    cm = { r: r, name: opts.name || r.name || 'Your recipe', factor: factor, recipeId: opts.recipeId || null, postId: opts.postId || null, steps: steps.length, stages: stages, at: 0, got: {} };
+    $('cookmode').hidden = false; document.body.style.overflow = 'hidden';
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { cmWake = w; }, function () {}); } catch (e) {}
+    try { history.pushState({ cookmode: 1 }, ''); } catch (e) {}
+    renderCookMode();
+  }
+  function closeCookMode(fromHistory) {
+    if (!cm) return;
+    cm = null; $('cookmode').hidden = true; document.body.style.overflow = '';
+    stopCmTimer(true);
+    if (cmWake) { try { cmWake.release(); } catch (e) {} cmWake = null; }
+    if (!fromHistory) { try { if (history.state && history.state.cookmode) history.back(); } catch (e) {} }
+  }
+  window.addEventListener('popstate', function () { if (cm) closeCookMode(true); });
+  function fmtClock(s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (x < 10 ? '0' : '') + x; }
+  function renderCookMode() {
+    if (!cm) return;
+    var s = cm.stages[cm.at], n = cm.stages.length;
+    $('cm-title').textContent = cm.name;
+    $('cm-of').textContent = s.type === 'done' ? 'All done!' : 'Step ' + (s.step + 1) + ' of ' + cm.steps;
+    $('cm-bar').style.width = Math.round((cm.at + 1) / n * 100) + '%';
+    var back = cm.at > 0 ? '<button class="btn" type="button" data-cm="back">← Back</button>' : '';
+    var html = '';
+    if (s.type === 'grab') {
+      var left = s.items.filter(function (it) { return !cm.got[it.key]; }).length;
+      html = '<h2 class="cm-h">Grab these ingredients</h2><p class="cm-sub">' + (left ? 'Tap each one as you set it out.' : 'Got everything for this step!') + '</p>' +
+        '<ul class="cm-list">' + s.items.map(function (it) {
+          var on = !!cm.got[it.key];
+          return '<li><button class="cm-item" type="button" data-cm="got" data-key="' + esc(it.key) + '" aria-pressed="' + on + '"><span class="bx" aria-hidden="true">' + (on ? '✓' : '') + '</span><span class="nm">' + esc(it.name) + '</span><span class="amt">' + esc(it.amt) + '</span></button></li>';
+        }).join('') + '</ul>' +
+        '<div class="cm-nav' + (back ? '' : ' one') + '">' + back + '<button class="btn primary" type="button" data-cm="next">Start step ' + (s.step + 1) + ' →</button></div>';
+    } else if (s.type === 'step') {
+      var last = cm.at === n - 2, t = cmTimer && cmTimer.stage === cm.at ? cmTimer : null;
+      html = '<span class="cm-label">Step ' + (s.step + 1) + '</span><p class="cm-step">' + scaleSteps(s.text, cm.factor, cm.r) + '</p>' +
+        (s.secs ? '<div class="cm-timer"><span class="lb">⏱ ' + esc(fmtClock(s.secs)) + ' timer</span><span class="tm" id="cm-tm">' + esc(fmtClock(t ? t.left : s.secs)) + '</span>' +
+          (t && t.left <= 0 ? '<button class="btn small" type="button" data-cm="t-stop">Stop</button>' : t && t.running ? '<button class="btn small" type="button" data-cm="t-pause">Pause</button>' : '<button class="btn primary small" type="button" data-cm="t-start">' + (t ? 'Resume' : 'Start') + '</button>') + '</div>' : '') +
+        '<div class="cm-nav' + (back ? '' : ' one') + '">' + back + '<button class="btn primary" type="button" data-cm="next">' + (last ? 'Finish 🎉' : 'Next →') + '</button></div>';
+    } else {
+      var post = cm.postId ? feedPosts.filter(function (p) { return p.id === cm.postId; })[0] : null;
+      html = '<div class="stack cm-done" style="gap:14px;flex:1"><span class="em" aria-hidden="true">🎉</span><h2 class="cm-h">You made ' + esc(cm.name) + '!</h2><p class="muted" style="margin:0">Enjoy it 💕</p>' +
+        (post && !guest ? '<button class="btn primary" type="button" data-cm="made">📸 I made this! Post a photo</button>' : cm.recipeId && S.recipes[cm.recipeId] && feedApi && !guest ? '<button class="btn primary" type="button" data-cm="share">📸 Share a photo of it</button>' : '') +
+        '<button class="btn" type="button" data-cm="close">Back to the recipe</button>' + (back ? '<button class="btn quiet small" type="button" data-cm="back">← Last step</button>' : '') + '</div>';
+    }
+    $('cm-body').innerHTML = html; $('cm-body').scrollTop = 0;
+    syncCmPill();
+  }
+  function syncCmPill() {
+    var p = $('cm-tpill');
+    if (!cmTimer || !cm) { p.hidden = true; p.classList.remove('ring'); return; }
+    p.hidden = cmTimer.stage === cm.at && cm.stages[cm.at].type === 'step';
+    p.textContent = '⏱ ' + (cmTimer.left > 0 ? fmtClock(cmTimer.left) : 'Done!');
+    p.classList.toggle('ring', cmTimer.left <= 0);
+    var tm = $('cm-tm'); if (tm && cmTimer.stage === cm.at) tm.textContent = fmtClock(cmTimer.left);
+  }
+  function stopCmTimer(quiet) { clearInterval(cmTick); cmTick = null; cmTimer = null; if (!quiet) { syncCmPill(); renderCookMode(); } }
+  function beep() {
+    try {
+      if (!cmAudio) return;
+      [0, 0.35, 0.7].forEach(function (d) {
+        var o = cmAudio.createOscillator(), g = cmAudio.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(cmAudio.destination);
+        g.gain.setValueAtTime(0.0001, cmAudio.currentTime + d); g.gain.exponentialRampToValueAtTime(0.4, cmAudio.currentTime + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, cmAudio.currentTime + d + 0.28);
+        o.start(cmAudio.currentTime + d); o.stop(cmAudio.currentTime + d + 0.3);
+      });
+    } catch (e) {}
+  }
+  function runCmTimer() {
+    clearInterval(cmTick);
+    cmTick = setInterval(function () {
+      if (!cmTimer || !cmTimer.running) return;
+      cmTimer.left = Math.max(0, Math.round((cmTimer.end - Date.now()) / 1000));
+      if (cmTimer.left <= 0) {
+        cmTimer.running = false; clearInterval(cmTick); cmTick = null;
+        beep(); try { navigator.vibrate && navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {}
+        toast('⏱ Timer done!'); renderCookMode(); return;
+      }
+      syncCmPill();
+    }, 500);
+  }
+  $('cookmode').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-cm]'); if (!b || !cm) return;
+    var a = b.dataset.cm;
+    if (a === 'close') { closeCookMode(); return; }
+    if (a === 'next') { if (cm.at < cm.stages.length - 1) { cm.at++; renderCookMode(); } return; }
+    if (a === 'back') { if (cm.at > 0) { cm.at--; renderCookMode(); } return; }
+    if (a === 'got') { var k = b.dataset.key; cm.got[k] = !cm.got[k]; renderCookMode(); return; }
+    if (a === 't-start') {
+      try { var AC = window.AudioContext || window.webkitAudioContext; if (AC && !cmAudio) cmAudio = new AC(); if (cmAudio && cmAudio.resume) cmAudio.resume(); } catch (e) {}
+      var s = cm.stages[cm.at];
+      if (!cmTimer || cmTimer.stage !== cm.at) cmTimer = { stage: cm.at, left: s.secs };
+      cmTimer.running = true; cmTimer.end = Date.now() + cmTimer.left * 1000; runCmTimer(); renderCookMode(); return;
+    }
+    if (a === 't-pause') { if (cmTimer) { cmTimer.left = Math.max(0, Math.round((cmTimer.end - Date.now()) / 1000)); cmTimer.running = false; } renderCookMode(); return; }
+    if (a === 't-stop') { stopCmTimer(); return; }
+    if (a === 'made') { var pid = cm.postId; closeCookMode(); if (fview && fview.post.id === pid) openMadeForm(); return; }
+    if (a === 'share') { var rid = cm.recipeId; closeCookMode(); openPostForm(); try { $('post-recipe').value = rid; } catch (e) {} return; }
+  });
+  $('cm-tpill').addEventListener('click', function () {
+    if (!cm || !cmTimer) return;
+    if (cmTimer.left <= 0) { stopCmTimer(); return; }
+    cm.at = cmTimer.stage; renderCookMode();
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (!cm) return;
+    if (ev.key === 'Escape') closeCookMode();
+    else if (ev.key === 'ArrowRight' && cm.at < cm.stages.length - 1) { cm.at++; renderCookMode(); }
+    else if (ev.key === 'ArrowLeft' && cm.at > 0) { cm.at--; renderCookMode(); }
+  });
+  function startCookFromRecipe(id) {
+    var r = ALL[id]; if (!r) return;
+    var n = portions(id), shown = n || cookServ || base(r);
+    openCookMode(r, { name: r.name, factor: shown / base(r), recipeId: id });
+  }
+  function startCookFromPost() {
+    if (!fview || !fview.recipe) return;
+    openCookMode(fview.recipe, { name: fview.post.title, factor: 1, postId: fview.post.id });
+  }
   function socialAct(act, b, id) {
     if (act === 'tag-user') { if (!$('swipe').hidden) closeSwipe(); openHandle(b.dataset.handle); return true; }
     if (act === 'comments') { openPostView(id); setTimeout(function () { var c = $('comments'); if (c) c.scrollIntoView({ block: 'start' }); var t = $('cm-input'); if (t) t.focus(); }, 60); return true; }
@@ -4862,6 +5069,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       return true;
     }
     if (act === 'made-it') { openMadeForm(); return true; }
+    if (act === 'start-cook') { startCookFromRecipe(id); return true; }
+    if (act === 'start-cook-post') { startCookFromPost(); return true; }
     if (act === 'share-post') { sharePost(id); return true; }
     if (act === 'share-week') { shareWeek(); return true; }
     if (act === 'open-notes') { openNotes(); return true; }
@@ -4939,7 +5148,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       var ings = (r.ingredients || []).map(function (g) {
         return '<li class="cook-ing"><span class="pick"><span class="txt">' + esc(g.name) + (dv[skey(g.name)] ? ' <span class="muted small">(divided)</span>' : '') + haveMark(g.name) + '</span><span class="q">' + esc([g.qty, g.unit].filter(Boolean).join(' ')) + '</span></span></li>';
       }).join('');
-      html += havePill(r) + safetyBlock(r, fview.post.owner !== uid) + '<div class="row" style="gap:8px;flex-wrap:wrap">' + (fview.weekId && portions(fview.weekId) ? '<button class="btn on-week week-btn" type="button" data-act="post-week" aria-pressed="true" style="width:auto;flex:1">✓ On this week</button>' : '<button class="btn primary" type="button" data-act="post-week" style="flex:1">+ Add to my week</button>') + '<button class="btn" type="button" data-act="save-post" style="flex:1">Steal this recipe</button></div>' +
+      html += (splitSteps(r.notes || '').length ? '<button class="btn primary start-cook" type="button" data-act="start-cook-post">👩‍🍳 Start cooking</button>' : '') + havePill(r) + safetyBlock(r, fview.post.owner !== uid) + '<div class="row" style="gap:8px;flex-wrap:wrap">' + (fview.weekId && portions(fview.weekId) ? '<button class="btn on-week week-btn" type="button" data-act="post-week" aria-pressed="true" style="width:auto;flex:1">✓ On this week</button>' : '<button class="btn primary" type="button" data-act="post-week" style="flex:1">+ Add to my week</button>') + '<button class="btn" type="button" data-act="save-post" style="flex:1">Steal this recipe</button></div>' +
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps</h3>' + (r.notes ? stepsHtml(r, 1) : '<p class="steps"><span class="muted">No steps written.</span></p>') + '</div>';
     }
@@ -6096,7 +6305,7 @@ var babyEd = $('ed-kind').value === 'baby';
     like: 'like posts', toggle: 'plan your week and get a shopping list', 'post-week': 'plan your week and get a shopping list', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
     'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals', 'made-it': 'post a photo of what you made', 'swipe-like': 'like posts', 'swipe-save': 'save recipes', 'cm-reply': 'comment', 'cm-del': 'comment', 'share-week': 'plan and share your week'
   };
-  var GUEST_OK = { 'tag-user': 1, comments: 1, 'swipe-open-feed': 1, 'swipe-close': 1, 'swipe-open': 1, 'swipe-user': 1, 'swipe-cm': 1, 'share-post': 1, 'swipe-share': 1, 'shop-open': 1, 'shop-back': 1, 'user-tab': 1, 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
+  var GUEST_OK = { 'start-cook-post': 1, 'tag-user': 1, comments: 1, 'swipe-open-feed': 1, 'swipe-close': 1, 'swipe-open': 1, 'swipe-user': 1, 'swipe-cm': 1, 'share-post': 1, 'swipe-share': 1, 'shop-open': 1, 'shop-back': 1, 'user-tab': 1, 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
   var GUEST_OK_IDS = { 'share-close': 1, 'share-go': 1, 'share-save': 1, 'tab-explore': 1, 'cook-back': 1, 'fr-back': 1, 'user-back': 1, 'join-dlg-close': 1, 'zoom-close': 1, 'feed-search': 1 };
   function askJoin(key) {
     $('join-dlg-why').textContent = 'Make a free account to ' + (JOIN_WHY[key] || 'use this') + '. It only takes a minute.';
@@ -6111,7 +6320,7 @@ var babyEd = $('ed-kind').value === 'baby';
     var j = ev.target.closest && ev.target.closest('[data-join]');
     if (j) { ev.preventDefault(); openAuth(j.dataset.join); return; }
     var el = ev.target.closest && ev.target.closest('button, a, input[type=checkbox], input[type=file], label');
-    if (!el || el.closest('#auth, #view-join, #view-terms, #view-guide, #join-dlg, #step-tip, #zoom, #share-dlg')) return;
+    if (!el || el.closest('#auth, #view-join, #view-terms, #view-guide, #join-dlg, #step-tip, #zoom, #share-dlg, #cookmode')) return;
     if (el.tagName === 'A' && !el.dataset.act) return;
     var id = el.id, act = el.dataset.act;
     if (id === 'tab-profile') { ev.preventDefault(); ev.stopPropagation(); show('join'); window.scrollTo(0, 0); return; }
