@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261116211335">
+<meta name="fedup-version" content="20261117104619">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -155,6 +155,16 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .cm-done .em { font-size: 4rem; line-height: 1; }
 .cm-done .btn { width: 100%; justify-content: center; }
 @media (prefers-reduced-motion: reduce) { .cm-tpill.ring { animation: none; } .cm-prog i { transition: none; } }
+/* star ratings */
+.rating { display: inline-flex; align-items: center; gap: 4px; font-size: 0.9rem; }
+.rating .r-stars { color: #E8A317; letter-spacing: 1px; }
+.rating .r-off { color: #E3D6DC; }
+.rate-box { border: 2px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.rate-stars { display: flex; gap: 4px; }
+.rate-stars button { border: 0; background: none; font-size: 2.1rem; line-height: 1; padding: 2px 4px; color: #E3D6DC; cursor: pointer; transition: transform 0.1s ease; }
+.rate-stars button[aria-pressed="true"] { color: #E8A317; }
+.rate-stars button:active { transform: scale(1.2); }
+@media (prefers-reduced-motion: reduce) { .rate-stars button { transition: none; } }
 </style>
 <title>Fed Up</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Instrument+Sans:wght@400;500;600;700&display=swap">
@@ -2026,6 +2036,10 @@ ul.menu li + li { border-top: 1px solid var(--line); }
         return (ctx && ctx.json ? ctx.json().catch(function () { return {}; }) : Promise.resolve({})).then(function (b) { throw { code: (b && b.error) || 'failed' }; });
       });
     },
+    /* star ratings on community recipes */
+    ratings: function (ids) { return sb.rpc('post_ratings', { ids: ids.slice(0, 200) }).then(function (r) { check(r); return r.data || []; }); },
+    myRatings: function () { if (guest) return Promise.resolve([]); return sb.from('recipe_ratings').select('post_id,stars').eq('user_id', uid).limit(1000).then(function (r) { check(r); return r.data || []; }); },
+    rate: function (pid, stars) { return sb.from('recipe_ratings').upsert({ post_id: pid, user_id: uid, stars: stars, updated_at: new Date().toISOString() }, { onConflict: 'post_id,user_id' }).then(check); },
     /* comments, notifications */
     comments: function (pid) { return sb.from('post_comments').select('id,post_id,owner,body,created_at').eq('post_id', pid).order('created_at', { ascending: true }).limit(300).then(function (r) { check(r); return r.data || []; }); },
     addComment: function (pid, body) { return sb.from('post_comments').insert({ post_id: pid, owner: uid, body: String(body).trim().slice(0, 500) }).select('id,post_id,owner,body,created_at').then(function (r) { check(r); return (r.data || [])[0]; }); },
@@ -3959,7 +3973,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (guest) { show('explore'); loadFeed(); return; }
     restoreView();
     loadFollows(); loadSaves(); loadMyProfile(); showA2hs(); setTimeout(syncAreaPrices, 300);
-    loadNotes(); syncBell(); clearInterval(notesTimer); notesTimer = setInterval(function () { if (!document.hidden) loadNotes(); }, 60000);
+    loadNotes(); syncBell(); loadMyRatings(); clearInterval(notesTimer); notesTimer = setInterval(function () { if (!document.hidden) loadNotes(); }, 60000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotes(); });
     api.isAdmin().then(function (a) { if (a) { loadReports(); loadShopReports(); loadFeedbackList(); if (api.members) api.members().then(function (r) { members = r || []; if (tab === 'profile') renderProfile(); }, function () {}); } }, function () {});
     if (api.deleteAccount) $('del-wrap').hidden = false;
@@ -3970,7 +3984,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   function splashDone() { (function wait() { if (!ready) return setTimeout(wait, 100); try { if (window.fedupSplashDone) window.fedupSplashDone(); } catch (e) {} if (!guest) setTimeout(maybeTour, 900); })(); }
   function loadFeed() {
     feedApi.list().then(function (posts) {
-      feedPosts = posts || []; feedState = 'ok'; splashDone(); loadLikes(); loadCommentCounts(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
+      feedPosts = posts || []; feedState = 'ok'; splashDone(); loadLikes(); loadCommentCounts(); loadRatings(); renderFeed(); renderExplore(); if (tab === 'profile') renderProfile(); if (tab === 'user') renderUser();
       var ids = uid ? [uid] : []; feedPosts.forEach(function (p) { if (ids.indexOf(p.owner) < 0) ids.push(p.owner); if (p.credit && ids.indexOf(p.credit) < 0) ids.push(p.credit); }); myFollows.forEach(function (o) { if (ids.indexOf(o) < 0) ids.push(o); });
       if (user && ids.length) user.profiles(ids).then(function (ps) { ids.forEach(function (o) { if (!ps[o]) return; if (ps[o].name) names[o] = ps[o].name; if (ps[o].username) unames[o] = ps[o].username; if (typeof ps[o].bio === 'string') bios[o] = ps[o].bio; if (ps[o].avatar) avatars[o] = ps[o].avatar; }); renderFeed(); if (tab === 'profile') renderProfile(); renderExplore(); if (tab === 'user') renderUser(); if (fview) renderFRecipe(); });
     }, function () { feedState = 'error'; renderFeed(); splashDone(); });
@@ -4250,7 +4264,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       '<span class="post-who"><strong>' + esc(handle(p.owner)) + miniStars(p.owner) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' + follow +
       '<button class="ibtn push" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) +
       (img ? '<button class="post-imgbtn" type="button" data-act="open-post" data-id="' + esc(p.id) + '" aria-label="Open ' + esc(p.title) + '"><img class="post-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '" loading="lazy"></button>' : '') +
-      '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + (p.madeFrom ? madeLine(p) : creditLine(p)) +
+      '<div class="post-body">' + likeRow(p) + '<h3 class="post-title">' + esc(p.title) + '</h3>' + ratingLine(p) + (p.madeFrom ? madeLine(p) : creditLine(p)) +
       (p.description ? '<p>' + richText(p.description) + '</p>' : '') + hashLine(p.tags) +
       (cmCounts[p.id] ? '<div><button class="linkish small muted" type="button" data-act="comments" data-id="' + esc(p.id) + '">View ' + (cmCounts[p.id] === 1 ? '1 comment' : 'all ' + cmCounts[p.id] + ' comments') + '</button></div>' : '') +
       '<div><button class="steal-btn" type="button" data-act="open-post" data-id="' + esc(p.id) + '">Steal this recipe <span aria-hidden="true">→</span></button></div>' +
@@ -4744,6 +4758,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (n.kind === 'comment') return a + ' commented on your ' + t + (n.meta && n.meta.text ? ': "' + esc(String(n.meta.text).slice(0, 80)) + '"' : '');
     if (n.kind === 'follow') return a + ' started following you';
     if (n.kind === 'steal') return a + ' stole your recipe' + (n.meta && n.meta.name ? ' ' + esc(n.meta.name) : '') + ' 🙌';
+    if (n.kind === 'rate') return a + ' rated your ' + t + ' ' + '★★★★★'.slice(0, Math.max(1, Math.min(5, Number(n.meta && n.meta.stars) || 0)));
     if (n.kind === 'made') return a + ' made your recipe and posted a photo! 📸';
     if (n.kind === 'tag') return a + ' tagged you' + (n.comment_id ? ' in a comment' : ' in a post') + (p ? ' on ' + t : '');
     return a;
@@ -4982,6 +4997,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       var post = cm.postId ? feedPosts.filter(function (p) { return p.id === cm.postId; })[0] : null;
       html = '<div class="stack cm-done" style="gap:14px;flex:1"><span class="em" aria-hidden="true">🎉</span><h2 class="cm-h">You made ' + esc(cm.name) + '!</h2><p class="muted" style="margin:0">Enjoy it 💕</p>' +
         (post && !guest ? '<button class="btn primary" type="button" data-cm="made">📸 I made this! Post a photo</button>' : cm.recipeId && S.recipes[cm.recipeId] && feedApi && !guest ? '<button class="btn primary" type="button" data-cm="share">📸 Share a photo of it</button>' : '') +
+        (post && post.owner !== uid && !post.madeFrom && feedApi && feedApi.rate ? '<div class="rate-box" style="align-self:stretch"><strong>How was it?</strong>' + rateButtons(post.id, 'data-cm="rate"') + '</div>' : '') +
         '<button class="btn" type="button" data-cm="close">Back to the recipe</button>' + (back ? '<button class="btn quiet small" type="button" data-cm="back">← Last step</button>' : '') + '</div>';
     }
     $('cm-body').innerHTML = html; $('cm-body').scrollTop = 0;
@@ -5035,6 +5051,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     }
     if (a === 't-pause') { if (cmTimer) { cmTimer.left = Math.max(0, Math.round((cmTimer.end - Date.now()) / 1000)); cmTimer.running = false; } renderCookMode(); return; }
     if (a === 't-stop') { stopCmTimer(); return; }
+    if (a === 'rate') { ratePost(b.dataset.id, Number(b.dataset.stars) || 0); return; }
     if (a === 'made') { var pid = cm.postId; closeCookMode(); if (fview && fview.post.id === pid) openMadeForm(); return; }
     if (a === 'share') { var rid = cm.recipeId; closeCookMode(); openPostForm(); try { $('post-recipe').value = rid; } catch (e) {} return; }
   });
@@ -5058,7 +5075,49 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (!fview || !fview.recipe) return;
     openCookMode(fview.recipe, { name: fview.post.title, factor: 1, postId: fview.post.id });
   }
+  /* ---------- 1 to 5 star ratings ---------- */
+  var rateBy = {}, myRate = {};
+  function loadRatings() {
+    if (!feedApi || !feedApi.ratings || !feedPosts.length) return;
+    feedApi.ratings(feedPosts.map(function (p) { return p.id; }).slice(0, 200)).then(function (rows) {
+      rateBy = {}; (rows || []).forEach(function (r) { rateBy[r.post_id] = { avg: Number(r.avg_stars) || 0, n: Number(r.ratings) || 0 }; });
+      renderFeed(); if (fview) renderFRecipe();
+    }, function () {});
+  }
+  function loadMyRatings() {
+    if (!feedApi || !feedApi.myRatings) return;
+    feedApi.myRatings().then(function (rows) { myRate = {}; (rows || []).forEach(function (r) { myRate[r.post_id] = r.stars; }); if (fview) renderFRecipe(); }, function () {});
+  }
+  function starGlyphs(avg) { var full = Math.round(avg); return '★★★★★'.slice(0, full) + '<span class="r-off">' + '★★★★★'.slice(0, 5 - full) + '</span>'; }
+  function ratingLine(p) {
+    var r = rateBy[p.id]; if (!r || !r.n || p.madeFrom) return '';
+    return '<span class="rating" aria-label="Rated ' + r.avg + ' out of 5 by ' + r.n + (r.n === 1 ? ' person' : ' people') + '"><span class="r-stars" aria-hidden="true">' + starGlyphs(r.avg) + '</span> <b>' + r.avg.toFixed(1) + '</b> <span class="muted">(' + r.n + ')</span></span>';
+  }
+  function rateButtons(pid, attr) {
+    var mine = myRate[pid] || 0;
+    return '<div class="rate-stars" role="group" aria-label="Rate this recipe">' + [1, 2, 3, 4, 5].map(function (n) {
+      return '<button type="button" ' + attr + ' data-id="' + esc(pid) + '" data-stars="' + n + '" aria-pressed="' + (n <= mine) + '" aria-label="' + n + (n === 1 ? ' star' : ' stars') + '">★</button>';
+    }).join('') + '</div>';
+  }
+  function rateBox(p) {
+    if (p.owner === uid || p.madeFrom || !feedApi || !feedApi.rate) return '';
+    var mine = myRate[p.id];
+    return '<div class="rate-box"><strong>' + (mine ? 'Your rating' : 'Made it? Rate it') + '</strong>' + rateButtons(p.id, 'data-act="rate"') +
+      '<span class="small muted">' + (mine ? 'You gave it ' + mine + (mine === 1 ? ' star' : ' stars') + '. Tap to change.' : 'Tap the stars to rate it from 1 to 5.') + '</span></div>';
+  }
+  function ratePost(pid, stars) {
+    if (guest) { askJoin('rate'); return; }
+    var p = feedPosts.filter(function (x) { return x.id === pid; })[0];
+    if (!p || p.owner === uid) return;
+    var before = myRate[pid];
+    myRate[pid] = stars; if (fview) renderFRecipe(); if (cm) renderCookMode();
+    feedApi.rate(pid, stars).then(function () {
+      toast('Thanks! You gave it ' + stars + (stars === 1 ? ' star.' : ' stars.'));
+      feedApi.ratings([pid]).then(function (rows) { var r = (rows || [])[0]; if (r) rateBy[pid] = { avg: Number(r.avg_stars) || 0, n: Number(r.ratings) || 0 }; renderFeed(); if (fview) renderFRecipe(); }, function () {});
+    }, function () { if (before) myRate[pid] = before; else delete myRate[pid]; if (fview) renderFRecipe(); if (cm) renderCookMode(); toast("Couldn't save your rating. Try again."); });
+  }
   function socialAct(act, b, id) {
+    if (act === 'rate') { ratePost(id, Number(b.dataset.stars) || 0); return true; }
     if (act === 'tag-user') { if (!$('swipe').hidden) closeSwipe(); openHandle(b.dataset.handle); return true; }
     if (act === 'comments') { openPostView(id); setTimeout(function () { var c = $('comments'); if (c) c.scrollIntoView({ block: 'start' }); var t = $('cm-input'); if (t) t.focus(); }, 60); return true; }
     if (act === 'cm-reply') { var t = $('cm-input'); if (t && b.dataset.handle) { t.value = '@' + b.dataset.handle + ' ' + t.value.replace(/^@\S+\s/, ''); cmDraft = t.value; t.focus(); } return true; }
@@ -5135,7 +5194,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     if (!fview) return;
     var p = fview.post, r = fview.recipe, img = safeImg(p.photo), html = '';
     html += (img ? '<img class="fr-img" src="' + esc(img) + '" alt="Photo of ' + esc(p.title) + '">' : '') +
-      '<div class="stack" style="gap:8px"><h2>' + esc(p.title) + '</h2>' +
+      '<div class="stack" style="gap:8px"><h2>' + esc(p.title) + '</h2>' + ratingLine(p) +
       '<div class="post-head" style="padding:0"><button class="who-btn" type="button" data-act="user" data-id="' + esc(p.owner) + '">' + avatarHtml(p.owner) + '<span class="post-who"><strong>' + esc(handle(p.owner)) + miniStars(p.owner) + '</strong>' + (p.kind === 'baby' ? '<span class="small muted">Baby food</span>' : '') + '</span></button>' +
       (p.owner !== uid ? (iFollow(p.owner) ? '<button class="btn small push" type="button" data-act="unfollow" data-id="' + esc(p.owner) + '">Following</button>' : '<button class="btn primary small push" type="button" data-act="follow" data-id="' + esc(p.owner) + '">Follow</button>') : '<span class="push"></span>') +
       '<button class="ibtn" type="button" data-act="post-menu" data-id="' + esc(p.id) + '" aria-label="More options" aria-expanded="' + (menuFor === p.id) + '">' + MORE_ICON + '</button></div>' + menuHtml(p) + likeRow(p) + (p.madeFrom ? madeLine(p) : creditLine(p)) + (p.description ? '<p>' + richText(p.description) + '</p>' : '') + hashLine(p.tags) +
@@ -5152,6 +5211,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         '<div class="aisle"><h3>Ingredients' + (r.servings > 0 ? ' (makes ' + r.servings + ')' : '') + '</h3><ul class="plain">' + (ings || '<li class="muted">No ingredients listed.</li>') + '</ul></div>' +
         '<div class="aisle"><h3>Steps</h3>' + (r.notes ? stepsHtml(r, 1) : '<p class="steps"><span class="muted">No steps written.</span></p>') + '</div>';
     }
+    if (fview.state === 'open') html += rateBox(p);
     if (feedApi && feedApi.comments) html += madeHtml(p) + commentsHtml(p);
     $('fr-body').innerHTML = html;
     if (feedApi && feedApi.comments) bindCommentForm(p.id);
@@ -6303,7 +6363,7 @@ var babyEd = $('ed-kind').value === 'baby';
     'tab-feed': 'get a home feed of the people you follow', 'tab-list': 'build your shopping list', 'new-post': 'share your recipes and meals',
     'open-settings': 'set your prices, store and settings', 'cook-edit': 'save this recipe to your recipes', 'save-post': 'steal this recipe and save it to your recipes',
     like: 'like posts', toggle: 'plan your week and get a shopping list', 'post-week': 'plan your week and get a shopping list', follow: 'follow people', unfollow: 'follow people', 'post-menu': 'report or manage posts', 'cost-fix': 'save your own store prices',
-    'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals', 'made-it': 'post a photo of what you made', 'swipe-like': 'like posts', 'swipe-save': 'save recipes', 'cm-reply': 'comment', 'cm-del': 'comment', 'share-week': 'plan and share your week'
+    'add-menu': 'share your recipes and meals', 'new-post-act': 'share your recipes and meals', 'made-it': 'post a photo of what you made', rate: 'rate recipes', 'swipe-like': 'like posts', 'swipe-save': 'save recipes', 'cm-reply': 'comment', 'cm-del': 'comment', 'share-week': 'plan and share your week'
   };
   var GUEST_OK = { 'start-cook-post': 1, 'tag-user': 1, comments: 1, 'swipe-open-feed': 1, 'swipe-close': 1, 'swipe-open': 1, 'swipe-user': 1, 'swipe-cm': 1, 'share-post': 1, 'swipe-share': 1, 'shop-open': 1, 'shop-back': 1, 'user-tab': 1, 'open-post': 1, 'comm-open': 1, user: 1, 'cserv-more': 1, 'cserv-less': 1, 'cook-tick': 1, 'step-tick': 1, 'reload-feed': 1, 'prof-tab': 1 };
   var GUEST_OK_IDS = { 'share-close': 1, 'share-go': 1, 'share-save': 1, 'tab-explore': 1, 'cook-back': 1, 'fr-back': 1, 'user-back': 1, 'join-dlg-close': 1, 'zoom-close': 1, 'feed-search': 1 };
