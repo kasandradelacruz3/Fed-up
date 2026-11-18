@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261117104619">
+<meta name="fedup-version" content="20261117182732">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -143,7 +143,7 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .cm-item[aria-pressed="true"] .bx { background: #1F7A4A; border-color: #1F7A4A; color: #fff; }
 .cm-item[aria-pressed="true"] .nm { text-decoration: line-through; }
 .cm-step { font-size: 1.45rem; line-height: 1.45; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
-.cm-step b.scaled { color: var(--accent); }
+.cm-step b.scaled, .cm-step b.ing-tag { color: var(--accent); }
 .cm-label { font-weight: 700; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.85rem; }
 .cm-timer { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid var(--accent); border-radius: 16px; padding: 12px 14px; }
 .cm-timer .tm { font-family: var(--display); font-size: 2rem; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -165,6 +165,12 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .rate-stars button[aria-pressed="true"] { color: #E8A317; }
 .rate-stars button:active { transform: scale(1.2); }
 @media (prefers-reduced-motion: reduce) { .rate-stars button { transition: none; } }
+.cm-uses { background: var(--accent-tint); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.cm-uses strong { font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); }
+.cm-uses ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cm-uses li { font-size: 1.15rem; display: block; }
+.cm-uses li b { color: var(--accent); margin-right: 4px; }
+.cm-uses li::before { content: none; }
 </style>
 <title>Fed Up</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Instrument+Sans:wght@400;500;600;700&display=swap">
@@ -4944,16 +4950,19 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var steps = splitSteps(r.notes || ''), ings = (r.ingredients || []).filter(function (g) { return g && g.name; });
     if (!steps.length) { toast('This recipe has no steps yet.'); return; }
     var factor = opts.factor || 1, taken = {}, perStep = steps.map(function () { return []; });
-    steps.forEach(function (st, i) {
-      ings.forEach(function (g, j) { if (!taken[j] && cmUses(st, g.name)) { taken[j] = true; perStep[i].push(j); } });
+    /* which ingredients a step calls for: its {tags} when it has them, otherwise the ingredient names it mentions */
+    var callsFor = steps.map(function (st) {
+      var tagged = [], m; STEP_TAG.lastIndex = 0;
+      while ((m = STEP_TAG.exec(st))) { var g = stepIng(r, tagParts(m[1]).name), j = ings.indexOf(g); if (j >= 0 && tagged.indexOf(j) < 0) tagged.push(j); }
+      if (tagged.length) return tagged;
+      return ings.map(function (g, j) { return j; }).filter(function (j) { return cmUses(st, ings[j].name); });
     });
-    /* anything no step mentions goes in the first checklist */
-    var rest = []; ings.forEach(function (g, j) { if (!taken[j]) rest.push(j); });
-    perStep[0] = rest.concat(perStep[0]);
+    steps.forEach(function (st, i) { callsFor[i].forEach(function (j) { if (!taken[j]) { taken[j] = true; perStep[i].push(j); } }); });
     var stages = [];
     steps.forEach(function (st, i) {
       if (perStep[i].length) stages.push({ type: 'grab', step: i, items: perStep[i].map(function (j) { return { key: 'i' + j, name: ings[j].name, amt: cmAmount(ings[j], factor) }; }) });
-      stages.push({ type: 'step', step: i, text: st, secs: cmMinutes(st) });
+      var uses = callsFor[i];
+      stages.push({ type: 'step', step: i, text: st, secs: cmMinutes(st), uses: uses.map(function (j) { return { name: ings[j].name, amt: cmAmount(ings[j], factor) }; }) });
     });
     stages.push({ type: 'done' });
     cm = { r: r, name: opts.name || r.name || 'Your recipe', factor: factor, recipeId: opts.recipeId || null, postId: opts.postId || null, steps: steps.length, stages: stages, at: 0, got: {} };
@@ -4989,7 +4998,8 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         '<div class="cm-nav' + (back ? '' : ' one') + '">' + back + '<button class="btn primary" type="button" data-cm="next">Start step ' + (s.step + 1) + ' →</button></div>';
     } else if (s.type === 'step') {
       var last = cm.at === n - 2, t = cmTimer && cmTimer.stage === cm.at ? cmTimer : null;
-      html = '<span class="cm-label">Step ' + (s.step + 1) + '</span><p class="cm-step">' + scaleSteps(s.text, cm.factor, cm.r) + '</p>' +
+      html = '<span class="cm-label">Step ' + (s.step + 1) + '</span><p class="cm-step">' + stepText(s.text, cm.factor, cm.r) + '</p>' +
+        (s.uses && s.uses.length && !/\{[^}]+\}/.test(s.text) ? '<div class="cm-uses"><strong>For this step</strong><ul>' + s.uses.map(function (u) { return '<li>' + (u.amt ? '<b>' + esc(u.amt) + '</b> ' : '') + esc(u.name) + '</li>'; }).join('') + '</ul></div>' : '') +
         (s.secs ? '<div class="cm-timer"><span class="lb">⏱ ' + esc(fmtClock(s.secs)) + ' timer</span><span class="tm" id="cm-tm">' + esc(fmtClock(t ? t.left : s.secs)) + '</span>' +
           (t && t.left <= 0 ? '<button class="btn small" type="button" data-cm="t-stop">Stop</button>' : t && t.running ? '<button class="btn small" type="button" data-cm="t-pause">Pause</button>' : '<button class="btn primary small" type="button" data-cm="t-start">' + (t ? 'Resume' : 'Start') + '</button>') + '</div>' : '') +
         '<div class="cm-nav' + (back ? '' : ' one') + '">' + back + '<button class="btn primary" type="button" data-cm="next">' + (last ? 'Finish 🎉' : 'Next →') + '</button></div>';
