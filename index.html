@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261117182732">
+<meta name="fedup-version" content="20261117203034">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2908,7 +2908,9 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     'Ground ginger;Turmeric;Allspice;Cloves;Dried rosemary;Dried dill;Sage;Pepper;White pepper;Lemon pepper;Cajun seasoning;Adobo;Sazon;Mexican oregano;Achiote paste;Tajín;Cinnamon sticks;Sazón seasoning;Adobo seasoning;Lard;Vanilla extract;Baking soda;Baking powder').split(';').forEach(function (n) { SEASON[norm(n)] = true; });
   function isSeasoning(name) { var m = masterOf(name); return !!(SEASON[norm(m ? m.name : name)] || SEASON[skey(name)] || SEASON[norm(name)] || /\b(seasoning|spice|bouillon|powder)\b/.test(norm(name)) && !/protein|cocoa|baking|milk/.test(norm(name))); }
   /* tap water in a recipe doesn't cost anything */
-  function isFree(g) { var k = norm(g.name); return /^(cold |warm |hot |boiling |tap |ice )?water$/.test(k) && !!FAM[normUnit(g.unit)]; }
+  function isFree(g) { var k = norm(g.name); return /^(cold |warm |hot |boiling |tap |ice )?water$/.test(k) && !!FAM[normUnit(g.unit)] || leftoverWater(k); }
+  /* "water from where we boiled the chicken" comes from an earlier step, so nobody buys it */
+  function leftoverWater(k) { return /^(the )?(reserved |saved |cooking |starchy |boiled )?(pasta |chicken |veggie |vegetable |bean |potato )?water (from|we|you|that|left|used|reserved|saved|after)\b/.test(norm(k)) || /^(reserved|saved|starchy) (pasta |cooking )?water$/.test(norm(k)); }
 
   /* ---------- build the shopping list ---------- */
   function buildList() {
@@ -2921,7 +2923,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         var lid = libFor(ing, idx), lib = lid && S.ings[lid];
         var mst = masterOf(lib ? lib.name : ing.name), shown = mst ? mst.name : String(lib ? lib.name : ing.name).trim();
         var key = norm(shown);
-        if (!key) return;
+        if (!key || leftoverWater(key)) return;
         var it = map[key], aisle = lib ? lib.aisle : mst ? mst.aisle : ing.aisle;
         if (!it) { it = map[key] = { key: key, pkey: key, lib: lid, name: shown, aisle: AISLES.indexOf(aisle) >= 0 ? aisle : 'Other', sums: {}, loose: [], from: [], pk: 0, pkAll: true, pkAny: false, conv: {} }; order.push(key); }
         if (it.from.indexOf(r.name) < 0) it.from.push(r.name);
@@ -2963,13 +2965,23 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     rows.forEach(function (r) {
       var g = r.lib && S.ings[r.lib], pr = priceFor(r.name, g || null);
       r.unitPrice = pr ? pr.price : null; r.priceSrc = pr ? pr.src : ''; r.size = g && g.size ? g.size : '';
-      var n = 1;
-      if (r.buy) n = r.buy;
-      else if (pr && r.sums) {
-        var tot = 0, ok = true, any = false;
-        Object.keys(r.sums).forEach(function (u) { var k = toPackages(r.sums[u], u, { size: pr.size, name: r.name }); if (k) { tot += k.n; any = true; } else ok = false; });
-        if (ok && any) n = Math.max(1, Math.ceil(tot - 0.001));
+      var n = 1, psz = pr && pr.size ? parseSize(pr.size) : null;
+      /* "Buy 3" already counts packages of the person's own product size */
+      if (r.buy && g && g.size) n = r.buy;
+      else if (pr && r.sums && Object.keys(r.sums).length) {
+        /* compare the amounts with the price's own package: 20 tomatillos are about 2 lb, not 20 bags */
+        var tot = 0, ok = true, any = false, each = false;
+        Object.keys(r.sums).forEach(function (u) {
+          var k = toPackages(r.sums[u], u, { size: pr.size, name: r.name });
+          if (k && k.approx === 'pkg' && psz && psz.fam !== 'count') k = { n: 1, approx: 'pkg1' }; /* 3 bay leaves come from one jar */
+          if (k) { tot += k.n; any = true; if (k.approx === 'each') each = true; } else ok = false;
+        });
+        /* loose produce priced by the pound is paid by weight, not rounded up to whole pounds */
+        var byWeight = each && psz && psz.fam === 'w' && Math.abs(psz.base - 16) < 0.01;
+        if (ok && any) n = byWeight ? Math.max(0.1, Math.round(tot * 100) / 100) : Math.max(1, Math.ceil(tot - 0.001));
+        else if (r.buy && !(psz && psz.fam !== 'count')) n = r.buy;
       }
+      else if (r.buy) n = r.buy;
       r.price = r.unitPrice != null ? r.unitPrice * n : null;
     });
     return rows;
@@ -3463,7 +3475,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       'Russet potatoes=potato,baking potato,idaho potato;Yukon gold potatoes=gold potato,yellow potato;Red potatoes=red potato;Baby potatoes=small potato,new potato;Sweet potatoes=sweet potato,yam;' +
       'Carrots=carrot;Baby carrots;Celery=celery stalk,celery stick;Broccoli=broccoli crown,broccoli florets;Cauliflower;Green beans=string beans;Asparagus;Brussels sprouts;Cabbage=green cabbage;Red cabbage=purple cabbage;' +
       'Zucchini=courgette;Yellow squash=summer squash;Butternut squash;Spaghetti squash;Acorn squash;Pumpkin;Cucumber=english cucumber;Mini cucumbers=persian cucumber;' +
-      'Green bell pepper=green pepper;Red bell pepper=red pepper,bell pepper;Yellow bell pepper=yellow pepper;Orange bell pepper=orange pepper;Mini sweet peppers=baby bell pepper;Jalapeño=jalapeno;Poblano pepper=poblano;Serrano pepper=serrano;' +
+      'Green bell pepper=green pepper;Red bell pepper=red pepper,bell pepper;Yellow bell pepper=yellow pepper;Orange bell pepper=orange pepper;Mini sweet peppers=baby bell pepper;Jalapeño=jalapeno,jalapeños,jalapenos,jalapeño peppers,jalapeno peppers,jalapeño pepper,jalapeno pepper;Poblano pepper=poblano;Serrano pepper=serrano;' +
       'Tomatoes=tomato,roma tomato,plum tomato;Cherry tomatoes=cherry tomato;Grape tomatoes=grape tomato;Beefsteak tomatoes=beefsteak tomato;Avocado=avocados,hass avocado;Corn on the cob=corn ear,ear of corn;' +
       'Romaine lettuce=romaine;Iceberg lettuce=iceberg;Spring mix=mixed greens,salad mix;Spinach=baby spinach,fresh spinach;Kale;Arugula;Coleslaw mix;' +
       'Mushrooms=white mushroom,button mushroom;Baby bella mushrooms=cremini mushroom,baby bella;Portobello mushrooms=portobello;Eggplant=aubergine;Beets=beet,beetroot;Radishes=radish;Snap peas=sugar snap peas;Snow peas;Bean sprouts;' +
