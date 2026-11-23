@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261118183645">
+<meta name="fedup-version" content="20261122190645">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -130,6 +130,17 @@ a.shop-buy { display: flex; justify-content: space-between; align-items: center;
 .cm-tpill { background: var(--accent); color: #fff; border-radius: 999px; padding: 6px 12px; font-weight: 700; font-variant-numeric: tabular-nums; flex: none; }
 .cm-tpill.ring { animation: cmring 0.6s ease-in-out infinite alternate; }
 @keyframes cmring { from { transform: scale(1); } to { transform: scale(1.08); } }
+.cm-tabs { display: flex; gap: 8px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+.cm-tabs:empty { display: none; }
+.cm-tab { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border: 2px solid var(--accent); background: #fff; color: var(--accent); border-radius: 999px; padding: 9px 12px; font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+.cm-tab .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-tab .tt { flex: none; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+.cm-tab[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.cm-tab.ring { animation: cmring 0.6s ease-in-out infinite alternate; }
+.cm-add { flex: 1; border: 2px dashed var(--accent); background: var(--accent-tint); color: var(--accent); border-radius: 999px; padding: 9px 12px; font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+.cm-pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cm-pick button { width: 100%; text-align: left; border: 0; border-radius: 14px; padding: 14px; background: var(--accent-tint); font: inherit; font-size: 1.1rem; font-weight: 600; color: var(--ink); cursor: pointer; }
+.cm-pick-h { margin: 6px 0 -4px; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
 .cm-prog { height: 6px; background: var(--line); margin: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); border-radius: 9px; overflow: hidden; }
 .cm-prog i { display: block; height: 100%; background: var(--accent); transition: width 0.25s ease; }
 .cm-body { flex: 1; overflow-y: auto; padding: 18px max(16px, env(safe-area-inset-right, 0px)) 18px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; max-width: 640px; width: 100%; margin: 0 auto; }
@@ -1632,6 +1643,7 @@ ul.menu li + li { border-top: 1px solid var(--line); }
     <div class="cm-where"><strong id="cm-title"></strong><span id="cm-of" class="small muted"></span></div>
     <span class="cm-tpill" id="cm-tpill" hidden></span>
   </div>
+  <div class="cm-tabs" id="cm-tabs"></div>
   <div class="cm-prog"><i id="cm-bar"></i></div>
   <div class="cm-body" id="cm-body" aria-live="polite"></div>
 </div>
@@ -4933,7 +4945,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     openShare(makeWeekCard, 'Share my week', 'My meals this week, planned on Fed Up 💕 fedupmeals.com');
   }
   /* ---------- Start cooking: grab what a step needs, then do that step ---------- */
-  var cm = null, cmWake = null, cmTimer = null, cmTick = null, cmAudio = null;
+  var cm = null, cms = [], cmPick = false, cmWake = null, cmTick = null, cmAudio = null;
   var CM_STOP = /^(fresh|large|small|medium|chopped|diced|minced|sliced|ground|shredded|grated|whole|dried|frozen|canned|can|cans|cup|cups|red|green|white|black|yellow|sweet|hot|cold|warm|boneless|skinless|low|fat|free|sodium|extra|virgin|light|dark|plain|unsalted|salted|raw|cooked|lean|thin|thick|optional|and|with|for|the|of|or|to|taste|into|piece|pieces|room|temperature|packed|divided|softened|melted|peeled|halved|crushed|bone|skin|style|baby|mix|mixed|leaves|leaf|package|packet|jar|bag|box|bunch|head|clove|cloves|stick|sticks|slice|slices|your|favorite|any|some|more|few|little|big|bite|size|sized)$/;
   function cmWords(s) {
     var out = {};
@@ -4985,7 +4997,11 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       stages.push({ type: 'step', step: i, text: st, secs: cmMinutes(st), uses: uses.map(function (j) { return { name: ings[j].name, amt: cmAmount(ings[j], factor) }; }) });
     });
     stages.push({ type: 'done' });
-    cm = { r: r, name: opts.name || r.name || 'Your recipe', factor: factor, recipeId: opts.recipeId || null, postId: opts.postId || null, steps: steps.length, stages: stages, at: 0, got: {} };
+    var sess = { r: r, name: opts.name || r.name || 'Your recipe', factor: factor, recipeId: opts.recipeId || null, postId: opts.postId || null, steps: steps.length, stages: stages, at: 0, got: {}, timer: null };
+    cmPick = false;
+    /* already cooking: this becomes the second meal */
+    if (cm) { cms = [cm, sess]; cm = sess; renderCookMode(); return; }
+    cms = [sess]; cm = sess;
     $('cookmode').hidden = false; document.body.style.overflow = 'hidden';
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { cmWake = w; }, function () {}); } catch (e) {}
     try { history.pushState({ cookmode: 1 }, ''); } catch (e) {}
@@ -4993,15 +5009,42 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
   }
   function closeCookMode(fromHistory) {
     if (!cm) return;
-    cm = null; $('cookmode').hidden = true; document.body.style.overflow = '';
-    stopCmTimer(true);
+    cm = null; cms = []; cmPick = false; $('cookmode').hidden = true; document.body.style.overflow = '';
+    clearInterval(cmTick); cmTick = null;
     if (cmWake) { try { cmWake.release(); } catch (e) {} cmWake = null; }
     if (!fromHistory) { try { if (history.state && history.state.cookmode) history.back(); } catch (e) {} }
   }
   window.addEventListener('popstate', function () { if (cm) closeCookMode(true); });
   function fmtClock(s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (x < 10 ? '0' : '') + x; }
+  /* up to 2 meals at once: a tab for each, or a button to add a second */
+  function cmTimerText(x) { var t = x.timer; return t ? '⏱ ' + (t.left > 0 ? fmtClock(t.left) : 'Done!') : ''; }
+  function renderCmTabs() {
+    var el = $('cm-tabs');
+    if (cms.length > 1) {
+      el.innerHTML = cms.map(function (x, i) {
+        var t = x.timer, on = x === cm && !cmPick;
+        return '<button class="cm-tab' + (t && t.left <= 0 ? ' ring' : '') + '" type="button" data-cm="tab" data-i="' + i + '" aria-pressed="' + on + '"><span class="nm">' + esc(x.name) + '</span>' + (t ? '<span class="tt">' + esc(cmTimerText(x)) + '</span>' : '') + '</button>';
+      }).join('');
+    } else if (cm && cm.recipeId && !cmPick && Object.keys(S.recipes || {}).length > 1) {
+      el.innerHTML = '<button class="cm-add" type="button" data-cm="add">＋ Make another meal at the same time</button>';
+    } else el.innerHTML = '';
+  }
+  function cmPickHtml() {
+    var mine = cms.map(function (x) { return x.recipeId; });
+    var ok = function (id) { var r = S.recipes[id]; return r && mine.indexOf(id) < 0 && splitSteps(r.notes || '').length; };
+    var week = pickedIds().filter(ok);
+    var rest = Object.keys(S.recipes).filter(function (id) { return ok(id) && week.indexOf(id) < 0; }).sort(function (a, b) { return String(S.recipes[a].name).localeCompare(String(S.recipes[b].name)); });
+    var item = function (id) { return '<li><button type="button" data-cm="pick" data-id="' + esc(id) + '">' + esc(S.recipes[id].name) + '</button></li>'; };
+    return '<h2 class="cm-h">What else are you making?</h2><p class="cm-sub">Switch between the two meals with the buttons at the top.</p>' +
+      (week.length ? '<p class="cm-pick-h">This week</p><ul class="cm-pick">' + week.map(item).join('') + '</ul>' : '') +
+      (rest.length ? '<p class="cm-pick-h">' + (week.length ? 'All my recipes' : 'My recipes') + '</p><ul class="cm-pick">' + rest.map(item).join('') + '</ul>' : '') +
+      (!week.length && !rest.length ? '<p class="muted">You don\'t have another recipe with steps yet.</p>' : '') +
+      '<div class="cm-nav one"><button class="btn" type="button" data-cm="pick-cancel">Cancel</button></div>';
+  }
   function renderCookMode() {
     if (!cm) return;
+    renderCmTabs();
+    if (cmPick) { $('cm-title').textContent = 'Add a meal'; $('cm-of').textContent = 'Cooking ' + cm.name; $('cm-bar').style.width = '0%'; $('cm-body').innerHTML = cmPickHtml(); $('cm-body').scrollTop = 0; syncCmPill(); return; }
     var s = cm.stages[cm.at], n = cm.stages.length;
     $('cm-title').textContent = cm.name;
     $('cm-of').textContent = s.type === 'done' ? 'All done!' : 'Step ' + (s.step + 1) + ' of ' + cm.steps;
@@ -5017,7 +5060,7 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
         }).join('') + '</ul>' +
         '<div class="cm-nav' + (back ? '' : ' one') + '">' + back + '<button class="btn primary" type="button" data-cm="next">Start step ' + (s.step + 1) + ' →</button></div>';
     } else if (s.type === 'step') {
-      var last = cm.at === n - 2, t = cmTimer && cmTimer.stage === cm.at ? cmTimer : null;
+      var last = cm.at === n - 2, t = cm.timer && cm.timer.stage === cm.at ? cm.timer : null;
       html = '<span class="cm-label">Step ' + (s.step + 1) + '</span><p class="cm-step">' + stepText(cmLines(s.text), cm.factor, cm.r) + '</p>' +
         (s.uses && s.uses.length && !/\{[^}]+\}/.test(s.text) ? '<div class="cm-uses"><strong>For this step</strong><ul>' + s.uses.map(function (u) { return '<li>' + (u.amt ? '<b>' + esc(u.amt) + '</b> ' : '') + esc(u.name) + '</li>'; }).join('') + '</ul></div>' : '') +
         (s.secs ? '<div class="cm-timer"><span class="lb">⏱ ' + esc(fmtClock(s.secs)) + ' timer</span><span class="tm" id="cm-tm">' + esc(fmtClock(t ? t.left : s.secs)) + '</span>' +
@@ -5028,20 +5071,34 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       html = '<div class="stack cm-done" style="gap:14px;flex:1"><span class="em" aria-hidden="true">🎉</span><h2 class="cm-h">You made ' + esc(cm.name) + '!</h2><p class="muted" style="margin:0">Enjoy it 💕</p>' +
         (post && !guest ? '<button class="btn primary" type="button" data-cm="made">📸 I made this! Post a photo</button>' : cm.recipeId && S.recipes[cm.recipeId] && feedApi && !guest ? '<button class="btn primary" type="button" data-cm="share">📸 Share a photo of it</button>' : '') +
         (post && post.owner !== uid && !post.madeFrom && feedApi && feedApi.rate ? '<div class="rate-box" style="align-self:stretch"><strong>How was it?</strong>' + rateButtons(post.id, 'data-cm="rate"') + '</div>' : '') +
-        '<button class="btn" type="button" data-cm="close">Back to the recipe</button>' + (back ? '<button class="btn quiet small" type="button" data-cm="back">← Last step</button>' : '') + '</div>';
+        (cms.length > 1 ? '<button class="btn" type="button" data-cm="finish-one">Keep cooking ' + esc(cms.filter(function (x) { return x !== cm; })[0].name) + ' →</button>' : '<button class="btn" type="button" data-cm="close">Back to the recipe</button>') + (back ? '<button class="btn quiet small" type="button" data-cm="back">← Last step</button>' : '') + '</div>';
     }
     $('cm-body').innerHTML = html; $('cm-body').scrollTop = 0;
     syncCmPill();
   }
+  /* the pill shows this meal's timer when it isn't on the screen (the other meal's timer shows on its tab) */
+  function cmPillTimer() {
+    var best = null;
+    cms.forEach(function (x) {
+      var t = x.timer; if (!t || (x !== cm && cms.length > 1)) return;
+      if (x === cm && !cmPick && t.stage === cm.at && cm.stages[cm.at].type === 'step') return;
+      if (!best || t.left < best.t.left) best = { x: x, t: t };
+    });
+    return best;
+  }
   function syncCmPill() {
     var p = $('cm-tpill');
-    if (!cmTimer || !cm) { p.hidden = true; p.classList.remove('ring'); return; }
-    p.hidden = cmTimer.stage === cm.at && cm.stages[cm.at].type === 'step';
-    p.textContent = '⏱ ' + (cmTimer.left > 0 ? fmtClock(cmTimer.left) : 'Done!');
-    p.classList.toggle('ring', cmTimer.left <= 0);
-    var tm = $('cm-tm'); if (tm && cmTimer.stage === cm.at) tm.textContent = fmtClock(cmTimer.left);
+    if (!cm) { p.hidden = true; return; }
+    var b = cmPillTimer();
+    if (!b) { p.hidden = true; p.classList.remove('ring'); }
+    else {
+      p.hidden = false;
+      p.textContent = '⏱ ' + (b.t.left > 0 ? fmtClock(b.t.left) : 'Done!');
+      p.classList.toggle('ring', b.t.left <= 0);
+    }
+    var tm = $('cm-tm'); if (tm && cm.timer && cm.timer.stage === cm.at) tm.textContent = fmtClock(cm.timer.left);
+    if (cms.length > 1) cms.forEach(function (x, i) { var el = document.querySelector('#cm-tabs [data-i="' + i + '"] .tt'); if (el) el.textContent = cmTimerText(x); });
   }
-  function stopCmTimer(quiet) { clearInterval(cmTick); cmTick = null; cmTimer = null; if (!quiet) { syncCmPill(); renderCookMode(); } }
   function beep() {
     try {
       if (!cmAudio) return;
@@ -5054,44 +5111,53 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     } catch (e) {}
   }
   function runCmTimer() {
-    clearInterval(cmTick);
+    if (cmTick) return;
     cmTick = setInterval(function () {
-      if (!cmTimer || !cmTimer.running) return;
-      cmTimer.left = Math.max(0, Math.round((cmTimer.end - Date.now()) / 1000));
-      if (cmTimer.left <= 0) {
-        cmTimer.running = false; clearInterval(cmTick); cmTick = null;
+      var any = false, rang = null;
+      cms.forEach(function (x) {
+        var t = x.timer; if (!t || !t.running) return;
+        t.left = Math.max(0, Math.round((t.end - Date.now()) / 1000));
+        if (t.left <= 0) { t.running = false; rang = x; } else any = true;
+      });
+      if (rang) {
         beep(); try { navigator.vibrate && navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {}
-        toast('⏱ Timer done!'); renderCookMode(); return;
-      }
-      syncCmPill();
+        toast('⏱ ' + (cms.length > 1 ? rang.name + ' timer' : 'Timer') + ' done!'); renderCookMode();
+      } else syncCmPill();
+      if (!any) { clearInterval(cmTick); cmTick = null; }
     }, 500);
   }
   $('cookmode').addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-cm]'); if (!b || !cm) return;
     var a = b.dataset.cm;
     if (a === 'close') { closeCookMode(); return; }
+    if (a === 'add') { cmPick = true; renderCookMode(); return; }
+    if (a === 'pick-cancel') { cmPick = false; renderCookMode(); return; }
+    if (a === 'pick') { var pr = S.recipes[b.dataset.id]; if (pr) openCookMode(pr, { name: pr.name, factor: (portions(b.dataset.id) || base(pr)) / base(pr), recipeId: b.dataset.id }); return; }
+    if (a === 'tab') { var nx = cms[Number(b.dataset.i)]; if (nx) { cm = nx; cmPick = false; renderCookMode(); } return; }
+    if (a === 'finish-one') { var keep = cms.filter(function (x) { return x !== cm; }); cms = keep; cm = keep[0]; renderCookMode(); return; }
     if (a === 'next') { if (cm.at < cm.stages.length - 1) { cm.at++; renderCookMode(); } return; }
     if (a === 'back') { if (cm.at > 0) { cm.at--; renderCookMode(); } return; }
     if (a === 'got') { var k = b.dataset.key; cm.got[k] = !cm.got[k]; renderCookMode(); return; }
     if (a === 't-start') {
       try { var AC = window.AudioContext || window.webkitAudioContext; if (AC && !cmAudio) cmAudio = new AC(); if (cmAudio && cmAudio.resume) cmAudio.resume(); } catch (e) {}
       var s = cm.stages[cm.at];
-      if (!cmTimer || cmTimer.stage !== cm.at) cmTimer = { stage: cm.at, left: s.secs };
-      cmTimer.running = true; cmTimer.end = Date.now() + cmTimer.left * 1000; runCmTimer(); renderCookMode(); return;
+      if (!cm.timer || cm.timer.stage !== cm.at) cm.timer = { stage: cm.at, left: s.secs };
+      cm.timer.running = true; cm.timer.end = Date.now() + cm.timer.left * 1000; runCmTimer(); renderCookMode(); return;
     }
-    if (a === 't-pause') { if (cmTimer) { cmTimer.left = Math.max(0, Math.round((cmTimer.end - Date.now()) / 1000)); cmTimer.running = false; } renderCookMode(); return; }
-    if (a === 't-stop') { stopCmTimer(); return; }
+    if (a === 't-pause') { if (cm.timer) { cm.timer.left = Math.max(0, Math.round((cm.timer.end - Date.now()) / 1000)); cm.timer.running = false; } renderCookMode(); return; }
+    if (a === 't-stop') { cm.timer = null; renderCookMode(); return; }
     if (a === 'rate') { ratePost(b.dataset.id, Number(b.dataset.stars) || 0); return; }
     if (a === 'made') { var pid = cm.postId; closeCookMode(); if (fview && fview.post.id === pid) openMadeForm(); return; }
     if (a === 'share') { var rid = cm.recipeId; closeCookMode(); openPostForm(); try { $('post-recipe').value = rid; } catch (e) {} return; }
   });
   $('cm-tpill').addEventListener('click', function () {
-    if (!cm || !cmTimer) return;
-    if (cmTimer.left <= 0) { stopCmTimer(); return; }
-    cm.at = cmTimer.stage; renderCookMode();
+    var b = cm && cmPillTimer(); if (!b) return;
+    cm = b.x; cmPick = false; cm.at = b.t.stage;
+    if (b.t.left <= 0) cm.timer = null;
+    renderCookMode();
   });
   document.addEventListener('keydown', function (ev) {
-    if (!cm) return;
+    if (!cm || cmPick) return;
     if (ev.key === 'Escape') closeCookMode();
     else if (ev.key === 'ArrowRight' && cm.at < cm.stages.length - 1) { cm.at++; renderCookMode(); }
     else if (ev.key === 'ArrowLeft' && cm.at > 0) { cm.at--; renderCookMode(); }
