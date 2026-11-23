@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="fedup-version" content="20261122190645">
+<meta name="fedup-version" content="20261122192156">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3313,15 +3313,42 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
     var k = norm(name), c = skey(name);
     return (r.ingredients || []).filter(function (g) { return norm(g.name) === k || skey(g.name) === c; })[0] || null;
   }
+  /* when the same ingredient is tagged in several steps, each step without its own amount gets an even share of what's left */
+  function tagPlan(r) {
+    var plan = {}, m, re = /\{([^{}\n]{1,60})\}/g; /* its own pattern: callers are mid-loop on STEP_TAG */
+    splitSteps(r.notes).forEach(function (st) {
+      re.lastIndex = 0;
+      while ((m = re.exec(st))) {
+        var tp = tagParts(m[1]), g = stepIng(r, tp.name); if (!g) continue;
+        var k = skey(g.name), e = plan[k] || (plan[k] = { g: g, parts: [], free: 0 });
+        if (tp.part) e.parts.push(splitAmt(tp.part, g.unit)); else e.free++;
+      }
+    });
+    Object.keys(plan).forEach(function (k) {
+      var e = plan[k], tot = parseQty(e.g.qty), u = normUnit(e.g.unit), used = 0, ok = !isNaN(tot) && tot > 0;
+      e.parts.forEach(function (pp) { if (isNaN(pp.q) || normUnit(pp.unit || e.g.unit) !== u) ok = false; else used += pp.q; });
+      e.share = ok && e.free && (e.parts.length || e.free > 1) && tot - used > 0 ? (tot - used) / e.free : null;
+    });
+    return plan;
+  }
+  /* the amount one {tag} stands for */
+  function tagAmount(r, raw, factor) {
+    var tg = tagParts(raw), g = stepIng(r, tg.name); if (!g) return null;
+    factor = factor || 1;
+    if (tg.part) { var pp = splitAmt(tg.part, g.unit); return { g: g, amt: !isNaN(pp.q) ? amountText(pp.q * factor, normUnit(pp.unit)) : tg.part }; }
+    var e = tagPlan(r)[skey(g.name)];
+    if (e && e.share) return { g: g, amt: amountText(e.share * factor, normUnit(g.unit)) };
+    var q = parseQty(g.qty);
+    return { g: g, amt: !isNaN(q) ? amountText(q * factor, normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' ') };
+  }
   function stepText(st, factor, r) {
     var out = '', last = 0, m;
     STEP_TAG.lastIndex = 0;
     var part = function (t) { return factor && factor !== 1 ? scaleSteps(t, factor, r) : esc(t); };
     while ((m = STEP_TAG.exec(st))) {
       out += part(st.slice(last, m.index));
-      var tg = tagParts(m[1]), g = stepIng(r, tg.name), label = tg.name;
-      if (g && tg.part) { var pp = splitAmt(tg.part, g.unit); label = (!isNaN(pp.q) ? amountText(pp.q * (factor || 1), normUnit(pp.unit)) : tg.part) + ' ' + g.name.toLowerCase(); }
-      else if (g) { var q = parseQty(g.qty); var amt = !isNaN(q) ? amountText(q * (factor || 1), normUnit(g.unit)) : [g.qty, g.unit].filter(Boolean).join(' '); label = (amt ? amt + ' ' : '') + g.name.toLowerCase(); }
+      var ta = tagAmount(r, m[1], factor), label = tagParts(m[1]).name;
+      if (ta) label = (ta.amt ? ta.amt + ' ' : '') + ta.g.name.toLowerCase();
       out += '<b class="ing-tag">' + esc(label) + '</b>';
       last = m.index + m[0].length;
     }
@@ -4989,10 +5016,19 @@ var ART = {}; Object.keys(ART_SRC).forEach(function (k) { ART[k] = { label: ART_
       if (tagged.length) return tagged;
       return ings.map(function (g, j) { return j; }).filter(function (j) { return cmUses(st, ings[j].name); });
     });
-    steps.forEach(function (st, i) { callsFor[i].forEach(function (j) { if (!taken[j]) { taken[j] = true; perStep[i].push(j); } }); });
+    /* a step with {tags} lists just its share of each ingredient, even if an earlier step used some of it too */
+    var tagAmts = steps.map(function (st) {
+      var out = {}, m; STEP_TAG.lastIndex = 0;
+      while ((m = STEP_TAG.exec(st))) { var ta = tagAmount(r, m[1], factor), j = ta ? ings.indexOf(ta.g) : -1; if (j >= 0 && !(j in out)) out[j] = ta.amt; }
+      return out;
+    });
+    steps.forEach(function (st, i) {
+      var tagged = Object.keys(tagAmts[i]).length > 0;
+      callsFor[i].forEach(function (j) { if (tagged || !taken[j]) { taken[j] = true; perStep[i].push(j); } });
+    });
     var stages = [];
     steps.forEach(function (st, i) {
-      if (perStep[i].length) stages.push({ type: 'grab', step: i, items: perStep[i].map(function (j) { return { key: 'i' + j, name: ings[j].name, amt: cmAmount(ings[j], factor) }; }) });
+      if (perStep[i].length) stages.push({ type: 'grab', step: i, items: perStep[i].map(function (j) { return { key: 'i' + j + 's' + i, name: ings[j].name, amt: j in tagAmts[i] ? tagAmts[i][j] : cmAmount(ings[j], factor) }; }) });
       var uses = callsFor[i];
       stages.push({ type: 'step', step: i, text: st, secs: cmMinutes(st), uses: uses.map(function (j) { return { name: ings[j].name, amt: cmAmount(ings[j], factor) }; }) });
     });
